@@ -45,12 +45,14 @@ def checkTransactions(txs, account, startDate, endDate):
         if settings.USE_CACHE:
             checkCache = db.findTransaction(str(tx), account)
             if checkCache != None:
-                events = jsonpickle.decode(checkCache[3])
-                if type(events) is list:
-                    for evt in events:
-                        events_map[checkCache[2]].append(evt)
-                else:
-                    events_map[checkCache[2]].append(events)
+                # if event data is empty it is just record with no events we care about and in the db so we dont have to parse blockchain again
+                if checkCache[3] != '':
+                    events = jsonpickle.decode(checkCache[3])
+                    if type(events) is list:
+                        for evt in events:
+                            events_map[checkCache[2]].append(evt)
+                    else:
+                        events_map[checkCache[2]].append(events)
                 txCount += 1
                 continue
 
@@ -155,6 +157,7 @@ def checkTransactions(txs, account, startDate, endDate):
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
                 logging.debug('Summoning activity: {0}'.format(tx))
+                # TODO Something causing duplicate summons events to be added for same hero
                 results = extractSummonResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None:
                     if type(results) == int:
@@ -165,7 +168,7 @@ def checkTransactions(txs, account, startDate, endDate):
                                 r.itemID = results
                             events_map['tavern'] = events_map['tavern'] + summonCrystalStorage[2]
                             eventsFound = True
-                            if settings.USE_CACHE:
+                            if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
                                 db.saveTransaction(summonCrystalStorage[0], summonCrystalStorage[1], 'tavern', jsonpickle.encode(summonCrystalStorage[2]), account)
                             summonCrystalStorage = [None, None, None]
                             heroIdStorage = None
@@ -184,7 +187,7 @@ def checkTransactions(txs, account, startDate, endDate):
                                 r.itemID = heroIdStorage
                             events_map['tavern'] = events_map['tavern'] + results
                             eventsFound = True
-                            if settings.USE_CACHE:
+                            if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
                             heroIdStorage = None
                             summonCrystalStorage = [None, None, None]
@@ -263,8 +266,8 @@ def checkTransactions(txs, account, startDate, endDate):
                         logging.debug('zero value wallet transfer ignored {0}'.format(tx))
                 if settings.USE_CACHE and len(transfers) > 0:
                     db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(transfers), account)
-        if eventsFound == False and settings.USE_CACHE:
-            db.saveTransaction(tx, timestamp, 'none', '{}', account)
+        if eventsFound == False and settings.USE_CACHE and db.findTransaction(tx, account) == None:
+            db.saveTransaction(tx, timestamp, 'none', '', account)
         txCount += 1
 
     db.updateReport(account, startDate, endDate, txCount, len(txs))
