@@ -1,0 +1,179 @@
+[
+    {
+        "type": "constructor",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {
+                "type": "address",
+                "name": "_address",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "inputs": [
+            {
+                "name": "recipient",
+                "internalType": "address",
+                "type": "address",
+                "indexed": false
+            },
+            {
+                "name": "amount",
+                "indexed": false,
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false,
+        "type": "event",
+        "name": "Claimed"
+    },
+    {
+        "type": "event",
+        "anonymous": false,
+        "name": "OwnershipTransferred",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address",
+                "indexed": true
+            },
+            {
+                "name": "newOwner",
+                "type": "address",
+                "internalType": "address",
+                "indexed": true
+            }
+        ]
+    },
+    {
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "type": "uint256",
+                "name": ""
+            }
+        ],
+        "inputs": [
+            {
+                "name": "",
+                "internalType": "address",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "name": "balances",
+        "type": "function"
+    },
+    {
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [
+            {
+                "type": "bool",
+                "internalType": "bool",
+                "name": ""
+            }
+        ],
+        "name": "enabled",
+        "type": "function"
+    },
+    {
+        "stateMutability": "view",
+        "name": "govToken",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "contract IERC20"
+            }
+        ],
+        "type": "function"
+    },
+    {
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "internalType": "address",
+                "type": "address",
+                "name": ""
+            }
+        ],
+        "name": "owner",
+        "type": "function",
+        "inputs": []
+    },
+    {
+        "outputs": [],
+        "inputs": [],
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "name": "renounceOwnership"
+    },
+    {
+        "type": "function",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "name": "transferOwnership",
+        "inputs": [
+            {
+                "name": "newOwner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address[]",
+                "type": "address[]",
+                "name": "_recipients"
+            },
+            {
+                "name": "_amounts",
+                "internalType": "uint256[]",
+                "type": "uint256[]"
+            }
+        ],
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "name": "setAirdrops",
+        "outputs": []
+    },
+    {
+        "name": "toggleEnabled",
+        "inputs": [],
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "outputs": []
+    },
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+        "outputs": [],
+        "name": "claimAirdrop"
+    },
+    {
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {
+                "internalType": "address",
+                "type": "address",
+                "name": "_address"
+            },
+            {
+                "name": "_amount",
+                "internalType": "uint256",
+                "type": "uint256"
+            }
+        ],
+        "type": "function",
+        "outputs": [],
+        "name": "transferTokens"
+    }
+]

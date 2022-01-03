@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<title>Lila's Ledger</title>
+<link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/static/jquery-ui.theme.min.css" media="screen" />
+<script src="/static/dfktax.js" type="text/javascript"></script>
+<script src="/static/jquery.min.js"></script>
+<script src="/static/jquery-ui.min.js"></script>
+<script type="text/javascript">
+
+var currentView = 'tax';
+var transactionWeight = 18;
+
+$(document).ready(function() {
+    $("#busyImg").css("display","none");
+    $( ".dateBox" ).datepicker({
+      dateFormat: "yy-mm-dd"
+    });
+    optionsReset();
+    $('.txHeader').hover(function() {
+      $( this ).addClass('goldBorder');
+    }, function() {
+      $( this ).removeClass('goldBorder');
+    });
+    $('.txHeader').click(function() {
+      $( this ).next('div').toggle(500);
+      imgInd = $( this ).find('img');
+      if ( $( imgInd ).attr('src') == '{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png') {
+        $( this ).find('img.txIndicator').attr('src', '{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png');
+      } else {
+        $( this ).find('img.txIndicator').attr('src', '{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png');
+      }
+    });
+});
+var usdFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+})
+$( function() {
+    $( "#reportProgress" ).progressbar({
+      value: false,
+      max: 2000
+    });
+  } );
+// Restore defaults for options
+function optionsReset() {
+  // Default to last year if it is early in year, this year otherwise
+  var dt = new Date();
+  var setYear = dt.getFullYear();
+  if (dt.getMonth() < 5) {
+    setYear = setYear -1;
+  }
+  $("#startDate").val(setYear + "-01-01");
+  $("#endDate").val(setYear + "-12-31");
+  $("#fifo").attr('checked', 'checked');
+}
+// Switch between Tax, Summary, and Transaction report views
+function switchView(view) {
+  if (view == 'tax') {
+    currentView = 'tax';
+    $("#viewTransaction").removeClass('tabSelect');
+    $("#viewSummary").removeClass('tabSelect');
+    $("#viewTax").addClass('tabSelect');
+    $("#transactionReport").hide(500);
+    $("#summaryReport").hide(500);
+    $("#taxReport").show(500);
+  } else if (view == 'transaction') {
+    currentView = 'transaction';
+    $("#viewTax").removeClass('tabSelect');
+    $("#viewSummary").removeClass('tabSelect');
+    $("#viewTransaction").addClass('tabSelect');
+    $("#taxReport").hide(500);
+    $("#summaryReport").hide(500);
+    $("#transactionReport").show(500);
+  } else {
+    currentView = 'summary';
+    $("#viewSummary").addClass('tabSelect');
+    $("#viewTax").removeClass('tabSelect');
+    $("#viewTransaction").removeClass('tabSelect');
+    $("#taxReport").hide(500);
+    $("#transactionReport").hide(500);
+    $("#summaryReport").show(500);
+  }
+}
+// This function is recursively called to check on report status and will trigger report load when done
+function generateReport(generateAddress, generateStart, generateEnd, costBasis) {
+    $("#loadingSection").css("display","block");
+    $(".taxTable").html('<tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
+    $.post(BASE_SCRIPT_URL + "generate.py",{
+        walletAddress: generateAddress,
+        startDate: generateStart,
+        endDate: generateEnd,
+        costBasis: costBasis}, async function( data ) {
+          reportStatus = data.response.status
+          if (reportStatus == 'complete') {
+            $( "#loadingMessage").html('Lila: I have that report ready now, here it is...');
+            loadReport(data.response)
+            $("#exportContainer").show(500);
+            $("#loadingSection").css("display","none");
+            $("#loadingMessage").html('Lila: I can help you.');
+            $("#reportProgress").progressbar( "option", "value", 0);
+            $("#reportPercent").html("");
+          } else if (reportStatus == 'generating') {
+            $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
+            $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
+            if ( (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) == 100 ) {
+              $( "#loadingMessage").html('Lila: I have that report ready now, I will have it up in just a minute or two...');
+            } else {
+              $("#loadingMessage").html('Lila: I\'m putting that report together now, maybe you should come back later.  Don\'t you have some quests to do?')
+            }
+            $("#reportPercent").html('.:' + (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
+            await new Promise(r => setTimeout(r, 2000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+          } else if (reportStatus == 'fetchingtx') {
+            $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
+            $("#reportProgress").progressbar( "option", "value", data.response.transactionsFetched );
+            $("#loadingMessage").html('Lila: Oh, I know I have that info here somewhere, looking for your records now.')
+            $("#reportPercent").html('.:' + (data.response.transactionsFetched / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
+            await new Promise(r => setTimeout(r, 2000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+          } else if (reportStatus == 'initiated') {
+            $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
+            $("#exportContainer").hide(500);
+            await new Promise(r => setTimeout(r, 2000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+          } else {
+            // If no status was returned, there must have been some kind of failure and an Error message should be in response
+            $("#loadingSection").css("display","none");
+            $("#loadingMessage").html('Lila: Hi, I can help you.');
+            $("#reportProgress").progressbar( "option", "value", 0);
+            $("#reportPercent").html("");
+            alert(data.response)
+          }
+        }, "json"
+    );
+    return false;
+}
+
+function exportData(format) {
+  // TODO tie the parameters to saved of last report run instead of current selections
+  var url = BASE_SCRIPT_URL + "generate.py?formatType=" + format + "&contentType=" + currentView + "&walletAddress=" + $("#ethAddress").val() + "&startDate=" + $("#startDate").val() + "&endDate=" + $("#endDate").val() + "&costBasis=" + $('input[name=cbs]:checked').val();
+  var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
+  document.getElementById('frame_box').innerHTML = htm;
+}
+// todo figure out callback for iframe load
+function downloadDone() {
+  $("#mask").hide();
+}
+</script>
+<body>
+<div>
+<h1><span id="dfkrptTitle">Defi Kingdoms: Lila's Ledger</span>
+  <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val());">Generate!</button>
+  <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address" />
+  
+</h1>
+
+</div>
+<div id="mainContent" class="wrapper">
+  <div id="leftNavContent" class="ghCol">
+    <div id="reportCriteria" class="ghWidgetBox ui-widget-content">
+    <form id="reportSearch" name="reportSearch">
+    <div class="boxHeader ui-widget-header">Report Options
+      <a href="{{ BASE_SCRIPT_URL }}help.py" alt="read documentation"><img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;"/></a></href>
+    </div>
+    <div id="searchInputs">
+      <div class="sectionHead"></div>
+      <fieldset id="dateRangeSet">
+        <legend style="font-weight: bold;">Date Range Included:</legend>
+        <div id="dateSetBox" class="fieldContainer">
+        <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 /></div>
+        <div class="sectionHead"></div>
+        <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 /></div>
+        </div>
+        <div class="sectionHead"></div>
+      </fieldset>
+      <div class="sectionHead"></div>
+      <div style="padding: 4px;">
+      <fieldset id="costBasisSet">
+        <legend style="font-weight: bold;">Cost Basis:</legend>
+        <input type="radio" name="cbs" id="fifo" value="fifo">
+        <label for="fifo">First in - First Out</label>
+        <input type="radio" name="cbs" id="lifo" value="lifo">
+        <label for="lifo">Last in - First Out</label>
+        <input type="radio" name="cbs" id="hifo" value="hifo">
+        <label for="hifo">Highest in - First Out</label>
+      </fieldset>
+      </div>
+      <div class="sectionHead"></div>
+      <div class="searchInput" style="text-align:center">
+        <input type="button" value="Reset" class="ui-button" onclick="optionsReset()"/></div></form>
+    </div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center;height: 100%;"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 200px;position: relative;bottom: 0px;" /></div>
+  </div>
+  <div id="rightMainContent" class="ghCol">
+    <div id="reportContainer" class="ghWidgetBox ui-widget-content">
+    <div class="boxHeader ui-widget-header" style="height:24px;"><div id="results_title" style="float:left;">Report Results
+      <div style="float:right;position:relative;top:-2px;display: none;" id="exportContainer">
+        <button type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;">Export CSV</button>
+      </div>
+    </div>
+      <div style="float:right;position:relative;top:0px;">
+        <button id="viewTax" type=button value="Tax Report" class="tab-button tabSelect" onclick="switchView('tax')">Tax Report</button>
+        <button id="viewSummary" type=button value="Summary" class="tab-button" onclick="switchView('summary')">Summary</button>
+        <button id="viewTransaction" type=button value="Transactions" class="tab-button" onclick="switchView('transaction')">Transactions</button>
+      </div>
+    </div>
+    <div id="reportInfo">
+      <div id="loadingSection" style="display: none;">
+        <img src="{{ BASE_SCRIPT_URL }}static/images/gettingrecords.gif" class="goldBorder lilaBox" />
+        <div class="talk-bubble tri-right round border right-top">
+          <div class="talktext">
+            <p id="loadingMessage">Lila: Hi, I can help you.</p>
+          </div>
+        </div>
+        <div id="reportProgress"></div>
+        <div id="reportPercent"></div>
+      </div>
+      <div id="summaryReport" style="display: none;">
+        <div id="quest_summary" class="summaryBox inlineBlock" style="height: 680px;">
+          <div id="smy_quest_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="smyIcon" /><span>Quest</span></div>
+          <div id="smy_quest_data"></div>
+        </div>
+        <div id="trader_summary" class="summaryBox inlineBlock" style="height: 680px;">
+          <div id="smy_trader_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="smyIcon" /><span>Trader</span></div>
+          <div id="smy_trader_data"></div>
+        </div>
+        <div id="liquidity_summary" class="summaryBox inlineBlock" style="height: 680px;">
+          <div id="smy_liquidity_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="smyIcon" /><span>Liquidity</span></div>
+          <div id="smy_liquidity_data"></div>
+        </div>
+        <div id="tavern_summary" class="summaryBox inlineBlock">
+          <div id="smy_tavern_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="smyIcon" /><span>Heroes</span></div>
+          <div id="smy_tavern_data"></div>
+        </div>
+        <div id="gardens_summary" class="summaryBox inlineBlock">
+          <div id="smy_gardens_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="smyIcon" /><span>Gardens</span></div>
+          <div id="smy_gardens_data"></div>
+        </div>
+        <div id="bank_summary" class="summaryBox inlineBlock">
+          <div id="smy_bank_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="smyIcon" /><span>Bank</span></div>
+          <div id="smy_bank_data"></div>
+        </div>
+        <div id="airdrop_summary" class="summaryBox inlineBlock">
+          <div id="smy_airdrop_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="smyIcon" /><span>Airdrop</span></div>
+          <div id="smy_airdrop_data"></div>
+        </div>
+        <div id="wallet_summary" class="summaryBox inlineBlock">
+          <div id="smy_wallet_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="smyIcon" /><span>Wallet</span></div>
+          <div id="smy_wallet_data"></div>
+        </div>
+        <div class="footer"></div>
+      </div>
+    <div id="taxReport" class="reportPage">
+      <h2 id="tax_gains_header">Capital Gains</h2>
+      <table id="tax_gains_data" class="taxTable" style="display: none;">
+        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+      </table>
+      <h2 id="tax_income_header">Income</h2>
+      <table id="tax_income_data" class="taxTable" style="display: none;">
+        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+      </table>
+      <h2 id="tax_expenses_header">Expenses</h2>
+      <table id="tax_expenses_data" class="taxTable" style="display: none;">
+        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+      </table>
+    </div>
+    <div id="transactionReport" class="reportPage" style="display: none;">
+      <h2 id="tx_tavern_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png" class="txIndicator" /><span>Heroes</span><span id="tx_tavern_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="txIcon" /></h2>
+      <div>
+      <table id="tx_tavern_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_trader_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Trader</span><span id="tx_trader_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_trader_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_liquidity_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Liquidity</span><span id="tx_liquidity_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_liquidity_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_gardens_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Gardens</span><span id="tx_gardens_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_gardens_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_bank_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bank</span><span id="tx_bank_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_bank_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_airdrop_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrop_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_airdrop_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_quest_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest</span><span id="tx_quest_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_quest_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+      <h2 id="tx_wallet_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Wallet</span><span id="tx_wallet_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="txIcon" /></h2>
+      <div style="display: none;">
+      <table id="tx_wallet_data" class="transactionTable" style="display: none;">
+      </table>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a>
+	<p style="padding: 4px;font-weight:normal;">This utility is intended to help quantify potential taxable events for account activity within the Defi Kingdoms game.  It makes no claims at being a full accounting of your tax liablity.</p>
+</div>
+<div id="frame_box" style="display:none;"></div>
+</body></html>

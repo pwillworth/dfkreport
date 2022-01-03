@@ -1,0 +1,241 @@
+[
+    {
+        "inputs": [
+            {
+                "type": "address",
+                "name": "_factory",
+                "internalType": "address"
+            },
+            {
+                "type": "address",
+                "name": "_bank",
+                "internalType": "address"
+            },
+            {
+                "name": "_govToken",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "type": "address",
+                "internalType": "address",
+                "name": "_weth"
+            }
+        ],
+        "type": "constructor",
+        "stateMutability": "nonpayable"
+    },
+    {
+        "name": "LogBridgeSet",
+        "anonymous": false,
+        "type": "event",
+        "inputs": [
+            {
+                "indexed": true,
+                "name": "token",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "bridge",
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "inputs": [
+            {
+                "type": "address",
+                "name": "server",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "type": "address",
+                "name": "token0",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "token1",
+                "indexed": true,
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "type": "uint256",
+                "internalType": "uint256",
+                "name": "amount0",
+                "indexed": false
+            },
+            {
+                "name": "amount1",
+                "internalType": "uint256",
+                "type": "uint256",
+                "indexed": false
+            },
+            {
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountGovToken"
+            }
+        ],
+        "anonymous": false,
+        "type": "event",
+        "name": "LogConvert"
+    },
+    {
+        "anonymous": false,
+        "name": "OwnershipTransferred",
+        "type": "event",
+        "inputs": [
+            {
+                "name": "previousOwner",
+                "indexed": true,
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "internalType": "address",
+                "type": "address",
+                "name": "newOwner",
+                "indexed": true
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "name": "bank",
+        "outputs": [
+            {
+                "type": "address",
+                "internalType": "address",
+                "name": ""
+            }
+        ]
+    },
+    {
+        "name": "factory",
+        "type": "function",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "contract IUniswapV2Factory"
+            }
+        ],
+        "stateMutability": "view",
+        "inputs": []
+    },
+    {
+        "type": "function",
+        "name": "owner",
+        "inputs": [],
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "name": "renounceOwnership",
+        "outputs": [],
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "inputs": []
+    },
+    {
+        "stateMutability": "nonpayable",
+        "outputs": [],
+        "type": "function",
+        "name": "transferOwnership",
+        "inputs": [
+            {
+                "name": "newOwner",
+                "internalType": "address",
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "type": "address",
+                "name": "bridge",
+                "internalType": "address"
+            }
+        ],
+        "name": "bridgeFor",
+        "type": "function",
+        "inputs": [
+            {
+                "type": "address",
+                "name": "token",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "type": "address",
+                "internalType": "address",
+                "name": "bridge"
+            }
+        ],
+        "type": "function",
+        "name": "setBridge",
+        "stateMutability": "nonpayable",
+        "outputs": []
+    },
+    {
+        "type": "function",
+        "name": "convert",
+        "outputs": [],
+        "inputs": [
+            {
+                "name": "token0",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "token1",
+                "internalType": "address",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "outputs": [],
+        "name": "convertMultiple",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {
+                "name": "token0",
+                "internalType": "address[]",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "token1",
+                "type": "address[]"
+            }
+        ],
+        "type": "function"
+    }
+]
