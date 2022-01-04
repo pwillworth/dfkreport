@@ -53,6 +53,10 @@ ul {
 	flex: 1 0 auto;
 }
 
+.helpTopic {
+	margin-top: 20px;
+}
+
 #summaryReport {
 	background-color: #91ca82;
 }

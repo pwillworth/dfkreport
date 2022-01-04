@@ -105,14 +105,15 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             ti = TaxItem('Sold Hero {0}'.format(event.itemID), 'gains', eventDate, event.fiatAmount)
             ti.amountNotAccounted = 1
             # Check hero cost data so gains can be calculated
+
             for k, v in heroExpenses.items():
                 if k == event.itemID and v.acquiredDate <= eventDate:
                     ti.acquiredDate = v.acquiredDate
                     ti.costs = v.costs
                     ti.amountNotAccounted = 0
-                    if ti.soldDate - ti.acquiredDate > 365:
+                    if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
                         ti.term = "long"
-                    del heroExpenses[k]
+                    v.proceeds = event.fiatAmount
             results.append(ti)
 
     for k, v in heroExpenses.items():
@@ -314,6 +315,7 @@ def buildQuestRecords(questEvents, startDate, endDate):
         v.description = 'Quest Jewel Rewards {:.3f}'.format(v.costs)
         # zero out costs because we were just using it to trace the sum of coin amount
         v.costs = 0
+        v.amountNotAccounted = 0
         results.append(v)
 
     return results

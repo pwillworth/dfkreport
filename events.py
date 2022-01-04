@@ -137,7 +137,6 @@ def checkTransactions(txs, account, startDate, endDate):
                         db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode(results), account)
                 else:
                     # if no bank result was parsed, it is just a direct xJewel transfer
-                    # TODO make this detected in wallet events
                     logging.error('Error: Failed to parse a bank result.')
                     with open('abi/xJewel.json', 'r') as f:
                         ABI = f.read()
@@ -481,7 +480,6 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
             return [r, rs]
     decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        # TODO track hero ID to mary with costs
         logging.info('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
         return log['args']['heroId']
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)

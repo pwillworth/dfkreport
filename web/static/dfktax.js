@@ -282,7 +282,11 @@ function loadGardensEvents(gardensEvents) {
   $("#tx_gardens_data").html('<tr><th>Block Date</th><th>Location</th><th>Reward Type</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < gardensEvents.length; i++) {
     var eventDate = new Date(gardensEvents[i].timestamp * 1000)
+    var coinAmount = gardensEvents[i].coinAmount
     var fiatValue = gardensEvents[i].fiatValue;
+    if (gardensEvents[i].coinAmount['py/reduce'] != undefined) {
+      coinAmount = gardensEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0];
+    }
     if (gardensEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = gardensEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
@@ -292,13 +296,13 @@ function loadGardensEvents(gardensEvents) {
       '<td>' + 'Garden Jewel Reward' + '</td>' +
       '<td>' + gardensEvents[i].event + '</td>' +
       '<td>' + address_map[gardensEvents[i].coinType] + '</td>' +
-      '<td>' + Number(gardensEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]).toFixed(5) + '</td>' +
+      '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
       '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
     );
     if ( gardensEvents[i].event in gardensTotals ) {
-      gardensTotals[gardensEvents[i].event] += Number(gardensEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
+      gardensTotals[gardensEvents[i].event] += Number(coinAmount);
     } else {
-      gardensTotals[gardensEvents[i].event] = Number(gardensEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
+      gardensTotals[gardensEvents[i].event] = Number(coinAmount);
     }
   }
   // Add summary data for each event
