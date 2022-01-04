@@ -106,7 +106,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
             if ( (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) == 100 ) {
-              $( "#loadingMessage").html('Lila: I have that report ready now, I will have it up in just a minute or two...');
+              $( "#loadingMessage").html('Lila: I have that report almost ready now, I will have it up in just a minute or two...');
             } else {
               $("#loadingMessage").html('Lila: I\'m putting that report together now, maybe you should come back later.  Don\'t you have some quests to do?')
             }
@@ -153,7 +153,7 @@ function downloadDone() {
 <div>
 <h1><span id="dfkrptTitle">Defi Kingdoms: Lila's Ledger</span>
   <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val());">Generate!</button>
-  <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address" />
+  <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
   
 </h1>
 

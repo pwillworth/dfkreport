@@ -24,6 +24,9 @@ class TaxItem:
         else:
             return 0
 
+def inReportRange(item, startDate, endDate):
+    itemDate = datetime.date.fromtimestamp(item.timestamp)
+    return itemDate >= startDate and itemDate <= endDate
 
 # Scrape all events and build the Tax Report from it
 def buildTaxMap(txns, account, startDate, endDate, costBasis):
@@ -31,9 +34,17 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     logging.info('Start Event map build')
     eventMap = events.checkTransactions(txns, account, startDate, endDate)
     # Have to look up Tavern sales events because they are not associated direct to wallet
-    eventMap['tavern'] += db.getTavernSales(account)
+    eventMap['tavern'] += db.getTavernSales(account, startDate, endDate)
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
+    # temporarily dedupe this list until I can find root cause
+    cleanTavern = []
+    for rec in eventMap['tavern']:
+        if rec not in cleanTavern:
+            cleanTavern.append(rec)
+        else:
+            logging.info('eliminated duplicate event {1} {0} on {2}'.format(rec.itemID, rec.event, str(rec.timestamp)))
+    eventMap['tavern'] = cleanTavern
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], costBasis)
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
@@ -41,6 +52,15 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
     questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
     airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
+    # pop out all events not in date range
+    eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
+    eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
+    eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
+    eventMap['liquidity'] = [x for x in eventMap['liquidity'] if inReportRange(x, startDate, endDate)]
+    eventMap['bank'] = [x for x in eventMap['bank'] if inReportRange(x, startDate, endDate)]
+    eventMap['gardens'] = [x for x in eventMap['gardens'] if inReportRange(x, startDate, endDate)]
+    eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
+    eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
     # Return all tax records combined and events
     return {
         'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData,
@@ -67,7 +87,10 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         if (event.event in ['purchase','hire','summon','crystal','meditate','levelup']) and eventDate >= startDate and eventDate <= endDate:
             if event.itemID in heroExpenses:
-                heroExpenses[event.itemID].description += ''.join((',', event.event))
+                if event.event in heroExpenses[event.itemID].description:
+                    heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+                else:
+                    heroExpenses[event.itemID].description += ''.join((',', event.event))
                 heroExpenses[event.itemID].costs += event.fiatAmount
                 if eventDate < heroExpenses[event.itemID].acquiredDate:
                     heroExpenses[event.itemID].acquiredDate = eventDate
@@ -83,9 +106,9 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             ti.amountNotAccounted = 1
             # Check hero cost data so gains can be calculated
             for k, v in heroExpenses.items():
-                if v.itemID == event.itemID and v.acquiredDate <= eventDate:
+                if k == event.itemID and v.acquiredDate <= eventDate:
                     ti.acquiredDate = v.acquiredDate
-                    ti.costs = v.fiatAmount
+                    ti.costs = v.costs
                     ti.amountNotAccounted = 0
                     if ti.soldDate - ti.acquiredDate > 365:
                         ti.term = "long"

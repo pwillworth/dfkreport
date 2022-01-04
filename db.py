@@ -4,6 +4,7 @@ import dfkInfo
 import logging
 import records
 import jsonpickle
+import datetime
 import os
 
 def aConn():
@@ -47,16 +48,17 @@ def saveTransaction(tx, timestamp, type, events, wallet):
     con.close()
 
 # Look up and return any transaction events where wallet was the seller
-def getTavernSales(wallet):
+def getTavernSales(wallet, startDate, endDate):
     sales = []
+    startStamp = int(datetime.datetime(startDate.year, startDate.month, startDate.day).timestamp())
+    endStamp = int(datetime.datetime(endDate.year, endDate.month, endDate.day).timestamp() + 86400)
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='tavern'", (wallet,))
+    cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
     row = cur.fetchone()
     while row != None:
         r = jsonpickle.decode(row[3])
         if type(r) is records.TavernTransaction and r.seller == wallet:
-            logging.info('Adding in sales record {0}'.format(r.__dict__))
             sales.append(r)
         row = cur.fetchone()
 
@@ -147,7 +149,7 @@ def main():
     cur = con.cursor()
     cur.execute("DELETE FROM reports")
     #cur.execute("DELETE FROM prices")
-    cur.execute("DELETE FROM transactions")
+    #cur.execute("DELETE FROM transactions")
     con.commit()
     con.close()
 
