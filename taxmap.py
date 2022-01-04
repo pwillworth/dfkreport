@@ -90,7 +90,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                 if event.event in heroExpenses[event.itemID].description:
                     heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
                 else:
-                    heroExpenses[event.itemID].description += ''.join((',', event.event))
+                    heroExpenses[event.itemID].description += ''.join((' ', event.event))
                 heroExpenses[event.itemID].costs += event.fiatAmount
                 if eventDate < heroExpenses[event.itemID].acquiredDate:
                     heroExpenses[event.itemID].acquiredDate = eventDate
