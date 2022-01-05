@@ -88,7 +88,7 @@ def getTransactionList(address, startDate, endDate, offset=0):
 
 def getTransactionCount(address):
     try:
-        result = account.get_transaction_count(address, endpoint=nets.hmy_main)
+        result = account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
     except ConnectionError:
         result = 'Error: Failed to connect to Harmony API'
         sys.stderr.write("connection to harmony api failed")

@@ -47,7 +47,6 @@ def main():
         if reportInfo == None:
             generateTime = datetime.datetime.now()
             txResult = transactions.getTransactionCount(args.wallet)
-            # TODO add an arg to create report so we can send something here to make proc be 1 instead of NULL on creation
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, 1)
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
