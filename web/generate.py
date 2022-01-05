@@ -28,28 +28,28 @@ def getResponseCSV(records, contentType):
         response = 'category,block date,event,type 1,type 1 amount,type 2,type 2 amount,type 1 fiat value,type 2 fiat value\n'
         for record in eventRecords['tavern']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), record.coinType, str(record.coinCost), '', str(record.fiatAmount),'\n'))
+            response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount),'\n'))
         for record in eventRecords['swaps']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('trader', blockDateStr, 'swap', record.swapType, str(record.swapAmount), record.receiveType, str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue),'\n'))
+            response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue),'\n'))
         for record in eventRecords['liquidity']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, record.poolAddress), record.coin1Type, str(record.coin1Amount), record.coin2Type, str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue),'\n'))
+            response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue),'\n'))
         for record in eventRecords['gardens']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('gardens', blockDateStr, record.event, record.coinType, str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
+            response += ','.join(('gardens', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
         for record in eventRecords['bank']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), record.coinType, str(record.coinAmount), '', str(record.fiatValue),'\n'))
+            response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue),'\n'))
         for record in eventRecords['airdrops']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('airdrops', blockDateStr, '', record.tokenReceived, str(record.tokenAmount), '', '', str(record.fiatValue), '','\n'))
+            response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '','\n'))
         for record in eventRecords['quests']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('quest', blockDateStr, 'rewards', record.rewardType, str(record.rewardAmount), '', '', str(record.fiatValue), '','\n'))
+            response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '','\n'))
         for record in eventRecords['wallet']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('wallet', blockDateStr, record.action, record.coinType, str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
+            response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
     else:
         response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted\n'
 
