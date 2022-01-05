@@ -116,10 +116,10 @@ def deleteReport(wallet, startDate, endDate):
     con.commit()
     con.close()
 
-def updateReportError(wallet, startDate, endDate):
+def updateReportError(wallet, startDate, endDate, statusCode=9):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=9 WHERE account=%s and startDate=%s AND endDate=%s", (wallet, startDate, endDate))
+    cur.execute("UPDATE reports SET proc=0, reportStatus=%s WHERE account=%s and startDate=%s AND endDate=%s", (statusCode, wallet, startDate, endDate))
     con.commit()
     con.close()
 
