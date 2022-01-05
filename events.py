@@ -160,7 +160,7 @@ def checkTransactions(txs, account, startDate, endDate):
                 results = extractSummonResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None:
                     if type(results) == int:
-                        logging.info('heroid results {0} {1}'.format(tx, results))
+                        logging.debug('heroid results {0} {1}'.format(tx, results))
                         if summonCrystalStorage[2] != None:
                             # crystal open event just returns the hero ID summoned so we can now add the full data
                             for r in summonCrystalStorage[2]:
@@ -476,15 +476,15 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             r = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
-            logging.info('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
+            logging.debug('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
             return [r, rs]
     decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
+        logging.debug('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
         return log['args']['heroId']
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info('{0} Summonning Auction log: '.format(txn) + str(log))
+        logging.debug('{0} Summonning Auction log: '.format(txn) + str(log))
         if log['args']['winner'] == account:
             # TODO is this picking up for account or someone else?
             r = records.TavernTransaction('hero', log['args']['tokenId'], 'hired', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', Web3.fromWei(log['args']['totalPrice'], 'ether'))

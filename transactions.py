@@ -6,12 +6,13 @@ import db
 import requests
 import sys
 import logging
+import settings
 
 # Return array of transactions on Harmony for the address
-def getHarmonyData(address, startDate="", endDate=""):
+def getHarmonyData(address, startDate="", endDate="", startOffset=0):
     tx_end = False
-    offset = 0
-    page_size = 80
+    offset = startOffset
+    page_size = settings.TX_PAGE_SIZE
     txs = []
     while tx_end == False:
         try:
@@ -32,8 +33,8 @@ def getHarmonyData(address, startDate="", endDate=""):
             logging.info('updated report fetched {0}'.format(len(txs)))
 
     tx_end = False
-    offset = 0
-    page_size = 80
+    offset = startOffset
+    page_size = settings.TX_PAGE_SIZE
     while tx_end == False:
         try:
             results = account.get_staking_transaction_history(address, page=offset, page_size=page_size, include_full_tx=False, endpoint=nets.hmy_main)
@@ -51,9 +52,9 @@ def getHarmonyData(address, startDate="", endDate=""):
     return txs
 
 # Return array of transactions on Avalanche for the address
-def getAvalancheData(address, startDate="", endDate=""):
+def getAvalancheData(address, startDate="", endDate="", startOffset=0):
     tx_end = False
-    offset = 0
+    offset = startOffset
     page_size = 140
     txs = []
     while tx_end == False:
@@ -78,11 +79,11 @@ def getAvalancheData(address, startDate="", endDate=""):
             break
     return txs
 
-def getTransactionList(address, startDate, endDate):
+def getTransactionList(address, startDate, endDate, offset=0):
     txs = []
     logging.info('Get Harmony data for {0}'.format(address))
-    txs = txs + getHarmonyData(address, startDate, endDate)
-    #txs = txs + transactions.getAvalancheData(address, startDate, endDate)
+    txs = txs + getHarmonyData(address, startDate, endDate, offset)
+    #txs = txs + transactions.getAvalancheData(address, startDate, endDate, offset)
     return txs
 
 def getTransactionCount(address):

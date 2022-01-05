@@ -74,10 +74,10 @@ def findReport(wallet, startDate, endDate):
 
     return row
 
-def createReport(wallet, startDate, endDate, now, txCount, costBasis):
+def createReport(wallet, startDate, endDate, now, txCount, costBasis, proc=None):
     con = aConn()
     cur = con.cursor()
-    cur.execute("INSERT INTO reports VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s)", (wallet, startDate, endDate, now, txCount, 0, 0, 0, '', '', costBasis))
+    cur.execute("INSERT INTO reports VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (wallet, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis))
     con.commit()
     con.close()
 
@@ -138,7 +138,7 @@ def createDatabase():
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
     cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp))')
-    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), PRIMARY KEY (account, startDate, endDate))')
+    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
     con.commit()
     con.close()
 

@@ -2,6 +2,7 @@
 import transactions
 import taxmap
 import db
+import settings
 import datetime
 import argparse
 import uuid
@@ -23,6 +24,17 @@ def main():
     else:
         costBasis = args.costbasis
 
+    offset = 0
+    txResult = 0
+    # When running background server process to populate tavern sales pickup from last transaction offset
+    if args.wallet == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
+        with open('tx_last_auction_offset.txt', 'r') as of:
+            ofContent = of.read().strip()
+            if ofContent.isdigit():
+                offset = int(ofContent)
+            else:
+                offset = 0
+
     txData = []
 
     # list of transactions if loaded from file if available, otherwise fetched
@@ -34,11 +46,12 @@ def main():
         # generate.py pre-generates report record, but if running outside of that, create one
         if reportInfo == None:
             generateTime = datetime.datetime.now()
-            result = transactions.getTransactionCount(args.wallet)
-            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis)
+            txResult = transactions.getTransactionCount(args.wallet)
+            # TODO add an arg to create report so we can send something here to make proc be 1 instead of NULL on creation
+            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, 1)
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
-        txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate)
+        txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, offset)
         # The transactions are written to a file and record updated indicate fetching complete
         transactionsFile = uuid.uuid4().hex
         with open('../transactions/{0}'.format(transactionsFile), 'wb') as f:
@@ -63,6 +76,16 @@ def main():
     with open('../reports/{0}'.format(reportFile), 'wb') as f:
         pickle.dump(reportData, f)
     db.completeReport(args.wallet, args.startDate, args.endDate, reportFile)
+
+    # When running background server process to populate tavern sales write new offset to pickup from next run
+    if args.wallet == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
+        if txResult > settings.TX_PAGE_SIZE:
+            offsetNew = int(txResult / settings.TX_PAGE_SIZE)
+        else:
+            offsetNew = 0
+        with open('tx_last_auction_offset.txt', 'w') as of:
+            of.write(str(offsetNew))
+
 
 if __name__ == "__main__":
 	main()

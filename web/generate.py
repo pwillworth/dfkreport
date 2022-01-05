@@ -12,6 +12,7 @@ import json
 from web3 import Web3
 sys.path.append("../")
 import transactions
+import contracts
 import db
 import pickle
 import jsonpickle
@@ -162,7 +163,7 @@ except ValueError:
     response = '{ "response" : "Error: You must provide dates in the format YYYY-MM-DD" }'
     failure = True
 
-if not Web3.isAddress(wallet):
+if not Web3.isAddress(wallet) and wallet not in contracts.address_map:
     response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
     failure = True
 else:
