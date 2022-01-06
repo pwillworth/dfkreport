@@ -124,6 +124,7 @@ def updateReportError(wallet, startDate, endDate, statusCode=9):
     con.close()
 
 def updateReport(wallet, startDate, endDate, updateType, recordCount):
+    logging.info('updated report {0} records {1} {2}'.format(wallet, updateType, recordCount))
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
@@ -149,7 +150,7 @@ def main():
     cur = con.cursor()
     cur.execute("DELETE FROM reports")
     #cur.execute("DELETE FROM prices")
-    #cur.execute("DELETE FROM transactions")
+    cur.execute("DELETE FROM transactions")
     con.commit()
     con.close()
 

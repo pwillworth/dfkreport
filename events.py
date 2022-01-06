@@ -41,7 +41,7 @@ def checkTransactions(txs, account, startDate, endDate):
         # Update report tracking record for status every 10 txs
         if txCount % 10 == 0:
             db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', txCount)
-            logging.info('updated report records {0}'.format(txCount))
+
         if settings.USE_CACHE:
             checkCache = db.findTransaction(str(tx), account)
             if checkCache != None:
@@ -55,7 +55,6 @@ def checkTransactions(txs, account, startDate, endDate):
                         events_map[checkCache[2]].append(events)
                 txCount += 1
                 continue
-
         try:
             # sometimes they just don't exist yet
             result = w3.eth.get_transaction(tx)
@@ -72,7 +71,7 @@ def checkTransactions(txs, account, startDate, endDate):
         if blockDate >= startDate and blockDate <= endDate:
             events_map['gas'] += gas
         if receipt['status'] == 1:
-            logging.debug("{4} | {3}: {0} - {1} - {2}".format(action, '{:f} ONE'.format(value), '{:f} ONE'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat()))
+            logging.info("{4} | {3}: {0} - {1} - {2}".format(action, '{:f} ONE'.format(value), '{:f} ONE'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat()))
             if result['input'] != '0x' and 'Quest' in action:
                 results = extractQuestResults(w3, tx, result['input'], timestamp, receipt)
                 events_map['quests'] += results
@@ -265,6 +264,10 @@ def checkTransactions(txs, account, startDate, endDate):
                         logging.debug('zero value wallet transfer ignored {0}'.format(tx))
                 if settings.USE_CACHE and len(transfers) > 0:
                     db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(transfers), account)
+        else:
+            # transaction failed, mark to ignore later
+            db.saveTransaction(tx, timestamp, 'none', '', account)
+        logging.info('extraction done')
         if eventsFound == False and settings.USE_CACHE and db.findTransaction(tx, account) == None:
             db.saveTransaction(tx, timestamp, 'none', '', account)
         txCount += 1

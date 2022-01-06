@@ -12,7 +12,7 @@ import traceback
 
 
 def main():
-    logging.basicConfig(filename='../main.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(filename='../main.log', level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('We got a report request')
     parser = argparse.ArgumentParser()
     parser.add_argument("wallet", help="The evm compatible wallet address to generate for")
@@ -67,7 +67,7 @@ def main():
         traceback.print_exc()
         # Set a different code when web3.exceptions.TransactionNotFound
         # so we can relay that it is about network rpc issue, try later
-        if str(err) == 'Relay attempts exhausted':
+        if str(err) == "{'message': 'Relay attempts exhausted', 'code': -32050}":
             statusCode = 8
         else:
             statusCode = 9
