@@ -267,7 +267,6 @@ def checkTransactions(txs, account, startDate, endDate):
         else:
             # transaction failed, mark to ignore later
             db.saveTransaction(tx, timestamp, 'none', '', account)
-        logging.info('extraction done')
         if eventsFound == False and settings.USE_CACHE and db.findTransaction(tx, account) == None:
             db.saveTransaction(tx, timestamp, 'none', '', account)
         txCount += 1
