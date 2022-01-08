@@ -4,11 +4,15 @@
 	margin: 0;
 }
 
+html {
+	height: 100%;
+}
 body {
 	background-color: #626362;
 	font-family: Inter, sans-serif;
 	display: flex;
 	flex-direction: column;
+	height: 100%;
 }
 
 h1 {
@@ -137,7 +141,7 @@ ul {
 	border-top-width: 1px;
 	padding: 2px 0;
 	flex-shrink: 0;
-
+	background-color: #abc7a3;
 }
 .ghWidgetBox {
 	position: relative;
