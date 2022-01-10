@@ -69,6 +69,8 @@ def main():
         # so we can relay that it is about network rpc issue, try later
         if str(err) == "{'message': 'Relay attempts exhausted', 'code': -32050}":
             statusCode = 8
+        elif "Bad Gateway for url" in str(err):
+            statusCode = 8
         else:
             statusCode = 9
         db.updateReportError(args.wallet, args.startDate, args.endDate, statusCode)
