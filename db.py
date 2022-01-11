@@ -43,8 +43,11 @@ def findTransaction(txHash, account):
 def saveTransaction(tx, timestamp, type, events, wallet):
     con = aConn()
     cur = con.cursor()
-    cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet))
-    con.commit()
+    try:
+        cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet))
+        con.commit()
+    except Exception as err:
+        logging.error('Unexpected Error {0} caching transaction {1} - '.format(err, tx))
     con.close()
 
 # Look up and return any transaction events where wallet was the seller
@@ -128,7 +131,8 @@ def updateReport(wallet, startDate, endDate, updateType, recordCount):
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
-        cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s WHERE account=%s and startDate=%s AND endDate=%s", (recordCount, wallet, startDate, endDate))
+        # sometimes the tx count is not quite right and fetched tx ends up being more, so update if so to avoid invalid progress percentages
+        cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s, transactions=GREATEST(transactions, %s) WHERE account=%s and startDate=%s AND endDate=%s", (recordCount, recordCount, wallet, startDate, endDate))
     else:
         cur.execute("UPDATE reports SET reportStatus=1, transactionsComplete=%s WHERE account=%s and startDate=%s AND endDate=%s", (recordCount, wallet, startDate, endDate))
     con.commit()

@@ -49,6 +49,10 @@ def getHarmonyData(address, startDate="", endDate="", startOffset=0):
         else:
             tx_end = True
 
+    if startDate != "" and endDate != "":
+        db.updateReport(address, startDate, endDate, 'fetched', len(txs))
+        logging.info('updated report fetched {0}'.format(len(txs)))
+
     return txs
 
 # Return array of transactions on Avalanche for the address

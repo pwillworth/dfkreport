@@ -51,7 +51,13 @@ def main():
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, 1)
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
-        txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, offset)
+        try:
+            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, offset)
+        except Exception as err:
+            logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
+            traceback.print_exc()
+            db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+            return 1
         # The transactions are written to a file and record updated indicate fetching complete
         transactionsFile = uuid.uuid4().hex
         with open('../transactions/{0}'.format(transactionsFile), 'wb') as f:
