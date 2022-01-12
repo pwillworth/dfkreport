@@ -9,14 +9,12 @@ import prices
 import db
 import settings
 import datetime
-import sys
 import decimal
-import json
 import jsonpickle
 import logging
 
 #TODO fix fail path references so abis don't need to be replicated under web or look em up another way
-def checkTransactions(txs, account, startDate, endDate):
+def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete=0):
     events_map = {
         'tavern': [],
         'swaps' : [],
@@ -28,19 +26,31 @@ def checkTransactions(txs, account, startDate, endDate):
         'airdrops' : [],
         'gas' : 0
     }
-    w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+    # Connect to right network that txs are for
+    if network == 'avalanche':
+        w3 = Web3(Web3.HTTPProvider(nets.avax_web3))
+    else:
+        w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+
     if not w3.isConnected():
-        logging.error('Error: Critical w3 connection failure')
+        logging.error('Error: Critical w3 connection failure for '.format(network))
         return 'Error: Blockchain connection failure.'
 
     txCount = 0
     summonCrystalStorage = [None, None, None]
     heroIdStorage = None
-    for tx in txs:
+    heroIdTx = None
+    for txn in txs:
+        # The AVAX list data includes the whole transaction, but harmony is just the hash
+        if network == 'avalanche':
+            tx = txn['hash']
+            timestamp = int(txn['timeStamp'])
+        else:
+            tx = txn
         eventsFound = False
         # Update report tracking record for status every 10 txs
         if txCount % 10 == 0:
-            db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', txCount)
+            db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
 
         if settings.USE_CACHE:
             checkCache = db.findTransaction(str(tx), account)
@@ -63,7 +73,8 @@ def checkTransactions(txs, account, startDate, endDate):
         action = lookupEvent(result['from'], result['to'], account)
         value = Web3.fromWei(result['value'], 'ether')
         block = result['blockNumber']
-        timestamp = w3.eth.get_block(block)['timestamp']
+        if network != 'avalanche':
+            timestamp = w3.eth.get_block(block)['timestamp']
         blockDate = datetime.date.fromtimestamp(timestamp)
         receipt = w3.eth.get_transaction_receipt(tx)
         #TODO deduct gas from cost basis
@@ -71,7 +82,7 @@ def checkTransactions(txs, account, startDate, endDate):
         if blockDate >= startDate and blockDate <= endDate:
             events_map['gas'] += gas
         if receipt['status'] == 1:
-            logging.info("{4} | {3}: {0} - {1} - {2}".format(action, '{:f} ONE'.format(value), '{:f} ONE'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat()))
+            logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} gas'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
             if result['input'] != '0x' and 'Quest' in action:
                 results = extractQuestResults(w3, tx, result['input'], timestamp, receipt)
                 events_map['quests'] += results
@@ -79,7 +90,7 @@ def checkTransactions(txs, account, startDate, endDate):
                 if settings.USE_CACHE:
                     db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account)
             elif 'Auction' in action:
-                logging.debug('Auction activity: {0}'.format(tx))
+                logging.info('Auction activity: {0}'.format(tx))
                 results = extractAuctionResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None and results[0] != None:
                     events_map['tavern'].append(results[0])
@@ -87,14 +98,14 @@ def checkTransactions(txs, account, startDate, endDate):
                     if settings.USE_CACHE:
                         db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account)
                 else:
-                    logging.debug('Ignored an auction result.')
+                    logging.info('Ignored an auction result.')
                 # Second record is to be saved in db and will be looked up when seller runs thier tax report
                 # All of these get populated by running a report for the Tavern Address though, so we need to
                 # skip if record has already been created.
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
                     db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
                 else:
-                    logging.debug('Failed to detect auction seller on {0}.'.format(tx))
+                    logging.info('Failed to detect auction seller on {0}.'.format(tx))
             elif 'Uniswap' in action:
                 results = extractSwapResults(w3, tx, result, account, timestamp, receipt)
                 if results != None:
@@ -144,7 +155,7 @@ def checkTransactions(txs, account, startDate, endDate):
                     for log in decoded_logs:
                         logging.info('banklog: ' + str(log))
             elif 'Vendor' in action:
-                logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
+                logging.info('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
                 results = extractSwapResults(w3, tx, result, account, timestamp, receipt)
                 if results != None and type(results) is records.TraderTransaction:
                     events_map['swaps'].append(results)
@@ -154,25 +165,29 @@ def checkTransactions(txs, account, startDate, endDate):
                 else:
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
-                logging.debug('Summoning activity: {0}'.format(tx))
+                logging.info('Summoning activity: {0}'.format(tx))
                 # TODO Something causing duplicate summons events to be added for same hero
                 results = extractSummonResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None:
+                    eventsFound = True
                     if type(results) == int:
-                        logging.debug('heroid results {0} {1}'.format(tx, results))
+                        logging.info('heroid results {0} {1}'.format(tx, results))
                         if summonCrystalStorage[2] != None:
                             # crystal open event just returns the hero ID summoned so we can now add the full data
                             for r in summonCrystalStorage[2]:
                                 r.itemID = results
                             events_map['tavern'] = events_map['tavern'] + summonCrystalStorage[2]
-                            eventsFound = True
                             if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
                                 db.saveTransaction(summonCrystalStorage[0], summonCrystalStorage[1], 'tavern', jsonpickle.encode(summonCrystalStorage[2]), account)
+                            if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                                db.saveTransaction(tx, timestamp, 'nones', '', account)
                             summonCrystalStorage = [None, None, None]
                             heroIdStorage = None
+                            heroIdTx = None
                         else:
                             # on rare occassion the crystal open even might get parsed before the summon crystal
                             heroIdStorage = results
+                            heroIdTx = tx
                     elif len(results) == 2:
                         if heroIdStorage == None:
                             # store crystal creation events for later so we can tag it with the summoned hero id
@@ -184,21 +199,22 @@ def checkTransactions(txs, account, startDate, endDate):
                             for r in results:
                                 r.itemID = heroIdStorage
                             events_map['tavern'] = events_map['tavern'] + results
-                            eventsFound = True
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                            if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
+                                db.saveTransaction(heroIdTx, timestamp, 'nonec', '', account)
                             heroIdStorage = None
+                            heroIdTx = None
                             summonCrystalStorage = [None, None, None]
                     else:
                         # other events are single hero hires
                         events_map['tavern'].append(results)
-                        eventsFound = True
                         if settings.USE_CACHE:
                             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
                 else:
-                    logging.debug('Error: Failed to parse a summon result. {0}'.format(tx))
+                    logging.info('Error: Failed to parse a summon result. {0}'.format(tx))
             elif 'Meditation' in action:
-                logging.debug('Meditation activity: {0}'.format(tx))
+                logging.info('Meditation activity: {0}'.format(tx))
                 results = extractMeditationResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None:
                     for record in results:
@@ -208,10 +224,10 @@ def checkTransactions(txs, account, startDate, endDate):
                     if settings.USE_CACHE:
                         db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
                 else:
-                    logging.debug('Error: Failed to parse a meditation result. {0}'.format(tx))
+                    logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
             # Native token wallet transfers
             elif 'Deposit from' in action and value > 0:
-                r = records.walletActivity(timestamp, 'deposit', result['from'], '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', value)
+                r = records.walletActivity(timestamp, 'deposit', result['from'], getNativeToken(network), value)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                 events_map['wallet'].append(r)
                 eventsFound = True
@@ -254,24 +270,27 @@ def checkTransactions(txs, account, startDate, endDate):
                     if log['address'] in contracts.address_map:
                         tokenName = contracts.address_map[log['address']]
                     if tokenValue > 0 and log['address'] in contracts.address_map:
-                        logging.debug('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, tokenName))
+                        logging.info('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, tokenName))
                         r = records.walletActivity(timestamp, event, otherAddress, log['address'], tokenValue)
                         r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
                         transfers.append(r)
                         events_map['wallet'].append(r)
                         eventsFound = True
                     else:
-                        logging.debug('zero value wallet transfer ignored {0}'.format(tx))
+                        logging.info('zero value wallet transfer ignored {0}'.format(tx))
                 if settings.USE_CACHE and len(transfers) > 0:
                     db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(transfers), account)
         else:
             # transaction failed, mark to ignore later
-            db.saveTransaction(tx, timestamp, 'none', '', account)
+            eventsFound = True
+            db.saveTransaction(tx, timestamp, 'nonef', '', account)
+        # transactions with no relevant data get a none record so they are ignored in later reports
         if eventsFound == False and settings.USE_CACHE and db.findTransaction(tx, account) == None:
-            db.saveTransaction(tx, timestamp, 'none', '', account)
+            db.saveTransaction(tx, timestamp, 'nonee', '', account)
+
         txCount += 1
 
-    db.updateReport(account, startDate, endDate, txCount, len(txs))
+    db.updateReport(account, startDate, endDate, txCount, alreadyComplete + len(txs))
     return events_map
 
 # Simple way to determine conversion, maybe change to lookup on chain later
@@ -285,6 +304,12 @@ def getDecimals(token):
     else:
         weiConvert = 'ether'
     return weiConvert
+
+def getNativeToken(network):
+    if network == 'avalanche':
+        return '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
+    else:
+        return '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a'
 
 def lookupEvent(fm, to, account):
     fmStr = ''
@@ -383,10 +408,10 @@ def extractSwapResults(w3, txn, details, account, timestamp, receipt):
                 sentToken.append(log['address'])
                 sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
             # added criteria excluding swap target to prevent duplicate values showing up on LP withdraw
-            elif log['args']['to'] != '0x0000000000000000000000000000000000000000' and log['args']['from'] in contracts.address_map and 'Jewel LP' in contracts.address_map[log['args']['from']]:
+            elif log['args']['to'] != '0x0000000000000000000000000000000000000000' and log['args']['from'] in contracts.address_map and ('Jewel LP' in contracts.address_map[log['args']['from']] or 'Pangolin LP' in contracts.address_map[log['args']['from']]):
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
-            elif log['args']['to'] in contracts.address_map and 'Jewel LP' in contracts.address_map[log['args']['to']]:
+            elif log['args']['to'] in contracts.address_map and ('Jewel LP' in contracts.address_map[log['args']['to']] or 'Pangolin LP' in contracts.address_map[log['args']['to']]):
                 sentToken.append(log['address'])
                 sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
             else:

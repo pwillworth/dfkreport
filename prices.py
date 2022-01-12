@@ -12,6 +12,9 @@ token_map = {
     '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'harmony',
     '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'defi-kingdoms',
     '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'usd-coin',
+    '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
+    '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
+    '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms'
 }
 
 def priceLookup(timestamp, token, fiatType='usd'):

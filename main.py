@@ -40,7 +40,7 @@ def main():
 
     # list of transactions if loaded from file if available, otherwise fetched
     reportInfo = db.findReport(args.wallet, args.startDate, args.endDate)
-    if reportInfo != None and reportInfo[5] > 0:
+    if reportInfo != None and reportInfo[5] > 0 and len(reportInfo[8]) > 0:
         with open('../transactions/{0}'.format(reportInfo[8]), 'rb') as file:
             txData = pickle.load(file)
     else:
@@ -75,7 +75,7 @@ def main():
         # so we can relay that it is about network rpc issue, try later
         if str(err) == "{'message': 'Relay attempts exhausted', 'code': -32050}":
             statusCode = 8
-        elif "Bad Gateway for url" in str(err):
+        elif "Bad Gateway for url" in str(err) or "Service Unavailable" in str(err) or "Max retries exceeded" in str(err):
             statusCode = 8
         else:
             statusCode = 9

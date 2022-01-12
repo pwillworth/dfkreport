@@ -32,9 +32,10 @@ def inReportRange(item, startDate, endDate):
 def buildTaxMap(txns, account, startDate, endDate, costBasis):
     # Generate map of all events from transaction list
     logging.info('Start Event map build')
-    eventMap = events.checkTransactions(txns, account, startDate, endDate)
+    eventMap = events.checkTransactions(txns[0], account, startDate, endDate, 'harmony')
+    eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0]))
     # Have to look up Tavern sales events because they are not associated direct to wallet
-    eventMap['tavern'] += db.getTavernSales(account, startDate, endDate)
+    eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
     # temporarily dedupe this list until I can find root cause
@@ -45,6 +46,14 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
         else:
             logging.info('eliminated duplicate event {1} {0} on {2}'.format(rec.itemID, rec.event, str(rec.timestamp)))
     eventMap['tavern'] = cleanTavern
+    eventMap['swaps'] += eventMapAvax['swaps']
+    eventMap['liquidity'] += eventMapAvax['liquidity']
+    eventMap['wallet'] += eventMapAvax['wallet']
+    eventMap['bank'] += eventMapAvax['bank']
+    eventMap['gardens'] += eventMapAvax['gardens']
+    eventMap['quests'] += eventMapAvax['quests']
+    eventMap['airdrops'] += eventMapAvax['airdrops']
+    eventMap['gas'] += eventMapAvax['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], costBasis)
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
@@ -108,7 +117,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
 
             for k, v in heroExpenses.items():
                 if k == event.itemID and v.acquiredDate <= eventDate:
-                    ti.acquiredDate = v.acquiredDate
+                    if ti.acquiredDate == None:
+                        ti.acquiredDate = v.acquiredDate
                     ti.costs = v.costs
                     ti.amountNotAccounted = 0
                     if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
@@ -139,7 +149,8 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
                 if searchEvent.receiveType == event.swapType and searchEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0 and searchEvent.receiveAmountNotAccounted > 0:
                     # setting date here although it could get overwritten later if multiple recieves are used
                     # to account for single swap (likely)
-                    ti.acquiredDate = searchEventDate
+                    if ti.acquiredDate == None:
+                        ti.acquiredDate = searchEventDate
                     if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
                         ti.term = "long"
                     if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
@@ -159,7 +170,8 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
                 for walletEvent in walletEvents:
                     walletEventDate = datetime.date.fromtimestamp(walletEvent.timestamp)
                     if walletEvent.action == 'deposit' and event.swapType == walletEvent.coinType and walletEvent.amountNotAccounted > 0 and walletEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
-                        ti.acquiredDate = walletEventDate
+                        if ti.acquiredDate == None:
+                            ti.acquiredDate = walletEventDate
                         if walletEvent.amountNotAccounted <= event.swapAmountNotAccounted:
                             # use up all receive transaction amount and update amount left to match still
                             ti.costs += walletEvent.fiatValue * (walletEvent.amountNotAccounted / walletEvent.coinAmount)
