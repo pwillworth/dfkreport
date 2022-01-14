@@ -124,7 +124,8 @@ function loadReport(results) {
     alert('No results - ' + results);
     return
   }
-
+  $("#mappingProgress").progressbar( "option", "value", 200);
+  $("#mappingPercent").html("Loading Tax Report...");
   // Populate the main Tax Report from response
   for (var i = 0; i < taxResult.length; i++) {
     recordCategory = taxResult[i].category;
@@ -144,19 +145,37 @@ function loadReport(results) {
   }
 
   // some very small accounts may result in no tax generating records
-  // switch to the transaction tab in this case as they may be something there
+  // switch to the transaction tab in this case as there may be something there
   if ( taxResult.length == 0 ) {
     switchView('transaction')
   }
   var eventResult = results.event_records;
+  $("#mappingProgress").progressbar( "option", "value", 400);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadTavernEvents(eventResult.tavern);
+  $("#mappingProgress").progressbar( "option", "value", 600);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadSwapEvents(eventResult.swaps);
+  $("#mappingProgress").progressbar( "option", "value", 800);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadLiquidityEvents(eventResult.liquidity);
+  $("#mappingProgress").progressbar( "option", "value", 1000);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadGardensEvents(eventResult.gardens);
+  $("#mappingProgress").progressbar( "option", "value", 1200);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadBankEvents(eventResult.bank);
+  $("#mappingProgress").progressbar( "option", "value", 1400);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadAirdropEvents(eventResult.airdrops);
+  $("#mappingProgress").progressbar( "option", "value", 1600);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadQuestEvents(eventResult.quests);
+  $("#mappingProgress").progressbar( "option", "value", 1800);
+  $("#mappingPercent").html("Loading Hero Events...");
   loadWalletEvents(eventResult.wallet);
+  $("#mappingProgress").progressbar( "option", "value", 2000);
+  $("#mappingPercent").html("Ready!");
 }
 
 function loadTavernEvents(tavernEvents) {

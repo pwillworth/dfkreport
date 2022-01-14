@@ -6,7 +6,7 @@ class TavernTransaction:
         # hero or pet
         self.itemType = itemType
         self.itemID = itemID
-        # purchase or sale or hire
+        # purchase/sale/hire/summon/crystal
         self.event = event
         self.timestamp = timestamp
         self.coinType = coinType

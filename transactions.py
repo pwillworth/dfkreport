@@ -34,7 +34,6 @@ def getHarmonyData(address, startDate="", endDate="", startOffset=0):
         
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', len(txs))
-            logging.info('updated report fetched {0}'.format(len(txs)))
 
     tx_end = False
     offset = startOffset
@@ -55,7 +54,6 @@ def getHarmonyData(address, startDate="", endDate="", startOffset=0):
 
     if startDate != "" and endDate != "":
         db.updateReport(address, startDate, endDate, 'fetched', len(txs))
-        logging.info('updated report fetched {0}'.format(len(txs)))
 
     return txs
 
@@ -85,11 +83,9 @@ def getAvalancheData(address, startDate="", endDate="", startOffset=0, alreadyFe
 
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
-            logging.info('updated report fetched {0}'.format(alreadyFetched + len(txs)))
 
     if startDate != "" and endDate != "":
         db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
-        logging.info('updated report fetched {0}'.format(alreadyFetched + len(txs)))
 
     return txs
 
@@ -98,6 +94,7 @@ def getTransactionList(address, startDate, endDate, offset=0):
     avx_txs = []
     logging.info('Get Harmony data for {0}'.format(address))
     hmy_txs += getHarmonyData(address, startDate, endDate, offset)
+    logging.info('Get Avalanche data for {0}'.format(address))
     avx_txs += getAvalancheData(address, startDate, endDate, offset, len(hmy_txs))
     return [hmy_txs, avx_txs]
 
@@ -136,5 +133,5 @@ def getTransactionCount(address):
 
 if __name__ == "__main__":
     logging.basicConfig(filename='transactions.log', level=logging.INFO)
-    result = getTransactionCount('0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF')
+    result = getTransactionCount('0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892')
     print(type(result))

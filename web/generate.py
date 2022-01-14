@@ -174,7 +174,12 @@ if costBasis not in ['fifo', 'lifo', 'hifo']:
     failure = True
 
 if not failure:
-    status = getReportStatus(wallet, startDate, endDate, costBasis)
+    try:
+        status = getReportStatus(wallet, startDate, endDate, costBasis)
+    except Exception as err:
+        # Failure can happen here if harmony api is completely down
+        logging.error('responding report failure for {0}'.format(str(err)))
+        response = ''.join(('{ \n', '  "response" : "Generation failed!  Harmony API could not be contacted!."\n}'))
     if len(status) == 12:
         if status[5] == 2:
             # report is ready

@@ -39,7 +39,7 @@ var usdFormat = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 })
 $( function() {
-    $( "#reportProgress" ).progressbar({
+    $( "#reportProgress, #mappingProgress" ).progressbar({
       value: false,
       max: 2000
     });
@@ -100,8 +100,10 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
             $("#exportContainer").show(500);
             $("#loadingSection").css("display","none");
             $("#loadingMessage").html('Lila: I can help you.');
-            $("#reportProgress").progressbar( "option", "value", 0);
+            $("#reportProgress").progressbar( "option", "value", false);
             $("#reportPercent").html("");
+            $("#mappingProgress").progressbar( "option", "value", false);
+            $("#mappingMessage").html("Loading Transactions...");
           } else if (reportStatus == 'generating') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
@@ -129,8 +131,10 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
             // If no status was returned, there must have been some kind of failure and an Error message should be in response
             $("#loadingSection").css("display","none");
             $("#loadingMessage").html('Lila: Hi, I can help you.');
-            $("#reportProgress").progressbar( "option", "value", 0);
+            $("#reportProgress").progressbar( "option", "value", false);
             $("#reportPercent").html("");
+            $("#mappingProgress").progressbar( "option", "value", false);
+            $("#mappingMessage").html("Loading Transactions...");
             alert(data.response)
           }
         }, "json"
@@ -223,6 +227,8 @@ function downloadDone() {
         </div>
         <div id="reportProgress"></div>
         <div id="reportPercent"></div>
+        <div id="mappingProgress"></div>
+        <div id="mappingMessage">Loading Transactions...</div>
       </div>
       <div id="summaryReport" style="display: none;">
         <div id="quest_summary" class="summaryBox inlineBlock" style="height: 680px;">

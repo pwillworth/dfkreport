@@ -27,15 +27,6 @@ def main():
 
     offset = 0
     txResult = 0
-    # When running background server process to populate tavern sales pickup from last transaction offset
-    if args.wallet == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
-        with open('tx_last_auction_offset.txt', 'r') as of:
-            ofContent = of.read().strip()
-            if ofContent.isdigit():
-                offset = int(ofContent)
-            else:
-                offset = 0
-
     txData = []
 
     # list of transactions if loaded from file if available, otherwise fetched
@@ -65,7 +56,6 @@ def main():
         db.completeTransactions(args.wallet, args.startDate, args.endDate, transactionsFile)
 
     # With transaction list, we now generate the events and tax map
-    logging.info('We are gonna get started now')
     try:
         reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis)
     except Exception as err:
@@ -90,15 +80,6 @@ def main():
     with open('../reports/{0}'.format(reportFile), 'wb') as f:
         pickle.dump(reportData, f)
     db.completeReport(args.wallet, args.startDate, args.endDate, reportFile)
-
-    # When running background server process to populate tavern sales write new offset to pickup from next run
-    if args.wallet == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
-        if txResult > settings.TX_PAGE_SIZE:
-            offsetNew = int(txResult / settings.TX_PAGE_SIZE)
-        else:
-            offsetNew = 0
-        with open('tx_last_auction_offset.txt', 'w') as of:
-            of.write(str(offsetNew))
 
 
 if __name__ == "__main__":

@@ -33,11 +33,15 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     # Generate map of all events from transaction list
     logging.info('Start Event map build')
     eventMap = events.checkTransactions(txns[0], account, startDate, endDate, 'harmony')
+    if eventMap == 'Error: Blockchain connection failure.':
+        raise ConnectionError('Service Unavailable')
     eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0]))
-    # Have to look up Tavern sales events because they are not associated direct to wallet
-    eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
+    if eventMapAvax == 'Error: Blockchain connection failure.':
+        raise ConnectionError('Service Unavailable')
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
+    # Have to look up Tavern sales events because they are not associated direct to wallet
+    eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
     # temporarily dedupe this list until I can find root cause
     cleanTavern = []
     for rec in eventMap['tavern']:
@@ -46,6 +50,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
         else:
             logging.info('eliminated duplicate event {1} {0} on {2}'.format(rec.itemID, rec.event, str(rec.timestamp)))
     eventMap['tavern'] = cleanTavern
+
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
     eventMap['wallet'] += eventMapAvax['wallet']
