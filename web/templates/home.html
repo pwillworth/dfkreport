@@ -84,9 +84,40 @@ function switchView(view) {
     $("#summaryReport").show(500);
   }
 }
+// Load the report in two steps after it is done, first tax report, then events
+function completeReport(generateAddress, generateStart, generateEnd, costBasis, contentType) {
+  $.post(BASE_SCRIPT_URL + "generate.py",{
+        walletAddress: generateAddress,
+        contentType: contentType,
+        startDate: generateStart,
+        endDate: generateEnd,
+        costBasis: costBasis}, function( data ) {
+          if (contentType == 'tax') {
+            reportRecords = data.response.tax_records;
+            loadReport(data.response, contentType);
+            $("#exportContainer").show(500);
+            $("#loadingSection").css("display","none");
+            $("#loadingMessage").html('Lila: I can help you.');
+            $("#reportProgress").progressbar( "option", "value", false);
+            $("#reportPercent").html("");
+            setTimeout('completeReport("' + generateAddress + '","' + generateStart + '","' + generateEnd + '","' + costBasis + '","transaction")', 500);
+          } else {
+            reportRecords = data.response.event_records;
+            if (reportRecords != 'undefined') {
+              loadReport(data.response, contentType);
+              $("#mappingSection").css("display","none");
+              $("#mappingProgress").progressbar( "option", "value", false);
+              $("#mappingMessage").html("Loading Transactions...");
+            }
+          }
+        }, "json"
+    );
+    return false;
+}
 // This function is recursively called to check on report status and will trigger report load when done
 function generateReport(generateAddress, generateStart, generateEnd, costBasis) {
     $("#loadingSection").css("display","block");
+    $("#mappingSection").css("display","block");
     $(".taxTable").html('<tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
     $.post(BASE_SCRIPT_URL + "generate.py",{
         walletAddress: generateAddress,
@@ -96,14 +127,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
           reportStatus = data.response.status
           if (reportStatus == 'complete') {
             $( "#loadingMessage").html('Lila: I have that report ready now, here it is...');
-            loadReport(data.response)
-            $("#exportContainer").show(500);
-            $("#loadingSection").css("display","none");
-            $("#loadingMessage").html('Lila: I can help you.');
-            $("#reportProgress").progressbar( "option", "value", false);
-            $("#reportPercent").html("");
-            $("#mappingProgress").progressbar( "option", "value", false);
-            $("#mappingMessage").html("Loading Transactions...");
+            completeReport(generateAddress, generateStart, generateEnd, costBasis, 'tax');
           } else if (reportStatus == 'generating') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
@@ -130,6 +154,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
           } else {
             // If no status was returned, there must have been some kind of failure and an Error message should be in response
             $("#loadingSection").css("display","none");
+            $("#mappingSection").css("display","none");
             $("#loadingMessage").html('Lila: Hi, I can help you.');
             $("#reportProgress").progressbar( "option", "value", false);
             $("#reportPercent").html("");
@@ -227,8 +252,6 @@ function downloadDone() {
         </div>
         <div id="reportProgress"></div>
         <div id="reportPercent"></div>
-        <div id="mappingProgress"></div>
-        <div id="mappingMessage">Loading Transactions...</div>
       </div>
       <div id="summaryReport" style="display: none;">
         <div id="quest_summary" class="summaryBox inlineBlock" style="height: 680px;">
@@ -265,62 +288,66 @@ function downloadDone() {
         </div>
         <div class="footer"></div>
       </div>
-    <div id="taxReport" class="reportPage">
-      <h2 id="tax_gains_header">Capital Gains</h2>
-      <table id="tax_gains_data" class="taxTable" style="display: none;">
-        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
-      </table>
-      <h2 id="tax_income_header">Income</h2>
-      <table id="tax_income_data" class="taxTable" style="display: none;">
-        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
-      </table>
-      <h2 id="tax_expenses_header">Expenses</h2>
-      <table id="tax_expenses_data" class="taxTable" style="display: none;">
-        <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
-      </table>
-    </div>
-    <div id="transactionReport" class="reportPage" style="display: none;">
-      <h2 id="tx_tavern_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png" class="txIndicator" /><span>Heroes</span><span id="tx_tavern_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="txIcon" /></h2>
-      <div>
-      <table id="tx_tavern_data" class="transactionTable" style="display: none;">
-      </table>
+      <div id="taxReport" class="reportPage">
+        <h2 id="tax_gains_header">Capital Gains</h2>
+        <table id="tax_gains_data" class="taxTable" style="display: none;">
+          <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+        </table>
+        <h2 id="tax_income_header">Income</h2>
+        <table id="tax_income_data" class="taxTable" style="display: none;">
+          <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+        </table>
+        <h2 id="tax_expenses_header">Expenses</h2>
+        <table id="tax_expenses_data" class="taxTable" style="display: none;">
+          <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+        </table>
       </div>
-      <h2 id="tx_trader_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Trader</span><span id="tx_trader_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_trader_data" class="transactionTable" style="display: none;">
-      </table>
+      <div id="transactionReport" class="reportPage" style="display: none;">
+        <div id="mappingSection" style="display: none;">
+          <div id="mappingProgress"></div>
+          <div id="mappingMessage">Loading Transactions...</div>
+        </div>
+        <h2 id="tx_tavern_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png" class="txIndicator" /><span>Heroes</span><span id="tx_tavern_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="txIcon" /></h2>
+        <div>
+        <table id="tx_tavern_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_trader_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Trader</span><span id="tx_trader_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_trader_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_liquidity_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Liquidity</span><span id="tx_liquidity_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_liquidity_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_gardens_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Gardens</span><span id="tx_gardens_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_gardens_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_bank_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bank</span><span id="tx_bank_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_bank_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_airdrop_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrop_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_airdrop_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_quest_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest</span><span id="tx_quest_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_quest_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_wallet_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Wallet</span><span id="tx_wallet_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_wallet_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
       </div>
-      <h2 id="tx_liquidity_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Liquidity</span><span id="tx_liquidity_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_liquidity_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-      <h2 id="tx_gardens_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Gardens</span><span id="tx_gardens_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_gardens_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-      <h2 id="tx_bank_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bank</span><span id="tx_bank_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_bank_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-      <h2 id="tx_airdrop_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrop_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_airdrop_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-      <h2 id="tx_quest_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest</span><span id="tx_quest_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_quest_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-      <h2 id="tx_wallet_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Wallet</span><span id="tx_wallet_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="txIcon" /></h2>
-      <div style="display: none;">
-      <table id="tx_wallet_data" class="transactionTable" style="display: none;">
-      </table>
-      </div>
-    </div>
     </div>
   </div>
   </div>

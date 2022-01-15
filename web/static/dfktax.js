@@ -118,7 +118,14 @@ var address_map = {
 }
 
 // Populates the transaction data that was generated into the page
-function loadReport(results) {
+function loadReport(results, contentType) {
+  if (contentType == 'tax') {
+    loadTaxes(results);
+  } else {
+    loadTransactions(results);
+  }
+}
+function loadTaxes(results) {
   var taxResult = results.tax_records;
   if (taxResult == undefined) {
     alert('No results - ' + results);
@@ -149,6 +156,8 @@ function loadReport(results) {
   if ( taxResult.length == 0 ) {
     switchView('transaction')
   }
+}
+function loadTransactions(results) {
   var eventResult = results.event_records;
   $("#mappingProgress").progressbar( "option", "value", 400);
   $("#mappingPercent").html("Loading Hero Events...");

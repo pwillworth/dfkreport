@@ -64,39 +64,42 @@ def getResponseCSV(records, contentType):
 
     return response
 
-def getResponseJSON(results):
+def getResponseJSON(results, contentType):
     taxRecords = results['taxes']
     eventRecords = results['events']
     response = '{ "response" : {\n'
     response += '  "status" : "complete",\n   '
-    response += '  "tax_records" : [\n   '
-    for record in taxRecords:
-        acquiredDateStr = ''
-        soldDateStr = ''
-        if record.acquiredDate != None:
-            acquiredDateStr = record.acquiredDate.strftime('%Y-%m-%d')
-        if record.soldDate != None:
-            soldDateStr = record.soldDate.strftime('%Y-%m-%d')
+    if contentType == 'transaction':
+        response += '  "event_records" : \n   '
+        response += jsonpickle.encode(eventRecords, make_refs=False)
+    else:
+        response += '  "tax_records" : [\n   '
+        for record in taxRecords:
+            acquiredDateStr = ''
+            soldDateStr = ''
+            if record.acquiredDate != None:
+                acquiredDateStr = record.acquiredDate.strftime('%Y-%m-%d')
+            if record.soldDate != None:
+                soldDateStr = record.soldDate.strftime('%Y-%m-%d')
 
-        response += '  {\n'
-        response += '  "category" : "{0}",\n'.format(record.category)
-        response += '  "description" : "{0}",\n'.format(record.description)
-        response += '  "acquiredDate" : "{0}",\n'.format(acquiredDateStr)
-        response += '  "soldDate" : "{0}",\n'.format(soldDateStr)
-        response += '  "proceeds" : "{0}",\n'.format(record.proceeds)
-        response += '  "costs" : "{0}",\n'.format(record.costs)
-        response += '  "gains" : "{0}",\n'.format(record.get_gains())
-        response += '  "term"  : "{0}",\n'.format(record.term)
-        response += '  "amountNotAccounted"  : "{0}"\n'.format(record.amountNotAccounted)
-        response += '  }, \n'
+            response += '  {\n'
+            response += '  "category" : "{0}",\n'.format(record.category)
+            response += '  "description" : "{0}",\n'.format(record.description)
+            response += '  "acquiredDate" : "{0}",\n'.format(acquiredDateStr)
+            response += '  "soldDate" : "{0}",\n'.format(soldDateStr)
+            response += '  "proceeds" : "{0}",\n'.format(record.proceeds)
+            response += '  "costs" : "{0}",\n'.format(record.costs)
+            response += '  "gains" : "{0}",\n'.format(record.get_gains())
+            response += '  "term"  : "{0}",\n'.format(record.term)
+            response += '  "amountNotAccounted"  : "{0}"\n'.format(record.amountNotAccounted)
+            response += '  }, \n'
 
-    # trim off extra comma
-    response = response[:-3]
-    response += '  ]\n,'
-    response += '  "event_records" : \n   '
-    response += jsonpickle.encode(eventRecords, make_refs=False)
+        # trim off extra comma
+        response = response[:-3]
+        response += '  ]\n'
     response += '  }\n}'
-    if len(taxRecords) == 0 and len(eventRecords) == 0:
+
+    if (contentType == 'tax' and len(taxRecords) == 0) or (contentType != 'tax' and len(eventRecords) == 0):
         response = '{ "response" : "Error: No events found for that wallet and date range." }'
 
     return response
@@ -183,12 +186,15 @@ if not failure:
     if len(status) == 12:
         if status[5] == 2:
             # report is ready
-            with open('../reports/{0}'.format(status[9]), 'rb') as file:
-                results = pickle.load(file)
-            if formatType == 'csv':
-                response = getResponseCSV(results, contentType)
+            if contentType == '':
+                response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
             else:
-                response = getResponseJSON(results)
+                with open('../reports/{0}'.format(status[9]), 'rb') as file:
+                    results = pickle.load(file)
+                if formatType == 'csv':
+                    response = getResponseCSV(results, contentType)
+                else:
+                    response = getResponseJSON(results, contentType)
         elif status[5] == 8:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))

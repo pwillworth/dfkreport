@@ -76,13 +76,23 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         value = Web3.fromWei(result['value'], 'ether')
         block = result['blockNumber']
         if network != 'avalanche':
-            timestamp = w3.eth.get_block(block)['timestamp']
+            try:
+                timestamp = w3.eth.get_block(block)['timestamp']
+            except Exception as err:
+                logging.error('Got invalid block {0} {1}'.format(block, str(err)))
+                continue
         blockDate = datetime.date.fromtimestamp(timestamp)
-        receipt = w3.eth.get_transaction_receipt(tx)
+        #TODO add try/catch bad gateway, retry here
+        try:
+            receipt = w3.eth.get_transaction_receipt(tx)
+        except Exception as err:
+            logging.error('Got invalid transaction {0} {1}'.format(tx, str(err)))
+            continue
         #TODO deduct gas from cost basis
         gas = Web3.fromWei(receipt['gasUsed'], 'ether')
         if blockDate >= startDate and blockDate <= endDate:
             events_map['gas'] += gas
+        results = None
         if receipt['status'] == 1:
             logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} gas'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
             if result['input'] != '0x' and 'Quest' in action:
@@ -201,10 +211,11 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         else:
                             # events came in backwards and now we can save with hero id
                             for r in results:
-                                r.itemID = heroIdStorage
-                            events_map['tavern'] = events_map['tavern'] + results
+                                if r != None:
+                                    r.itemID = heroIdStorage
+                            events_map['tavern'] = events_map['tavern'] + [results[0], results[1]]
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([results[0], results[1]]), account)
                             if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
                                 db.saveTransaction(heroIdTx, timestamp, 'nonec', '', account)
                             heroIdStorage = None
@@ -513,10 +524,8 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
         if type(log['args']['generation']) is int:
             rc = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
-            rc.seller = hiredFromAccount
             r = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
-            r.seller = hiredFromAccount
             logging.debug('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
 
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
@@ -524,7 +533,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
         logging.debug('{0} Summonning Auction log: '.format(txn) + str(log))
         if hiredFromAccount != '':
             # Saves record of owner of hired hero gaining proceeds from hire
-            rs = records.TavernTransaction('hero', log['args']['tokenId'], 'hired', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
+            rs = records.TavernTransaction('hero', log['args']['tokenId'], 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             rs.seller = hiredFromAccount
             logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))
@@ -600,7 +609,6 @@ def extractAuctionResults(w3, txn, inputs, account, timestamp, receipt):
         r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
 
         if heroSeller != "":
-            r.seller = heroSeller
             logging.info("  {2}  Sold hero {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, heroSeller))
             rs = records.TavernTransaction('hero', log['args']['tokenId'], 'sale', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', sellerProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * rs.coinCost
