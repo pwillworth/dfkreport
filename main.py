@@ -25,7 +25,7 @@ def main():
     else:
         costBasis = args.costbasis
 
-    offset = 0
+    page_size = settings.TX_PAGE_SIZE
     txResult = 0
     txData = []
 
@@ -42,8 +42,11 @@ def main():
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, 1)
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
+        # Scale up default page size for very large accounts
+        if reportInfo != None and reportInfo[4] > page_size*50:
+            page_size = min(1000, page_size*5)
         try:
-            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, offset)
+            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, page_size)
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()

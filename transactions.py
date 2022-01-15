@@ -9,10 +9,9 @@ import logging
 import settings
 
 # Return array of transactions on Harmony for the address
-def getHarmonyData(address, startDate="", endDate="", startOffset=0):
+def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE_SIZE):
     tx_end = False
-    offset = startOffset
-    page_size = settings.TX_PAGE_SIZE
+    offset = 0
     txs = []
     while tx_end == False:
         try:
@@ -36,8 +35,7 @@ def getHarmonyData(address, startDate="", endDate="", startOffset=0):
             db.updateReport(address, startDate, endDate, 'fetched', len(txs))
 
     tx_end = False
-    offset = startOffset
-    page_size = settings.TX_PAGE_SIZE
+    offset = 0
     while tx_end == False:
         try:
             results = account.get_staking_transaction_history(address, page=offset, page_size=page_size, include_full_tx=False, endpoint=nets.hmy_main)
@@ -58,10 +56,9 @@ def getHarmonyData(address, startDate="", endDate="", startOffset=0):
     return txs
 
 # Return array of transactions on Avalanche for the address
-def getAvalancheData(address, startDate="", endDate="", startOffset=0, alreadyFetched=0):
+def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PAGE_SIZE, alreadyFetched=0):
     tx_end = False
-    offset = startOffset
-    page_size = settings.TX_PAGE_SIZE
+    offset = 0
     txs = []
     while tx_end == False:
         try:
@@ -71,7 +68,7 @@ def getAvalancheData(address, startDate="", endDate="", startOffset=0, alreadyFe
             break
         if r.status_code == 200:
             results = r.json()
-            logging.info("got {0} transactions".format(len(results)))
+            logging.info("got {0} transactions".format(len(results['result'])))
             if len(results['result']) > 0:
                 offset = offset + 1
                 txs = txs + results['result']
@@ -84,18 +81,15 @@ def getAvalancheData(address, startDate="", endDate="", startOffset=0, alreadyFe
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
 
-    if startDate != "" and endDate != "":
-        db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
-
     return txs
 
-def getTransactionList(address, startDate, endDate, offset=0):
+def getTransactionList(address, startDate, endDate, page_size):
     hmy_txs = []
     avx_txs = []
     logging.info('Get Harmony data for {0}'.format(address))
-    hmy_txs += getHarmonyData(address, startDate, endDate, offset)
+    hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
     logging.info('Get Avalanche data for {0}'.format(address))
-    avx_txs += getAvalancheData(address, startDate, endDate, offset, len(hmy_txs))
+    avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
     return [hmy_txs, avx_txs]
 
 def getTransactionCount(address):
