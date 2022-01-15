@@ -96,10 +96,11 @@ def costBasisSort(eventList, costBasis):
 def buildTavernRecords(tavernEvents, startDate, endDate):
     results = []
     heroExpenses = {}
-    # Grab a list of all hero purchases and hires to list as expenses
+    heroIncome = {}
+    # Grab a list of all hero purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if (event.event in ['purchase','hire','summon','crystal','meditate','levelup']) and eventDate >= startDate and eventDate <= endDate:
+        if (event.event in ['purchase','summon','crystal','meditate','levelup']) and eventDate >= startDate and eventDate <= endDate:
             if event.itemID in heroExpenses:
                 if event.event in heroExpenses[event.itemID].description:
                     heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
@@ -111,6 +112,22 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             else:
                 ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'expenses', None, 0, eventDate, event.fiatAmount)
                 heroExpenses[event.itemID] = ti
+
+    # Grab a list of all hero hires to list as income
+    for event in tavernEvents:
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
+        if (event.event in ['hire']) and eventDate >= startDate and eventDate <= endDate:
+            if event.itemID in heroIncome:
+                if event.event in heroIncome[event.itemID].description:
+                    heroIncome[event.itemID].description = heroIncome[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+                else:
+                    heroIncome[event.itemID].description += ''.join((' ', event.event))
+                heroIncome[event.itemID].costs += event.fiatAmount
+                if eventDate < heroIncome[event.itemID].acquiredDate:
+                    heroIncome[event.itemID].acquiredDate = eventDate
+            else:
+                ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'income', None, 0, eventDate, event.fiatAmount)
+                heroIncome[event.itemID] = ti
 
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
@@ -132,6 +149,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             results.append(ti)
 
     for k, v in heroExpenses.items():
+        results.append(v)
+    for k, v in heroIncome.items():
         results.append(v)
     return results
 

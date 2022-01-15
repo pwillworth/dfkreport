@@ -210,9 +210,9 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             summonCrystalStorage[2] = [results[0], results[1]]
                         else:
                             # events came in backwards and now we can save with hero id
-                            for r in results:
-                                if r != None:
-                                    r.itemID = heroIdStorage
+                            results[1].itemID = heroIdStorage
+                            if results[0] != None:
+                                results[0].itemID = heroIdStorage
                             events_map['tavern'] = events_map['tavern'] + [results[0], results[1]]
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([results[0], results[1]]), account)
@@ -516,6 +516,10 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
     rs = None
     contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
     input_data = contract.decode_function_input(inputs)
+    try:
+        assistant = input_data[1]['_assistantId']
+    except Exception as err:
+        logging.debug('no assistant detected {0}'.format(str(err)))
     logging.debug('Summon input: {0}'.format(input_data))
 
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
@@ -533,7 +537,10 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
         logging.debug('{0} Summonning Auction log: '.format(txn) + str(log))
         if hiredFromAccount != '':
             # Saves record of owner of hired hero gaining proceeds from hire
-            rs = records.TavernTransaction('hero', log['args']['tokenId'], 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
+            hiredHero = log['args']['tokenId']
+            if assistant != None:
+                hiredHero = assistant
+            rs = records.TavernTransaction('hero', hiredHero, 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             rs.seller = hiredFromAccount
             logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))
