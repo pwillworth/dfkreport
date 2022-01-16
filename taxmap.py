@@ -126,7 +126,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                 if eventDate < heroIncome[event.itemID].acquiredDate:
                     heroIncome[event.itemID].acquiredDate = eventDate
             else:
-                ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'income', None, 0, eventDate, event.fiatAmount)
+                ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'income', eventDate, event.fiatAmount)
                 heroIncome[event.itemID] = ti
 
     for event in tavernEvents:
