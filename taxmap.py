@@ -107,7 +107,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                 else:
                     heroExpenses[event.itemID].description += ''.join((' ', event.event))
                 heroExpenses[event.itemID].costs += event.fiatAmount
-                if eventDate < heroExpenses[event.itemID].acquiredDate:
+                if heroExpenses[event.itemID].acquiredDate == None or eventDate < heroExpenses[event.itemID].acquiredDate:
                     heroExpenses[event.itemID].acquiredDate = eventDate
             else:
                 ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'expenses', None, 0, eventDate, event.fiatAmount)
@@ -122,9 +122,12 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     heroIncome[event.itemID].description = heroIncome[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
                 else:
                     heroIncome[event.itemID].description += ''.join((' ', event.event))
-                heroIncome[event.itemID].costs += event.fiatAmount
-                if eventDate < heroIncome[event.itemID].acquiredDate:
+                heroIncome[event.itemID].proceeds += event.fiatAmount
+                # setup the acquired/sold date to tell the range of dates the hires occured
+                if heroIncome[event.itemID].acquiredDate == None or eventDate < heroIncome[event.itemID].acquiredDate:
                     heroIncome[event.itemID].acquiredDate = eventDate
+                if heroIncome[event.itemID].soldDate == None or eventDate < heroIncome[event.itemID].soldDate:
+                    heroIncome[event.itemID].soldDate = eventDate
             else:
                 ti = TaxItem('Hero {0} {1}'.format(event.itemID, event.event), 'income', eventDate, event.fiatAmount)
                 heroIncome[event.itemID] = ti
