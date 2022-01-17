@@ -424,9 +424,9 @@ def extractSwapResults(w3, txn, details, account, timestamp, receipt, network):
     sentToken = []
     sentAmount = []
     for log in decoded_logs:
+        weiConvert = getDecimals(log['address'])
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
-            weiConvert = getDecimals(log['address'])
             if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
