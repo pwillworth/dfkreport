@@ -112,12 +112,19 @@ def completeReport(wallet, startDate, endDate, fileName):
     con.commit()
     con.close()
 
-def deleteReport(wallet, startDate, endDate):
+def deleteReport(wallet, startDate, endDate, transactionFile, reportFile):
     con = aConn()
     cur = con.cursor()
     cur.execute("DELETE FROM reports WHERE account=%s and startDate=%s AND endDate=%s", (wallet, startDate, endDate))
     con.commit()
     con.close()
+    try:
+        logging.debug('removing old report data from disk.')
+        os.remove('../transactions/{0}'.format(transactionFile))
+        os.remove('../reports/{0}'.format(reportFile))
+    except Exception as err:
+        logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
+        logging.error(err)
 
 def updateReportError(wallet, startDate, endDate, statusCode=9):
     con = aConn()

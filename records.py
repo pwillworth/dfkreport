@@ -59,7 +59,7 @@ class LiquidityTransaction:
 class GardenerTransaction:
     def __init__(self, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
         self.timestamp = timestamp
-        # staking-reward, staking-reward-locked
+        # deposit, staking-reward, staking-reward-locked
         self.event = event
         self.coinType = coinType
         self.coinAmount = coinAmount
@@ -109,3 +109,17 @@ class walletActivity:
         self.fiatValue = fiatValue
         # Just for tracking amounts that have been allocated to tax records during mapping
         self.amountNotAccounted = coinAmount
+
+class AlchemistTransaction:
+    def __init__(self, timestamp, craftingType, craftingAmount=0, fiatType='usd', fiatValue=0, craftingCosts=0, costsFiatValue=0):
+        self.timestamp = timestamp
+        # what did we craft with alchemist, address of it
+        self.craftingType = craftingType
+        # how many were crafted
+        self.craftingAmount = craftingAmount
+        self.fiatType = fiatType
+        self.fiatValue = fiatValue
+        # list of ingredients and qty burned
+        self.craftingCosts = craftingCosts
+        # fiat value of those ingredients at the time
+        self.costsFiatValue = costsFiatValue

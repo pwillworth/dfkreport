@@ -41,6 +41,9 @@ def getResponseCSV(records, contentType):
         for record in eventRecords['bank']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
             response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue),'\n'))
+        for record in eventRecords['alchemist']:
+            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
+            response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), record.craftingCosts, '', str(record.fiatValue), str(record.costsFiatValue),'\n'))
         for record in eventRecords['airdrops']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
             response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '','\n'))
@@ -198,14 +201,14 @@ if not failure:
         elif status[5] == 8:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))
-            db.deleteReport(status[0], status[1], status[2])
+            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
             response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed due to Harmony RPC network congestion.  Please try again later and the report will continue where it left off in generation.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True
         elif status[5] == 9:
             # report has encountered some other failure
             logging.warning('responding report failure for {0}'.format(str(status)))
-            db.deleteReport(status[0], status[1], status[2])
+            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
             response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed.  Please report this message to the site admin.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True

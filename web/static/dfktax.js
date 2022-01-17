@@ -20,6 +20,7 @@ var address_map = {
   '0x7ca9C1D0bb11F1b7C31ee5538D7a75aAF2d8E2FC': 'CryptoPigs',
   '0x8Eb03202275bD598AdC23678008eF88655544910': 'Radiant',
   '0x5903720f0132E8bd48530010d9b3192B25F51D8e': 'PASTA',
+  '0x3E018675c0Ef63eB361b9EF4bfEa3A3294C74C7b': 'KuroShiba',
   '0x224e64ec1BDce3870a6a6c777eDd450454068FEC': 'wUST',
   '0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f': '1USDT',
   '0xE176EBE47d621b984a73036B9DA5d834411ef734': 'BinanceUSD',
@@ -28,6 +29,9 @@ var address_map = {
   '0x6983D1E6DEf3690C4d616b13597A09e6193EA013': '1ETH',
   '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9': 'wBTC',
   '0x735aBE48e8782948a37C7765ECb76b98CdE97B0F': 'Fantom',
+  '0x39aB439897380eD10558666C4377fACB0322Ad48': '1FTM',
+  '0x14A7B318fED66FfDcc80C1517C172c13852865De': '1AXS',
+  '0xA5445d24E5dbF641f76058CD7a95b1c402Eb97b5': 'bscTLM',
   '0x093956649D43f23fe4E7144fb1C3Ad01586cCf1e': 'Jewel LP Token AVAX/Jewel',
   '0xEb579ddcD49A7beb3f205c9fF6006Bb6390F138f': 'Jewel LP Token ONE/Jewel',
   '0xFdAB6B23053E22b74f21ed42834D7048491F8F32': 'Jewel LP Token ONE/xJewel',
@@ -76,6 +80,7 @@ var address_map = {
   '0xC9D4786b600873EF0f4CBe60474563Fe55ec2320': 'Jewel LP Token BUSD/1FTM',
   '0x882cF21E4bf43B6d5658C27e07f5b2873DBE5718': 'Jewel LP Token AME/RAIN',
   '0xD74B9b22860b52d8d6bc666Cf8E7274D76Cd596d': 'Jewel LP Token bscTLM/Jewel',
+  '0xa8589d575aeD9C6dc12C860867c5348791D2D097': 'Jewel LP Token KURO/Jewel',
   '0x3685ec75ea531424bbe67db11e07013abeb95f1e': 'LP withdraw fees?',
   '0x9014B937069918bd319f80e8B3BB4A2cf6FAA5F7': 'UniswapV2Factory',
   '0x24ad62502d1C652Cc7684081169D04896aC20f30': 'UniswapV2Router02',
@@ -88,6 +93,7 @@ var address_map = {
   '0x65DEA93f7b886c33A78c10343267DD39727778c2': 'SummoningPortal',
   '0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1': 'MeditationCircle',
   '0xDB30643c71aC9e2122cA0341ED77d09D5f99F924': 'MasterGardener',
+  '0x87CBa8F998F902f2fff990efFa1E261F35932e57': 'Alchemist',
   '0xa678d193fEcC677e137a00FEFb43a9ccffA53210': 'Airdrop',
   '0xabD4741948374b1f5DD5Dd7599AC1f85A34cAcDD': 'Profiles',
   '0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4': 'Serendale Quest',
@@ -120,6 +126,16 @@ var address_map = {
   '0xAC5c49Ff7E813dE1947DC74bbb1720c353079ac9': 'Blue Stem',
   '0xc0214b37FCD01511E6283Af5423CF24C96BB9808': 'Milkweed',
   '0x19B9F05cdE7A61ab7aae5b0ed91aA62FF51CF881': 'Spiderfruit',
+  '0x2789F04d22a845dC854145d3c289240517f2BcF0': 'Health Vial',
+  '0x87361363A75c9A6303ce813D0B2656c34B68FF52': 'Full Health Potion',
+  '0x19b020001AB0C12Ffa93e1FDeF90c7C37C8C71ef': 'Mana Vial',
+  '0xDc2C698aF26Ff935cD1c50Eef3a4A933C62AF18D': 'Full Mana Potion',
+  '0x959ba19508827d1ed2333B1b503Bd5ab006C710e': 'Stamina Vial',
+  '0xA1f8b0E88c51a45E152934686270DDF4E3356278': 'Anti-poison Potion',
+  '0x1771dEc8D9A29F30d82443dE0a69e7b6824e2F53': 'Anti-blinding Potion',
+  '0x7e120334D9AFFc0982719A4eacC045F78BF41C68': 'Magic Resistance Potion',
+  '0xFb03c364969a0bB572Ce62b8Cd616A7DDEb4c09A': 'Toughness Potion',
+  '0x872dD1595544CE22ad1e0174449C7ECE6F0bb01b': 'Switftness Potion',
   '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  // Start Avalanche list
   '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
   '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106': 'Uniswap AVAX',
@@ -172,25 +188,28 @@ function loadTransactions(results) {
   $("#mappingPercent").html("Loading Hero Events...");
   loadTavernEvents(eventResult.tavern);
   $("#mappingProgress").progressbar( "option", "value", 600);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Swap Events...");
   loadSwapEvents(eventResult.swaps);
   $("#mappingProgress").progressbar( "option", "value", 800);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Liquidity Events...");
   loadLiquidityEvents(eventResult.liquidity);
   $("#mappingProgress").progressbar( "option", "value", 1000);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Gardens Events...");
   loadGardensEvents(eventResult.gardens);
   $("#mappingProgress").progressbar( "option", "value", 1200);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Bank Events...");
   loadBankEvents(eventResult.bank);
+  $("#mappingProgress").progressbar( "option", "value", 1300);
+  $("#mappingPercent").html("Loading Alchemist Events...");
+  loadAlchemistEvents(eventResult.alchemist);
   $("#mappingProgress").progressbar( "option", "value", 1400);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Airdrop Events...");
   loadAirdropEvents(eventResult.airdrops);
   $("#mappingProgress").progressbar( "option", "value", 1600);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Quest Events...");
   loadQuestEvents(eventResult.quests);
   $("#mappingProgress").progressbar( "option", "value", 1800);
-  $("#mappingPercent").html("Loading Hero Events...");
+  $("#mappingPercent").html("Loading Wallet Events...");
   loadWalletEvents(eventResult.wallet);
   $("#mappingProgress").progressbar( "option", "value", 2000);
   $("#mappingPercent").html("Ready!");
@@ -335,7 +354,7 @@ function loadGardensEvents(gardensEvents) {
   // Populate the Transaction list with Jewel rewards events from Gardens LPs
   var gardensTotals = {};
   $('#tx_gardens_count').html(' (' + gardensEvents.length + ')');
-  $("#tx_gardens_data").html('<tr><th>Block Date</th><th>Location</th><th>Reward Type</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
+  $("#tx_gardens_data").html('<tr><th>Block Date</th><th>Location</th><th>Event</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < gardensEvents.length; i++) {
     var eventDate = new Date(gardensEvents[i].timestamp * 1000)
     var coinAmount = gardensEvents[i].coinAmount
@@ -349,7 +368,7 @@ function loadGardensEvents(gardensEvents) {
     $('#tx_gardens_data').show();
     $('#tx_gardens_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + 'Garden Jewel Reward' + '</td>' +
+      '<td>' + 'Gardens' + '</td>' +
       '<td>' + gardensEvents[i].event + '</td>' +
       '<td>' + address_map[gardensEvents[i].coinType] + '</td>' +
       '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
@@ -406,6 +425,51 @@ function loadBankEvents(bankEvents) {
     bankTable = bankTable + '<tr><td>' + k + '</td><td>' + bankTotals[k][0].toFixed(3) + '</td><td>' + bankTotals[k][1].toFixed(3) + '</td></tr>';
   }
   $("#smy_bank_data").html(bankTable + '</table>');
+}
+
+function loadAlchemistEvents(alchemistEvents) {
+  // Populate the Transaction list with Alchemist Data
+  var craftingTotals = {}
+  $('#tx_alchemist_count').html(' (' + alchemistEvents.length + ')');
+  $("#tx_alchemist_data").html('<tr><th>Block Date</th><th>Potion Type</th><th>Crafting Costs</th><th>Potion Fiat Value</th><th>Ingredients Fiat Value</th></tr>');
+  for (var i = 0; i < alchemistEvents.length; i++) {
+    var eventDate = new Date(alchemistEvents[i].timestamp * 1000);
+    var craftedAmount = alchemistEvents[i].craftingAmount;
+    var fiatCraftedValue = alchemistEvents[i].fiatValue;
+    var fiatIngredientsValue = alchemistEvents[i].costsFiatValue;
+
+    if (alchemistEvents[i].craftingAmount['py/reduce'] != undefined) {
+      craftedAmount = alchemistEvents[i].craftingAmount['py/reduce'][1]['py/tuple'][0];
+    }
+    if (alchemistEvents[i].fiatValue['py/reduce'] != undefined) {
+      fiatCraftedValue = alchemistEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
+    }
+    if (alchemistEvents[i].costsFiatValue['py/reduce'] != undefined) {
+      fiatIngredientsValue = alchemistEvents[i].costsFiatValue['py/reduce'][1]['py/tuple'][0];
+    }
+    $('#tx_alchemist_data').show();
+    $('#tx_alchemist_data').append(
+      '<tr><td>' + eventDate.toUTCString() + '</td>' +
+      '<td>' + address_map[alchemistEvents[i].craftingType] + 'x' + craftedAmount + '</td>' +
+      '<td>' + alchemistEvents[i].craftingCosts + '</td>' +
+      '<td>' + usdFormat.format(fiatCraftedValue) + '</td>' +
+      '<td>' + usdFormat.format(fiatIngredientsValue) + '</td></tr>'
+    );
+
+    if ( address_map[alchemistEvents[i].craftingType] in craftingTotals ) {
+      craftingTotals[address_map[alchemistEvents[i].craftingType]][0] += parseInt(craftedAmount);
+      craftingTotals[address_map[alchemistEvents[i].craftingType]][1] += fiatCraftedValue;
+      craftingTotals[address_map[alchemistEvents[i].craftingType]][2] += fiatIngredientsValue;
+    } else {
+      craftingTotals[address_map[alchemistEvents[i].craftingType]] = [parseInt(craftedAmount), fiatCraftedValue, fiatIngredientsValue];
+    }
+  }
+  // Add summary data for each coin type swapped
+  var craftingTable = '<table><tr><th>Potion</th><th>Total Crafted</th><th>Total Value</th><th>Total Ingredient Value</th></tr>';
+  for (let k in craftingTotals) {
+    craftingTable = craftingTable + '<tr><td>' + k + '</td><td>' + craftingTotals[k][0].toFixed(0) + '</td><td>' + usdFormat.format(craftingTotals[k][1]) + '</td><td>' + usdFormat.format(craftingTotals[k][2]) + '</td></tr>';
+  }
+  $("#smy_alchemist_data").html(craftingTable + '</table>');
 }
 
 function loadAirdropEvents(airdropEvents) {

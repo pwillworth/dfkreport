@@ -23,6 +23,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         'bank' : [],
         'gardens' : [],
         'quests' : [],
+        'alchemist' : [],
         'airdrops' : [],
         'gas' : 0
     }
@@ -154,6 +155,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     eventsFound = True
                     if settings.USE_CACHE:
                         db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
+            elif 'Banker' in action:
+                logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
             elif result['input'] != '0x' and 'xJewel' in action:
                 results = extractBankResults(w3, tx, result, account, timestamp, receipt)
                 if results != None:
@@ -245,6 +248,16 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
                 else:
                     logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
+            elif 'Alchemist' in action:
+                logging.debug('Alchemist activity: {0}'.format(tx))
+                results = extractAlchemistResults(w3, tx, result['input'], account, timestamp, receipt)
+                if results != None:
+                    events_map['alchemist'].append(results)
+                    eventsFound = True
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'alchemist', jsonpickle.encode(results), account)
+                else:
+                    logging.info('Failed to parse alchemist results tx {0}'.format(tx))
             # Native token wallet transfers
             elif 'Deposit from' in action and value > 0:
                 r = records.walletActivity(timestamp, 'deposit', result['from'], getNativeToken(network), value)
@@ -371,7 +384,6 @@ def extractBankResults(w3, txn, details, account, timestamp, receipt):
                 sentToken = log['address']
                 sentAmount = Web3.fromWei(log['args']['value'], 'ether')
         if sentAmount > 0 and rcvdAmount > 0:
-            #sys.stdout.write("Swapped {0} {1} for {2} {3} in Bank\n".format(sentAmount, contracts.address_map[sentToken], depAmount, contracts.address_map[rcvdToken])
             if sentToken == '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': # TODO: make this an array including crystal when crystalvale launches
                 # Dumping xJewel and getting Jewel from bank
                 r = records.BankTransaction(timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
@@ -384,28 +396,48 @@ def extractBankResults(w3, txn, details, account, timestamp, receipt):
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
 
 def extractGardenerResults(w3, txn, details, account, timestamp, receipt):
+    # events record amount of jewel received when claiming at the gardens
     with open('abi/MasterGardener.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0xDB30643c71aC9e2122cA0341ED77d09D5f99F924', abi=ABI)
-    logIndexes = ','
     events = []
-    for log in receipt['logs']:
-        decoded_logs = contract.events.SendGovernanceTokenReward().processReceipt(receipt, errors=DISCARD)
-        for log in decoded_logs:
-            if ",{0},".format(log['logIndex']) not in logIndexes:
-                logIndexes = "{0}{1},".format(logIndexes, log['logIndex'])
-                receivedAmount = Web3.fromWei(log['args']['amount'], 'ether')
-                lockedAmount = Web3.fromWei(log['args']['lockAmount'], 'ether')
-                #sys.stdout.write("Received Reward {0} Jewel and {1} Locked Jewel\n".format(receivedAmount - lockedAmount, lockedAmount))
-                r = records.GardenerTransaction(timestamp, 'staking-reward', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', receivedAmount - lockedAmount)
-                rl = records.GardenerTransaction(timestamp, 'staking-reward-locked', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', lockedAmount)
-                jewelPrice = prices.priceLookup(timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
-                r.fiatValue = jewelPrice * r.coinAmount
-                rl.fiatValue = jewelPrice * rl.coinAmount
-                events.append(r)
-                events.append(rl)
-    return events
+    decoded_logs = contract.events.SendGovernanceTokenReward().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        receivedAmount = Web3.fromWei(log['args']['amount'], 'ether')
+        lockedAmount = Web3.fromWei(log['args']['lockAmount'], 'ether')
+        r = records.GardenerTransaction(timestamp, 'staking-reward', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', receivedAmount - lockedAmount)
+        rl = records.GardenerTransaction(timestamp, 'staking-reward-locked', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', lockedAmount)
+        jewelPrice = prices.priceLookup(timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+        r.fiatValue = jewelPrice * r.coinAmount
+        rl.fiatValue = jewelPrice * rl.coinAmount
+        events.append(r)
+        events.append(rl)
 
+    # events record amount of lp tokens put in and out of gardens for farming and when
+    with open('abi/JewelToken.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    gardenEvent = ''
+    gardenToken = ''
+    gardenAmount = 0
+    for log in decoded_logs:
+        weiConvert = getDecimals(log['address'])
+        # Token Transfers
+        if 'to' in log['args'] and 'from' in log['args'] and log['address'] in contracts.address_map and 'Jewel LP' in contracts.address_map[log['address']]:
+            if log['args']['to'] == account:
+                gardenEvent = 'withdraw'
+                gardenToken = log['address']
+                gardenAmount = Web3.fromWei(log['args']['value'], weiConvert)
+            elif log['args']['from'] == account:
+                gardenEvent = 'deposit'
+                gardenToken = log['address']
+                gardenAmount = Web3.fromWei(log['args']['value'], weiConvert)
+    if gardenAmount > 0:
+        r = records.GardenerTransaction(timestamp, gardenEvent, gardenToken, gardenAmount)
+        events.append(r)
+
+    return events
 
 def extractSwapResults(w3, txn, details, account, timestamp, receipt, network):
     abiPath = "abi/{0}.json".format('JewelToken')
@@ -672,3 +704,44 @@ def extractQuestResults(w3, txn, inputs, timestamp, receipt):
         r.fiatValue = prices.priceLookup(timestamp, k) * v
         txns.append(r)
     return txns
+
+def extractAlchemistResults(w3, txn, inputs, account, timestamp, receipt):
+    # Create record of the alchemist crafting activity with total costs
+    with open('abi/JewelToken.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    rcvdToken = []
+    rcvdAmount = []
+    sentToken = []
+    sentAmount = []
+    r = None
+    for log in decoded_logs:
+        weiConvert = getDecimals(log['address'])
+        # Token Transfers
+        if 'to' in log['args'] and 'from' in log['args']:
+            if log['args']['to'] == account:
+                rcvdToken.append(log['address'])
+                rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+            elif log['args']['from'] == account:
+                sentToken.append(log['address'])
+                sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+            else:
+                logging.debug('ignored alchemist log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+    # Total up value of all ingredients
+    ingredientList = ''
+    ingredientValue = 0
+    for i in range(len(sentToken)):
+        ingredientList += '{0}x{1}, '.format(contracts.address_map[sentToken[i]], sentAmount[i])
+        ingredientValue += prices.priceLookup(timestamp, sentToken[i]) * sentAmount[i]
+    if len(ingredientList) > 1:
+        ingredientList = ingredientList[:-2]
+    # should be just 1 thing received, the potion, create the record if so
+    if len(rcvdToken) == 1:
+        r = records.AlchemistTransaction(timestamp, rcvdToken[0], rcvdAmount[0])
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0])
+        r.craftingCosts = ingredientList
+        r.costsFiatValue = ingredientValue
+    else:
+        logging.error('Failed to add alchemist record, wrong token rcvd {0}'.format(txn))
+    return r

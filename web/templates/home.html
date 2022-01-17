@@ -278,6 +278,10 @@ function downloadDone() {
           <div id="smy_bank_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="smyIcon" /><span>Bank</span></div>
           <div id="smy_bank_data"></div>
         </div>
+        <div id="alchemist_summary" class="summaryBox inlineBlock">
+          <div id="smy_alchemist_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="smyIcon" /><span>Alchemist</span></div>
+          <div id="smy_alchemist_data"></div>
+        </div>
         <div id="airdrop_summary" class="summaryBox inlineBlock">
           <div id="smy_airdrop_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="smyIcon" /><span>Airdrop</span></div>
           <div id="smy_airdrop_data"></div>
@@ -332,9 +336,9 @@ function downloadDone() {
         <table id="tx_bank_data" class="transactionTable" style="display: none;">
         </table>
         </div>
-        <h2 id="tx_airdrop_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrop_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
+        <h2 id="tx_alchemist_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Alchemist</span><span id="tx_alchemist_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="txIcon" /></h2>
         <div style="display: none;">
-        <table id="tx_airdrop_data" class="transactionTable" style="display: none;">
+        <table id="tx_alchemist_data" class="transactionTable" style="display: none;">
         </table>
         </div>
         <h2 id="tx_quest_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest</span><span id="tx_quest_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
@@ -345,6 +349,11 @@ function downloadDone() {
         <h2 id="tx_wallet_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Wallet</span><span id="tx_wallet_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="txIcon" /></h2>
         <div style="display: none;">
         <table id="tx_wallet_data" class="transactionTable" style="display: none;">
+        </table>
+        </div>
+        <h2 id="tx_airdrop_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrop_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
+        <div style="display: none;">
+        <table id="tx_airdrop_data" class="transactionTable" style="display: none;">
         </table>
         </div>
       </div>

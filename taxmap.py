@@ -57,6 +57,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     eventMap['bank'] += eventMapAvax['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
     eventMap['quests'] += eventMapAvax['quests']
+    eventMap['alchemist'] += eventMapAvax['alchemist']
     eventMap['airdrops'] += eventMapAvax['airdrops']
     eventMap['gas'] += eventMapAvax['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
@@ -74,6 +75,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     eventMap['bank'] = [x for x in eventMap['bank'] if inReportRange(x, startDate, endDate)]
     eventMap['gardens'] = [x for x in eventMap['gardens'] if inReportRange(x, startDate, endDate)]
     eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
+    eventMap['alchemist'] = [x for x in eventMap['alchemist'] if inReportRange(x, startDate, endDate)]
     eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
     # Return all tax records combined and events
     return {
