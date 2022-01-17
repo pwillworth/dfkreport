@@ -70,7 +70,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         try:
             # sometimes they just don't exist yet
             result = w3.eth.get_transaction(tx)
-        except Exception:
+        except Exception as err:
+            logging.error('Got failed to get transaction {0} {1}'.format(tx, str(err)))
             continue
         action = lookupEvent(result['from'], result['to'], account)
         value = Web3.fromWei(result['value'], 'ether')
@@ -89,7 +90,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             logging.error('Got invalid transaction {0} {1}'.format(tx, str(err)))
             continue
         #TODO deduct gas from cost basis
-        gas = Web3.fromWei(receipt['gasUsed'], 'ether')
+        gas = Web3.fromWei(receipt['gasUsed'], 'gwei')
         if blockDate >= startDate and blockDate <= endDate:
             events_map['gas'] += gas
         results = None
@@ -122,7 +123,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.info('Failed to detect auction seller on {0}.'.format(tx))
             elif 'Uniswap' in action:
-                results = extractSwapResults(w3, tx, result, account, timestamp, receipt)
+                results = extractSwapResults(w3, tx, result, account, timestamp, receipt, network)
                 if results != None:
                     if type(results) is records.TraderTransaction:
                         events_map['swaps'].append(results)
@@ -171,7 +172,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         logging.info('banklog: ' + str(log))
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
-                results = extractSwapResults(w3, tx, result, account, timestamp, receipt)
+                results = extractSwapResults(w3, tx, result, account, timestamp, receipt, network)
                 if results != None and type(results) is records.TraderTransaction:
                     events_map['swaps'].append(results)
                     eventsFound = True
@@ -406,36 +407,42 @@ def extractGardenerResults(w3, txn, details, account, timestamp, receipt):
     return events
 
 
-def extractSwapResults(w3, txn, details, account, timestamp, receipt):
+def extractSwapResults(w3, txn, details, account, timestamp, receipt, network):
     abiPath = "abi/{0}.json".format('JewelToken')
     with open(abiPath, 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    abiPath = "abi/{0}.json".format('Wrapped ONE')
+    with open(abiPath, 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', abi=ABI)
+    decoded_logs += contract.events.Withdrawal().processReceipt(receipt, errors=DISCARD)
+    decoded_logs += contract.events.Deposit().processReceipt(receipt, errors=DISCARD)
     rcvdToken = []
     rcvdAmount = []
     sentToken = []
     sentAmount = []
     for log in decoded_logs:
+        # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
             weiConvert = getDecimals(log['address'])
-            # added criteria excluding source router to prevent duplicate values showing up on LP withdraw
-            if log['args']['to'] == account and log['args']['from'] != '0x24ad62502d1C652Cc7684081169D04896aC20f30':
+            if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
             elif log['args']['from'] == account:
                 sentToken.append(log['address'])
                 sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
-            # added criteria excluding swap target to prevent duplicate values showing up on LP withdraw
-            elif log['args']['to'] != '0x0000000000000000000000000000000000000000' and log['args']['from'] in contracts.address_map and ('Jewel LP' in contracts.address_map[log['args']['from']] or 'Pangolin LP' in contracts.address_map[log['args']['from']]):
-                rcvdToken.append(log['address'])
-                rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
-            elif log['args']['to'] in contracts.address_map and ('Jewel LP' in contracts.address_map[log['args']['to']] or 'Pangolin LP' in contracts.address_map[log['args']['to']]):
-                sentToken.append(log['address'])
-                sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
             else:
-                if '0x0000000000000000000000000000000000000000' not in [log['args']['from'], log['args']['to']]:
-                    logging.error('Error: ignored swap log {0} to {1} maybe missing some LP address'.format(log['args']['from'], log['args']['to']))
+                logging.debug('ignored swap log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+        # Native token transfers (src and dst also in args but used yet)
+        if 'wad' in log['args']:
+            if log['event'] == 'Withdrawal':
+                rcvdToken.append(log['address'])
+                rcvdAmount.append(Web3.fromWei(log['args']['wad'], weiConvert))
+            if log['event'] == 'Deposit':
+                sentToken.append(log['address'])
+                sentAmount.append(Web3.fromWei(log['args']['wad'], weiConvert))
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
             # simple 1 coin in 1 coin out swaps
@@ -451,6 +458,7 @@ def extractSwapResults(w3, txn, details, account, timestamp, receipt):
             # Others should be LP deposit/withdraws
             if len(sentToken) == 1 and len(rcvdToken) == 2:
                 # if sending 1 and receiving 2, it is withdraw, sending LP tokens, rcv 2 currency
+                logging.info('Liquidity withdraw event {2} send {0} rcvd {1}'.format(str(sentToken), str(rcvdToken), txn))
                 r = records.LiquidityTransaction(timestamp, 'withdraw', sentToken[0], sentAmount[0], rcvdToken[0], rcvdAmount[0], rcvdToken[1], rcvdAmount[1])
                 fiatValues = getSwapFiatValues(timestamp, rcvdToken[0], rcvdAmount[0], rcvdToken[1], rcvdAmount[1])
                 r.coin1FiatValue = fiatValues[0]
@@ -458,6 +466,7 @@ def extractSwapResults(w3, txn, details, account, timestamp, receipt):
                 return r
             elif len(rcvdToken) == 1 and len(sentToken) == 2:
                 # receiving LP tokens, sending 2 currencies is LP deposit
+                logging.info('Liquidity deposit event {2} send {0} rcvd {1}'.format(str(sentToken), str(rcvdToken), txn))
                 r = records.LiquidityTransaction(timestamp, 'deposit', rcvdToken[0], rcvdAmount[0], sentToken[0], sentAmount[0], sentToken[1], sentAmount[1])
                 fiatValues = getSwapFiatValues(timestamp, sentToken[0], sentAmount[0], sentToken[1], sentAmount[1])
                 r.coin1FiatValue = fiatValues[0]
