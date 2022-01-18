@@ -141,13 +141,51 @@ var address_map = {
   '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106': 'Uniswap AVAX',
   '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX'
 }
+event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops'];
 
 // Populates the transaction data that was generated into the page
-function loadReport(results, contentType) {
+function loadReport(results, contentType, eventGroup='all') {
   if (contentType == 'tax') {
     loadTaxes(results);
   } else {
-    loadTransactions(results);
+    var eventResult = results.event_records;
+    var progressIndex = event_groups.findIndex((element) => {element == eventGroup;});
+    $("#mappingProgress").progressbar( "option", "value", (2000 / event_groups.length) + ((progressIndex+1) * (2000 / event_groups.length)));
+    $("#mappingPercent").html("Loading " + eventGroup + " Events...");
+    switch(eventGroup) {
+      case 'tavern':
+        loadTavernEvents(eventResult[eventGroup]);
+        break;
+      case 'swaps':
+        loadSwapEvents(eventResult[eventGroup]);
+        break;
+      case 'liquidity':
+        loadLiquidityEvents(eventResult[eventGroup]);
+        break;
+      case 'gardens':
+        loadGardensEvents(eventResult[eventGroup]);
+        break;
+      case 'bank':
+        loadBankEvents(eventResult[eventGroup]);
+        break;
+      case 'alchemist':
+        loadAlchemistEvents(eventResult[eventGroup]);
+        break;
+      case 'airdrops':
+        loadAirdropEvents(eventResult[eventGroup]);
+        break;
+      case 'quests':
+        loadQuestEvents(eventResult[eventGroup]);
+        break;
+      case 'wallet':
+        loadWalletEvents(eventResult[eventGroup]);
+        $("#mappingProgress").progressbar( "option", "value", 2000);
+        $("#mappingPercent").html("Ready!");
+        break;
+      default:
+        $("#mappingProgress").progressbar( "option", "value", 2000);
+        $("#mappingPercent").html("Ready!");
+    }
   }
 }
 function loadTaxes(results) {
@@ -182,43 +220,10 @@ function loadTaxes(results) {
     switchView('transaction')
   }
 }
-function loadTransactions(results) {
-  var eventResult = results.event_records;
-  $("#mappingProgress").progressbar( "option", "value", 400);
-  $("#mappingPercent").html("Loading Hero Events...");
-  loadTavernEvents(eventResult.tavern);
-  $("#mappingProgress").progressbar( "option", "value", 600);
-  $("#mappingPercent").html("Loading Swap Events...");
-  loadSwapEvents(eventResult.swaps);
-  $("#mappingProgress").progressbar( "option", "value", 800);
-  $("#mappingPercent").html("Loading Liquidity Events...");
-  loadLiquidityEvents(eventResult.liquidity);
-  $("#mappingProgress").progressbar( "option", "value", 1000);
-  $("#mappingPercent").html("Loading Gardens Events...");
-  loadGardensEvents(eventResult.gardens);
-  $("#mappingProgress").progressbar( "option", "value", 1200);
-  $("#mappingPercent").html("Loading Bank Events...");
-  loadBankEvents(eventResult.bank);
-  $("#mappingProgress").progressbar( "option", "value", 1300);
-  $("#mappingPercent").html("Loading Alchemist Events...");
-  loadAlchemistEvents(eventResult.alchemist);
-  $("#mappingProgress").progressbar( "option", "value", 1400);
-  $("#mappingPercent").html("Loading Airdrop Events...");
-  loadAirdropEvents(eventResult.airdrops);
-  $("#mappingProgress").progressbar( "option", "value", 1600);
-  $("#mappingPercent").html("Loading Quest Events...");
-  loadQuestEvents(eventResult.quests);
-  $("#mappingProgress").progressbar( "option", "value", 1800);
-  $("#mappingPercent").html("Loading Wallet Events...");
-  loadWalletEvents(eventResult.wallet);
-  $("#mappingProgress").progressbar( "option", "value", 2000);
-  $("#mappingPercent").html("Ready!");
-}
 
 function loadTavernEvents(tavernEvents) {
   // Populate the Transaction list with Hero Data
   var tavernTotals = {}
-  $('#tx_tavern_count').html(' (' + tavernEvents.length + ')');
   $("#tx_tavern_data").html('<tr><th>Block Date</th><th>Item Type</th><th>Item ID</th><th>Event</th><th>Coin</th><th>Coin Amt</th><th>USD Amount</th></tr>');
   for (var i = 0; i < tavernEvents.length; i++) {
     var eventDate = new Date(tavernEvents[i].timestamp * 1000);
@@ -247,6 +252,7 @@ function loadTavernEvents(tavernEvents) {
     } else {
       tavernTotals[tavernEvents[i].event] = 1;
     }
+    $('#tx_tavern_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
   var tavernTable = '';
@@ -259,8 +265,7 @@ function loadTavernEvents(tavernEvents) {
 function loadSwapEvents(swapEvents) {
   // Populate the Transaction list with Swaps Data
   var swapTotals = {}
-  $('#tx_trader_count').html(' (' + swapEvents.length + ')');
-  $("#tx_trader_data").html('<tr><th>Block Date</th><th>Swap Type</th><th>Swap Amount</th><th>Receive Type</th><th>Receive Amount</th><th>Swap USD Amount</th><th>Receive USD Amount</th></tr>');
+  $("#tx_swaps_data").html('<tr><th>Block Date</th><th>Swap Type</th><th>Swap Amount</th><th>Receive Type</th><th>Receive Amount</th><th>Swap USD Amount</th><th>Receive USD Amount</th></tr>');
   for (var i = 0; i < swapEvents.length; i++) {
     var eventDate = new Date(swapEvents[i].timestamp * 1000);
     var fiatReceiveValue = swapEvents[i].fiatReceiveValue;
@@ -272,8 +277,8 @@ function loadSwapEvents(swapEvents) {
     if (swapEvents[i].fiatSwapValue['py/reduce'] != undefined) {
       fiatSwapValue = swapEvents[i].fiatSwapValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_trader_data').show();
-    $('#tx_trader_data').append(
+    $('#tx_swaps_data').show();
+    $('#tx_swaps_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
       '<td>' + address_map[swapEvents[i].swapType] + '</td>' +
       '<td>' + Number(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]).toFixed(3) + '</td>' +
@@ -293,19 +298,19 @@ function loadSwapEvents(swapEvents) {
     } else {
       swapTotals[address_map[swapEvents[i].receiveType]] = [0, parseInt(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0])];
     }
+    $('#tx_swaps_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin type swapped
   var swapTable = '<table><tr><th>Coin Type</th><th>Total In</th><th>Total Out</th></tr>';
   for (let k in swapTotals) {
     swapTable = swapTable + '<tr><td>' + k + '</td><td>' + swapTotals[k][0].toFixed(0) + '</td><td>' + swapTotals[k][1].toFixed(0) + '</td></tr>';
   }
-  $("#smy_trader_data").html(swapTable + '</table>');
+  $("#smy_swaps_data").html(swapTable + '</table>');
 }
 
 function loadLiquidityEvents(liquidityEvents) {
   // Populate the Transaction list with Liquidity Pool events
   var liquidityTotals = {};
-  $('#tx_liquidity_count').html(' (' + liquidityEvents.length + ')');
   $("#tx_liquidity_data").html('<tr><th>Block Date</th><th>Pool Action</th><th>LP Tokens</th><th>Coin 1 Amount</th><th>Coin 2 Amount</th><th>Coin 1 USD Value</th><th>Coin 2 USD Value</th></tr>');
   for (var i = 0; i < liquidityEvents.length; i++) {
     var eventDate = new Date(liquidityEvents[i].timestamp * 1000);
@@ -341,6 +346,7 @@ function loadLiquidityEvents(liquidityEvents) {
         liquidityTotals[poolName] = [0, coin1FiatValue + coin2FiatValue];
       }
     }
+    $('#tx_liquidity_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each pool
   var liquidityTable = '<table><tr><th>LP</th><th>Total Out</th><th>Total In</th></tr>';
@@ -353,7 +359,6 @@ function loadLiquidityEvents(liquidityEvents) {
 function loadGardensEvents(gardensEvents) {
   // Populate the Transaction list with Jewel rewards events from Gardens LPs
   var gardensTotals = {};
-  $('#tx_gardens_count').html(' (' + gardensEvents.length + ')');
   $("#tx_gardens_data").html('<tr><th>Block Date</th><th>Location</th><th>Event</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < gardensEvents.length; i++) {
     var eventDate = new Date(gardensEvents[i].timestamp * 1000)
@@ -379,6 +384,7 @@ function loadGardensEvents(gardensEvents) {
     } else {
       gardensTotals[gardensEvents[i].event] = Number(coinAmount);
     }
+    $('#tx_gardens_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
   var gardensTable = '';
@@ -391,7 +397,6 @@ function loadGardensEvents(gardensEvents) {
 function loadBankEvents(bankEvents) {
   // Populate the transaction list with Bank deposit/withdrawal events
   var bankTotals = {};
-  $('#tx_bank_count').html(' (' + bankEvents.length + ')');
   $("#tx_bank_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>xJewel Multiplier</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < bankEvents.length; i++) {
     var eventDate = new Date(bankEvents[i].timestamp * 1000)
@@ -418,6 +423,7 @@ function loadBankEvents(bankEvents) {
         bankTotals[address_map[bankEvents[i].coinType]] = [0, Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0])];
       }
     }
+    $('#tx_bank_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
   var bankTable = '<table><tr><th>token</th><th>total withdraws</th><th>total deposits</th></tr>';
@@ -430,7 +436,6 @@ function loadBankEvents(bankEvents) {
 function loadAlchemistEvents(alchemistEvents) {
   // Populate the Transaction list with Alchemist Data
   var craftingTotals = {}
-  $('#tx_alchemist_count').html(' (' + alchemistEvents.length + ')');
   $("#tx_alchemist_data").html('<tr><th>Block Date</th><th>Potion Type</th><th>Crafting Costs</th><th>Potion Fiat Value</th><th>Ingredients Fiat Value</th></tr>');
   for (var i = 0; i < alchemistEvents.length; i++) {
     var eventDate = new Date(alchemistEvents[i].timestamp * 1000);
@@ -463,6 +468,7 @@ function loadAlchemistEvents(alchemistEvents) {
     } else {
       craftingTotals[address_map[alchemistEvents[i].craftingType]] = [parseInt(craftedAmount), fiatCraftedValue, fiatIngredientsValue];
     }
+    $('#tx_alchemist_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin type swapped
   var craftingTable = '<table><tr><th>Potion</th><th>Total Crafted</th><th>Total Value</th><th>Total Ingredient Value</th></tr>';
@@ -475,8 +481,7 @@ function loadAlchemistEvents(alchemistEvents) {
 function loadAirdropEvents(airdropEvents) {
   // Populate the transaction list with Airdrop events
   var airdropTotals = {};
-  $("#tx_airdrop_data").html('<tr><th>Block Date</th><th>Location</th><th>Token Type</th><th>Token Amount</th><th>Token USD Value</th></tr>');
-  $('#tx_airdrop_count').html(' (' + airdropEvents.length + ')');
+  $("#tx_airdrops_data").html('<tr><th>Block Date</th><th>Location</th><th>Token Type</th><th>Token Amount</th><th>Token USD Value</th></tr>');
   for (var i = 0; i < airdropEvents.length; i++) {
     var eventDate = new Date(airdropEvents[i].timestamp * 1000)
     var tokenAmount = airdropEvents[i].tokenAmount;
@@ -487,8 +492,8 @@ function loadAirdropEvents(airdropEvents) {
     if (airdropEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = airdropEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_airdrop_data').show();
-    $('#tx_airdrop_data').append(
+    $('#tx_airdrops_data').show();
+    $('#tx_airdrops_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
       '<td>' + 'Airdrop' + '</td>' +
       '<td>' + address_map[airdropEvents[i].tokenReceived] + '</td>' +
@@ -500,20 +505,20 @@ function loadAirdropEvents(airdropEvents) {
     } else {
       airdropTotals[address_map[airdropEvents[i].tokenReceived]] = Number(tokenAmount);
     }
+    $('#tx_airdrops_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin
   var airdropTable = '<table><tr><th>token</th><th>Total of Airdrops</th></tr>';
   for (let k in airdropTotals) {
     airdropTable = airdropTable + '<tr><td>' + k + '</td><td>' + airdropTotals[k].toFixed(3) + '</td></tr>';
   }
-  $("#smy_airdrop_data").html(airdropTable + '</table>');
+  $("#smy_airdrops_data").html(airdropTable + '</table>');
 }
 
 function loadQuestEvents(questEvents) {
   // Populate the transaction list with Quest reward receipts
   var questTotals = {};
-  $('#tx_quest_count').html(' (' + questEvents.length + ')');
-  $("#tx_quest_data").html('<tr><th>Block Date</th><th>Location</th><th>Reward Type</th><th>Reward Amount</th><th>Reward USD Value</th></tr>');
+  $("#tx_quests_data").html('<tr><th>Block Date</th><th>Location</th><th>Reward Type</th><th>Reward Amount</th><th>Reward USD Value</th></tr>');
   for (var i = 0; i < questEvents.length; i++) {
     var eventDate = new Date(questEvents[i].timestamp * 1000)
     var rewardAmount = questEvents[i].rewardAmount;
@@ -524,8 +529,8 @@ function loadQuestEvents(questEvents) {
     if (questEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = questEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_quest_data').show();
-    $('#tx_quest_data').append(
+    $('#tx_quests_data').show();
+    $('#tx_quests_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
       '<td>' + 'Serendale' + '</td>' +
       '<td>' + address_map[questEvents[i].rewardType] + '</td>' +
@@ -537,19 +542,19 @@ function loadQuestEvents(questEvents) {
     } else {
       questTotals[address_map[questEvents[i].rewardType]] = rewardAmount;
     }
+    $('#tx_quests_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each reward type
   var questTable = '<table><tr><th>Reward</th><th>total gained</th></tr>';
   for (let k in questTotals) {
     questTable = questTable + '<tr><td>' + k + '</td><td>' + questTotals[k].toFixed(3) + '</td></tr>';
   }
-  $("#smy_quest_data").html(questTable + '</table>');
+  $("#smy_quests_data").html(questTable + '</table>');
 }
 
 function loadWalletEvents(walletEvents) {
   // Populate the transaction list with basic wallet in/out transfers
   var walletTotals = {};
-  $('#tx_wallet_count').html(' (' + walletEvents.length + ')');
   $("#tx_wallet_data").html('<tr><th>Block Date</th><th>Action</th><th>Address</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < walletEvents.length; i++) {
     var eventDate = new Date(walletEvents[i].timestamp * 1000)
@@ -583,6 +588,7 @@ function loadWalletEvents(walletEvents) {
         walletTotals[address_map[walletEvents[i].coinType]] = [0, coinAmount];
       }
     }
+    $('#tx_wallet_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin type
   var walletTable = '<table><tr><th>Coin Type</th><th>Total Out</th><th>Total In</th></tr>';

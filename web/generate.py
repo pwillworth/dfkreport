@@ -67,14 +67,19 @@ def getResponseCSV(records, contentType):
 
     return response
 
-def getResponseJSON(results, contentType):
+def getResponseJSON(results, contentType, eventGroup='all'):
     taxRecords = results['taxes']
     eventRecords = results['events']
     response = '{ "response" : {\n'
     response += '  "status" : "complete",\n   '
     if contentType == 'transaction':
         response += '  "event_records" : \n   '
-        response += jsonpickle.encode(eventRecords, make_refs=False)
+        if eventGroup != 'all':
+            response += '  {"' + eventGroup + '" : \n'
+            response += jsonpickle.encode(eventRecords[eventGroup], make_refs=False)
+            response += '  }'
+        else:
+            response += jsonpickle.encode(eventRecords, make_refs=False)
     else:
         response += '  "tax_records" : [\n   '
         for record in taxRecords:
@@ -148,6 +153,8 @@ costBasis = form.getfirst('costBasis', 'fifo')
 formatType = form.getfirst('formatType', '')
 # can be tax or transaction, only used for CSV
 contentType = form.getfirst('contentType', '')
+# can be any event group to return only that group of events instead of all
+eventGroup = form.getfirst('eventGroup', 'all')
 failure = False
 
 if formatType == 'csv':
@@ -197,7 +204,7 @@ if not failure:
                 if formatType == 'csv':
                     response = getResponseCSV(results, contentType)
                 else:
-                    response = getResponseJSON(results, contentType)
+                    response = getResponseJSON(results, contentType, eventGroup)
         elif status[5] == 8:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))
