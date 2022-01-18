@@ -187,8 +187,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 logging.debug('Summoning activity: {0}'.format(tx))
                 results = extractSummonResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None:
-                    eventsFound = True
                     if type(results) == int:
+                        eventsFound = True
                         logging.info('heroid results {0} {1}'.format(tx, results))
                         if summonCrystalStorage[2] != None:
                             # crystal open event just returns the hero ID summoned so we can now add the full data
@@ -207,6 +207,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             heroIdStorage = results
                             heroIdTx = tx
                     elif len(results) > 1 and results[1] != None:
+                        eventsFound = True
                         if heroIdStorage == None:
                             # store crystal creation events for later so we can tag it with the summoned hero id
                             summonCrystalStorage[0] = tx
@@ -226,6 +227,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             heroIdTx = None
                             summonCrystalStorage = [None, None, None]
                     if type(results) != int and len(results) > 2 and results[2] != None:
+                        eventsFound = True
                         # other events are single hero hires
                         # record is to be saved in db and will be looked up when seller runs thier tax report
                         # All of these get populated by running a report for the Tavern Address though, so we need to
@@ -565,7 +567,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
 
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('Summonning Crystal log: summonerId {0} assistantId {1} generation {2} summonerTears {3} assistantTears {4}'.format(log['args']['summonerId'], log['args']['assistantId'], log['args']['generation'], log['args']['summonerTears'], log['args']['assistantTears']))
+        logging.info('Summonning Crystal log: summonerId {0} assistantId {1} generation {2} summonerTears {3} assistantTears {4}'.format(log['args']['summonerId'], log['args']['assistantId'], log['args']['generation'], log['args']['summonerTears'], log['args']['assistantTears']))
         if type(log['args']['generation']) is int:
             rc = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
@@ -575,7 +577,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
 
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('{0} Summonning Auction log: '.format(txn) + str(log))
+        logging.info('{0} Summonning Auction log: '.format(txn) + str(log))
         if hiredFromAccount != '':
             # Saves record of owner of hired hero gaining proceeds from hire
             hiredHero = log['args']['tokenId']
@@ -588,7 +590,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
 
     decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
+        logging.info('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
         return log['args']['heroId']
 
     return [r, rc, rs]
