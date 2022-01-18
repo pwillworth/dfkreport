@@ -8,11 +8,13 @@ import argparse
 import uuid
 import pickle
 import logging
+import logging.handlers
 import traceback
 
 
 def main():
-    logging.basicConfig(filename='../main.log', level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    handler = logging.handlers.RotatingFileHandler('../main.log', maxBytes=33554432, backupCount=10)
+    logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('We got a report request')
     parser = argparse.ArgumentParser()
     parser.add_argument("wallet", help="The evm compatible wallet address to generate for")
