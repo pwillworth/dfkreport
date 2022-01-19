@@ -9,6 +9,7 @@ import prices
 import db
 import settings
 import datetime
+import time
 import decimal
 import jsonpickle
 import logging
@@ -73,6 +74,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             result = w3.eth.get_transaction(tx)
         except Exception as err:
             logging.error('Got failed to get transaction {0} {1}'.format(tx, str(err)))
+            time.sleep(1)
             continue
         action = lookupEvent(result['from'], result['to'], account)
         value = Web3.fromWei(result['value'], 'ether')
@@ -82,6 +84,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 timestamp = w3.eth.get_block(block)['timestamp']
             except Exception as err:
                 logging.error('Got invalid block {0} {1}'.format(block, str(err)))
+                time.sleep(1)
                 continue
         blockDate = datetime.date.fromtimestamp(timestamp)
         #TODO add try/catch bad gateway, retry here
@@ -89,6 +92,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             receipt = w3.eth.get_transaction_receipt(tx)
         except Exception as err:
             logging.error('Got invalid transaction {0} {1}'.format(tx, str(err)))
+            time.sleep(1)
             continue
         #TODO deduct gas from cost basis
         gas = Web3.fromWei(receipt['gasUsed'], 'gwei')
@@ -197,8 +201,12 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             events_map['tavern'] = events_map['tavern'] + summonCrystalStorage[2]
                             if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
                                 db.saveTransaction(summonCrystalStorage[0], summonCrystalStorage[1], 'tavern', jsonpickle.encode(summonCrystalStorage[2]), account)
+                            else:
+                                logging.info('tried to save portal record that already existed {0}'.format(tx))
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'nones', '', account)
+                            else:
+                                logging.info('tried to save none portal when record already existed {0}'.format(tx))
                             summonCrystalStorage = [None, None, None]
                             heroIdStorage = None
                             heroIdTx = None
@@ -221,8 +229,12 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             events_map['tavern'] = events_map['tavern'] + [results[0], results[1]]
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([results[0], results[1]]), account)
+                            else:
+                                logging.info('tried to save backwards portal that already existed {0}'.format(tx))
                             if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
                                 db.saveTransaction(heroIdTx, timestamp, 'nonec', '', account)
+                            else:
+                                logging.info('tried to save a backwards noen that already existed {0}'.format(tx))
                             heroIdStorage = None
                             heroIdTx = None
                             summonCrystalStorage = [None, None, None]
@@ -235,7 +247,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         if db.findTransaction(tx, results[2].seller) == None:
                             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[2]), results[2].seller)
                         else:
-                            logging.info('Failed to detect summon hire seller on {0}.'.format(tx))
+                            logging.info('summon hire found but was already in db on {0}.'.format(tx))
                 else:
                     logging.info('Error: Failed to parse a summon result. {0}'.format(tx))
             elif 'Meditation' in action:
@@ -297,7 +309,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         event = 'deposit'
                         otherAddress = log['args']['from']
                     else:
-                        logging.error('{3} Could not detect wallet transfer direction from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], tx))
+                        logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], tx))
                         continue
                     tokenValue = Web3.fromWei(log['args']['value'], getDecimals(log['address']))
                     # People might be moving weird tokens around in thier wallet not related to DFK

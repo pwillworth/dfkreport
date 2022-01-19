@@ -151,7 +151,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
               $("#loadingMessage").html('Lila: I\'m putting that report together now, maybe you should come back later.  Don\'t you have some quests to do?')
             }
             $("#reportPercent").html('.:' + (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 4000));
             generateReport(generateAddress, generateStart, generateEnd, costBasis);
           } else if (reportStatus == 'fetchingtx') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );

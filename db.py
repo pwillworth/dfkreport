@@ -145,6 +145,14 @@ def updateReport(wallet, startDate, endDate, updateType, recordCount):
     con.commit()
     con.close()
 
+def getRunningReports():
+    con = aConn()
+    cur = con.cursor()
+    cur.execute("SELECT Count(*) FROM reports WHERE proc=1")
+    row = cur.fetchone()
+    con.close()
+    return row[0]
+
 def createDatabase():
     con = aConn()
     cur = con.cursor()
