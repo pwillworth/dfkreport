@@ -219,6 +219,13 @@ if not failure:
             response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed.  Please report this message to the site admin.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True
+        elif startDate != status[1] or endDate != status[2]:
+            # same account has different report running
+            response = '{ \n  "response" : '
+            response += '"There is already a report being generated for your account, change the date range to {0} - {1} and generate again to check the progress.  You can only generate one report at a time."'.format(status[1], status[2])
+            response += '\n}'
+            logging.warning(response)
+            failure = True
         else:
             # report is not ready
             if status[10] == None:

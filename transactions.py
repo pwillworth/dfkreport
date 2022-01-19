@@ -39,9 +39,10 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
     while tx_end == False:
         try:
             results = account.get_staking_transaction_history(address, page=offset, page_size=page_size, include_full_tx=False, endpoint=nets.hmy_main)
-        except ConnectionError as err:
-            logging.error("connection to harmony api failed - ".format(str(err)))
-            break
+        except Exception as err:
+            logging.error("harmony connection failure getting records, waiting and trying again.  {0}".format(str(err)))
+            time.sleep(1)
+            continue
 
         logging.info("got {0} staking transactions".format(len(results)))
         if len(results) > 0:

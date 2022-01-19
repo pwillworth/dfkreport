@@ -73,9 +73,14 @@ def findReport(wallet, startDate, endDate):
     cur = con.cursor()
     cur.execute("SELECT * FROM reports WHERE account=%s AND startDate=%s AND endDate=%s", (wallet, startDate, endDate))
     row = cur.fetchone()
+    # Make sure they don't already have a report running for other range
+    cur.execute("SELECT * FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
+    existRow = cur.fetchone()
     con.close()
-
-    return row
+    if existRow != None:
+        return existRow
+    else:
+        return row
 
 def createReport(wallet, startDate, endDate, now, txCount, costBasis, proc=None):
     con = aConn()
