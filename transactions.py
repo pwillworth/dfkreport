@@ -21,7 +21,7 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
             break
         except Exception as err:
             logging.error("harmony connection failure getting records, waiting and trying again.  {0}".format(str(err)))
-            time.sleep(1)
+            time.sleep(2)
             continue
 
         logging.info("got {0} transactions".format(len(results)))
@@ -69,8 +69,8 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
             break
         if r.status_code == 200:
             results = r.json()
-            logging.info("got {0} transactions".format(len(results['result'])))
-            if len(results['result']) > 0:
+            if results['result'] != None and len(results['result']) > 0:
+                logging.info("got {0} transactions".format(len(results['result'])))
                 offset = offset + 1
                 txs = txs + results['result']
             else:

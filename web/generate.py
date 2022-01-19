@@ -176,12 +176,16 @@ except ValueError:
     response = '{ "response" : "Error: You must provide dates in the format YYYY-MM-DD" }'
     failure = True
 
-if not Web3.isAddress(wallet) and wallet not in contracts.address_map:
+if not Web3.isAddress(wallet):
     response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
     failure = True
 else:
     # Ensure consistent checksum version of address incase they enter lower case
     wallet = Web3.toChecksumAddress(wallet)
+    if wallet in contracts.address_map:
+        response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
+        failure = True
+
 if costBasis not in ['fifo', 'lifo', 'hifo']:
     response = '{ "response" : "Error: Invalid option specified for cost basis." }'
     failure = True
