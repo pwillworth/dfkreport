@@ -196,7 +196,7 @@ if not failure:
     except Exception as err:
         # Failure can happen here if harmony api is completely down
         logging.error('responding report failure for {0}'.format(str(err)))
-        response = ''.join(('{ \n', '  "response" : "Generation failed!  Harmony API could not be contacted!."\n}'))
+        status = "Generation failed!  Harmony API could not be contacted!."
     if len(status) == 12:
         if status[5] == 2:
             # report is ready
@@ -236,7 +236,7 @@ if not failure:
                 # too busy right now
                 logging.warning('responding report too busy for {0}'.format(str(status)))
                 db.deleteReport(status[0], status[1], status[2], status[8], status[9])
-                response = ''.join(('{ \n', '  "response" : "Unfortunately the site is too overloaded to generate your report right now.  Please try again later!"\n', '}'))
+                response = ''.join(('{ \n', '  "response" : "Unfortunately too many people are generating reports right now.  Please try again later!"\n', '}'))
                 logging.warning(response)
                 failure = True
             else:
