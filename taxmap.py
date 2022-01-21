@@ -4,6 +4,7 @@ import contracts
 import datetime
 import logging
 import db
+from decimal import *
 
 # Record for final tax report data
 class TaxItem:
@@ -13,10 +14,10 @@ class TaxItem:
         self.category = category
         self.acquiredDate = acquiredDate
         self.soldDate = soldDate
-        self.proceeds = proceeds
-        self.costs = costs
+        self.proceeds = Decimal(proceeds)
+        self.costs = Decimal(costs)
         self.term = term
-        self.amountNotAccounted = proceeds
+        self.amountNotAccounted = Decimal(proceeds)
     # Only calculate gains assets cost basis was found
     def get_gains(self):
         if self.proceeds > 0:
@@ -170,7 +171,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
                 swapType = contracts.address_map[swapType]
             if receiveType in contracts.address_map:
                 receiveType = contracts.address_map[receiveType]
-            ti = TaxItem('Sold {0:.3f} {1} for {2:.3f} {3}'.format(event.swapAmount, swapType, event.receiveAmount, receiveType), 'gains', eventDate, event.fiatSwapValue)
+            ti = TaxItem('Sold {0:.5f} {1} for {2:.5f} {3}'.format(event.swapAmount, swapType, event.receiveAmount, receiveType), 'gains', eventDate, event.fiatSwapValue)
             # Check all transactions for prior time when sold token was received to calc gains
             cbList = costBasisSort(swapEvents, costBasis)
             for searchEvent in cbList:

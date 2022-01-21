@@ -107,7 +107,7 @@ def getResponseJSON(results, contentType, eventGroup='all'):
         response += '  ]\n'
     response += '  }\n}'
 
-    if (contentType == 'tax' and len(taxRecords) == 0) or (contentType != 'tax' and len(eventRecords) == 0):
+    if len(eventRecords) == 0:
         response = '{ "response" : "Error: No events found for that wallet and date range." }'
 
     return response
@@ -141,7 +141,7 @@ def getReportStatus(wallet, startDate, endDate, costBasis):
         else:
             return 'Error: No Transactions for that wallet found'
 
-logging.basicConfig(filename='../generate.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='../generate.log', level=logging.WARNING, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Extract query parameters
 form = cgi.FieldStorage()
 

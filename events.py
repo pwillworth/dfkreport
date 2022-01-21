@@ -42,6 +42,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     summonCrystalStorage = [None, None, None]
     heroIdStorage = None
     heroIdTx = None
+    heroCrystals = {}
     for txn in txs:
         # The AVAX list data includes the whole transaction, but harmony is just the hash
         if network == 'avalanche':
@@ -294,6 +295,40 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 eventsFound = True
                 if settings.USE_CACHE:
                     db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(r), account)
+            elif 'HeroSale' in action:
+                # Special Gen0 sale events are like a summon but are crystals are bought with jewel
+                #results = extractHeroSaleResults(w3, tx, result['input'], account, timestamp, receipt)
+                with open('abi/HeroSale.json', 'r') as f:
+                    ABI = f.read()
+                contract = w3.eth.contract(address='0xdF0Bf714e80F5e6C994F16B05b7fFcbCB83b89e9', abi=ABI)
+                decoded_logs = contract.events.Gen0Purchase().processReceipt(receipt, errors=DISCARD)
+                heroId = 0
+                purchasePrice = 0
+                crystalId = 0
+                for log in decoded_logs:
+                    logging.info('Purchase Gen0 Crystal id {0} price {1}'.format(log['args']['crystalId'], log['args']['purchasePrice']))
+                    crystalId = log['args']['crystalId']
+                    purchasePrice = log['args']['purchasePrice']
+                decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
+                for log in decoded_logs:
+                    logging.info('Open Gen0 Crystal id {0} heroid {1}'.format(log['args']['crystalId'], log['args']['heroId']))
+                    crystalId = log['args']['crystalId']
+                    heroId = log['args']['heroId']
+                if crystalId != 0:
+                    eventsFound = True
+                    if log['args']['crystalId'] not in heroCrystals:
+                        heroCrystals[log['args']['crystalId']] = [tx, timestamp, purchasePrice, heroId]
+                    else:
+                        heroCrystals[log['args']['crystalId']][2] = max(purchasePrice, heroCrystals[log['args']['crystalId']][2])
+                        heroCrystals[log['args']['crystalId']][3] = max(heroId, heroCrystals[log['args']['crystalId']][3])
+                        if heroCrystals[log['args']['crystalId']][2] > 0 and heroCrystals[log['args']['crystalId']][3] > 0:
+                            heroPrice = Web3.fromWei(heroCrystals[log['args']['crystalId']][2], 'ether')
+                            r = records.TavernTransaction('hero', heroCrystals[log['args']['crystalId']][3], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', heroPrice)
+                            r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
+                            events_map['tavern'].append(r)
+                            if settings.USE_CACHE:
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(r), account)
+                                db.saveTransaction(heroCrystals[log['args']['crystalId']][0], heroCrystals[log['args']['crystalId']][1], 'noneg', '', account)
             else:
                 # Last possibility, check for any random token trasfers in the wallet
                 with open('abi/JewelToken.json', 'r') as f:
@@ -311,7 +346,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     else:
                         logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], tx))
                         continue
-                    tokenValue = Web3.fromWei(log['args']['value'], getDecimals(log['address']))
+                    tokenValue = valueFromWei(log['args']['value'], log['address'])
                     # People might be moving weird tokens around in thier wallet not related to DFK
                     tokenName = 'Unknown({0})'.format(log['address'])
                     if log['address'] in contracts.address_map:
@@ -341,16 +376,20 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     return events_map
 
 # Simple way to determine conversion, maybe change to lookup on chain later
-def getDecimals(token):
-    if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
-        weiConvert = 'kwei'
-    elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4']: # 1USDC
-        weiConvert = 'mwei'
-    elif token in contracts.gold_values:
-        weiConvert = 'wei'
+def valueFromWei(amount, token):
+    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
+    if token == '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9':
+        return amount / decimal.Decimal(100000000)
     else:
-        weiConvert = 'ether'
-    return weiConvert
+        if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
+            weiConvert = 'kwei'
+        elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4','0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f']: # 1USDC/1USDT
+            weiConvert = 'mwei'
+        elif token in contracts.gold_values:
+            weiConvert = 'wei'
+        else:
+            weiConvert = 'ether'
+        return Web3.fromWei(amount, weiConvert)
 
 def getNativeToken(network):
     if network == 'avalanche':
@@ -436,17 +475,16 @@ def extractGardenerResults(w3, txn, details, account, timestamp, receipt):
     gardenToken = ''
     gardenAmount = 0
     for log in decoded_logs:
-        weiConvert = getDecimals(log['address'])
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args'] and log['address'] in contracts.address_map and 'Jewel LP' in contracts.address_map[log['address']]:
             if log['args']['to'] == account:
                 gardenEvent = 'withdraw'
                 gardenToken = log['address']
-                gardenAmount = Web3.fromWei(log['args']['value'], weiConvert)
+                gardenAmount = Web3.fromWei(log['args']['value'], 'ether')
             elif log['args']['from'] == account:
                 gardenEvent = 'deposit'
                 gardenToken = log['address']
-                gardenAmount = Web3.fromWei(log['args']['value'], weiConvert)
+                gardenAmount = Web3.fromWei(log['args']['value'], 'ether')
     if gardenAmount > 0:
         r = records.GardenerTransaction(timestamp, gardenEvent, gardenToken, gardenAmount)
         events.append(r)
@@ -470,25 +508,24 @@ def extractSwapResults(w3, txn, details, account, timestamp, receipt, network):
     sentToken = []
     sentAmount = []
     for log in decoded_logs:
-        weiConvert = getDecimals(log['address'])
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
             elif log['args']['from'] == account:
                 sentToken.append(log['address'])
-                sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+                sentAmount.append(valueFromWei(log['args']['value'], log['address']))
             else:
                 logging.debug('ignored swap log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
         # Native token transfers (src and dst also in args but used yet)
         if 'wad' in log['args']:
             if log['event'] == 'Withdrawal':
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(Web3.fromWei(log['args']['wad'], weiConvert))
+                rcvdAmount.append(valueFromWei(log['args']['wad'], log['address']))
             if log['event'] == 'Deposit':
                 sentToken.append(log['address'])
-                sentAmount.append(Web3.fromWei(log['args']['wad'], weiConvert))
+                sentAmount.append(valueFromWei(log['args']['wad'], log['address']))
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
             # simple 1 coin in 1 coin out swaps
@@ -703,8 +740,7 @@ def extractQuestResults(w3, txn, inputs, timestamp, receipt):
     for log in decoded_logs:
         if 'itemQuantity' in log['args'] and 'rewardItem' in log['args'] and log['args']['rewardItem'] != '0x0000000000000000000000000000000000000000':
             # Keep a running total of each unique reward item in this quest result
-            weiConvert = getDecimals(log['args']['rewardItem'])
-            rewardQuantity = Web3.fromWei(log['args']['itemQuantity'], weiConvert)
+            rewardQuantity = valueFromWei(log['args']['itemQuantity'], log['args']['rewardItem'])
             if log['args']['rewardItem'] in contracts.address_map:
                 logging.debug('    Hero {2} on quest {3} got reward of {0} {1}\n'.format(rewardQuantity, contracts.address_map[log['args']['rewardItem']], log['args']['heroId'], log['args']['questId']))
                 if log['args']['rewardItem'] in rewardTotals:
@@ -731,15 +767,14 @@ def extractAlchemistResults(w3, txn, inputs, account, timestamp, receipt):
     sentAmount = []
     r = None
     for log in decoded_logs:
-        weiConvert = getDecimals(log['address'])
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
             elif log['args']['from'] == account:
                 sentToken.append(log['address'])
-                sentAmount.append(Web3.fromWei(log['args']['value'], weiConvert))
+                sentAmount.append(valueFromWei(log['args']['value'], log['address']))
             else:
                 logging.debug('ignored alchemist log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
     # Total up value of all ingredients
