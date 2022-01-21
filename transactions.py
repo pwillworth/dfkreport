@@ -69,7 +69,7 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
             break
         if r.status_code == 200:
             results = r.json()
-            if results['result'] != None and len(results['result']) > 0:
+            if results['result'] != None and type(results['result']) is list:
                 logging.info("got {0} transactions".format(len(results['result'])))
                 offset = offset + 1
                 txs = txs + results['result']
