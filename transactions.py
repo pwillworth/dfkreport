@@ -70,13 +70,7 @@ def getTransactionList(address, startDate, endDate, page_size):
     logging.info('Get Harmony data for {0}'.format(address))
     hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
     # Sometimes the paged return tx lookup can result in duplicate txs in the list
-    cleanTx = []
-    for rec in hmy_txs:
-        if rec not in cleanTx:
-            cleanTx.append(rec)
-        else:
-            logging.info('eliminated duplicate event {0}'.format(rec))
-    hmy_txs = cleanTx
+    hmy_txs = list(dict.fromkeys(hmy_txs))
     logging.info('Get Avalanche data for {0}'.format(address))
     avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
     return [hmy_txs, avx_txs]
