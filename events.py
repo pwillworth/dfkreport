@@ -28,6 +28,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         'airdrops' : [],
         'gas' : 0
     }
+
     # Connect to right network that txs are for
     if network == 'avalanche':
         w3 = Web3(Web3.HTTPProvider(nets.avax_web3))
@@ -63,10 +64,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     events = jsonpickle.decode(checkCache[3])
                     if type(events) is list:
                         for evt in events:
-                            logging.debug('loading event from cache {0}'.format(str(evt.__dict__)))
                             events_map[checkCache[2]].append(evt)
                     else:
-                        logging.debug('loading event from cache {0}'.format(str(events.__dict__)))
                         events_map[checkCache[2]].append(events)
                 txCount += 1
                 continue
@@ -110,9 +109,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     if settings.USE_CACHE:
                         db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account)
                 else:
-                    logging.debug('{0} quest with no rewards.')
+                    logging.info('{0} quest with no rewards.'.format(tx))
             elif 'Auction' in action:
-                logging.debug('Auction activity: {0}'.format(tx))
                 results = extractAuctionResults(w3, tx, result['input'], account, timestamp, receipt)
                 if results != None and results[0] != None:
                     events_map['tavern'].append(results[0])
@@ -120,14 +118,12 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     if settings.USE_CACHE:
                         db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account)
                 else:
-                    logging.debug('Ignored an auction interaction, probably listing.')
+                    logging.info('Ignored an auction interaction, probably listing.')
                 # Second record is to be saved in db and will be looked up when seller runs thier tax report
                 # All of these get populated by running a report for the Tavern Address though, so we need to
                 # skip if record has already been created.
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
                     db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
-                else:
-                    logging.info('Failed to detect auction seller on {0}.'.format(tx))
             elif 'Uniswap' in action:
                 results = extractSwapResults(w3, tx, result, account, timestamp, receipt, network)
                 if results != None:
@@ -653,7 +649,6 @@ def extractMeditationResults(w3, txn, inputs, account, timestamp, receipt):
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('{3} transfer for meditation from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.address_map[log['address']]))
         if log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
             jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
         else:
@@ -662,21 +657,18 @@ def extractMeditationResults(w3, txn, inputs, account, timestamp, receipt):
     with open('abi/MeditationCircle.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1', abi=ABI)
-    input_data = contract.decode_function_input(inputs)
-    logging.debug('{1} Meditation input: {0}'.format(input_data, txn))
-    heroID = input_data[1]['_heroId']
     complete_logs = contract.events.MeditationBegun().processReceipt(receipt, errors=DISCARD)
-    decoded_logs = complete_logs
     r = None
     rs = None
-    for log in decoded_logs:
-        logging.debug('Meditation log: ' + str(log))
+    heroID = None
+    for log in complete_logs:
+        heroID = log['args']['heroId']
         if type(heroID) is int:
             rs = records.TavernTransaction('hero', heroID, 'levelup', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             r = records.TavernTransaction('hero', heroID, 'meditate', timestamp, '0x66F5BfD910cd83d3766c4B39d13730C911b2D286', int(shvasAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
-            logging.debug('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
+            logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
     return [r, rs]
 
 def extractAuctionResults(w3, txn, inputs, account, timestamp, receipt):

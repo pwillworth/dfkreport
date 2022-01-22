@@ -43,15 +43,6 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     logging.info('Start Tax mapping {0}'.format(account))
     # Have to look up Tavern sales events because they are not associated direct to wallet
     eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
-    # temporarily dedupe this list until I can find root cause
-    cleanTavern = []
-    for rec in eventMap['tavern']:
-        if rec not in cleanTavern:
-            cleanTavern.append(rec)
-        else:
-            logging.info('eliminated duplicate event {1} {0} on {2}'.format(rec.itemID, rec.event, str(rec.timestamp)))
-    eventMap['tavern'] = cleanTavern
-
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
     eventMap['wallet'] += eventMapAvax['wallet']

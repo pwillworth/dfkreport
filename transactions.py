@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pyhmy import account, transaction
+from pyhmy import account
 import nets
 import db
 import requests
@@ -34,26 +34,6 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', len(txs))
 
-    tx_end = False
-    offset = 0
-    while tx_end == False:
-        try:
-            results = account.get_staking_transaction_history(address, page=offset, page_size=page_size, include_full_tx=False, endpoint=nets.hmy_main)
-        except Exception as err:
-            logging.error("harmony connection failure getting records, waiting and trying again.  {0}".format(str(err)))
-            time.sleep(1)
-            continue
-
-        logging.info("got {0} staking transactions".format(len(results)))
-        if len(results) > 0:
-            offset = offset + 1
-            txs = txs + results
-        else:
-            tx_end = True
-
-    if startDate != "" and endDate != "":
-        db.updateReport(address, startDate, endDate, 'fetched', len(txs))
-
     return txs
 
 # Return array of transactions on Avalanche for the address
@@ -69,7 +49,7 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
             break
         if r.status_code == 200:
             results = r.json()
-            if results['result'] != None and type(results['result']) is list:
+            if results['result'] != None and type(results['result']) is list and len(results['result']) > 0:
                 logging.info("got {0} transactions".format(len(results['result'])))
                 offset = offset + 1
                 txs = txs + results['result']
@@ -89,6 +69,14 @@ def getTransactionList(address, startDate, endDate, page_size):
     avx_txs = []
     logging.info('Get Harmony data for {0}'.format(address))
     hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
+    # Sometimes the paged return tx lookup can result in duplicate txs in the list
+    cleanTx = []
+    for rec in hmy_txs:
+        if rec not in cleanTx:
+            cleanTx.append(rec)
+        else:
+            logging.info('eliminated duplicate event {0}'.format(rec))
+    hmy_txs = cleanTx
     logging.info('Get Avalanche data for {0}'.format(address))
     avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
     return [hmy_txs, avx_txs]

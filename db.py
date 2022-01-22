@@ -3,6 +3,7 @@ import pymysql
 import dfkInfo
 import logging
 import records
+import settings
 import jsonpickle
 import datetime
 import os
@@ -74,9 +75,11 @@ def findReport(wallet, startDate, endDate):
     cur.execute("SELECT * FROM reports WHERE account=%s AND startDate=%s AND endDate=%s", (wallet, startDate, endDate))
     row = cur.fetchone()
     # Make sure they don't already have a report running for other range
-    cur.execute("SELECT * FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
-    existRow = cur.fetchone()
-    con.close()
+    existRow = None
+    if not settings.CONCURRENT_REPORTS:
+        cur.execute("SELECT * FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
+        existRow = cur.fetchone()
+        con.close()
     if existRow != None:
         return existRow
     else:
