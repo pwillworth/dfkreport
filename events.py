@@ -36,7 +36,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
 
     if not w3.isConnected():
-        logging.error('Error: Critical w3 connection failure for '.format(network))
+        logging.error('Error: Critical w3 connection failure for {0}'.format(network))
         return 'Error: Blockchain connection failure.'
 
     txCount = 0
@@ -602,23 +602,27 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
     r = None
     rc = None
     rs = None
+    summoner = 'unk'
+    assistant = 'unk'
     contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
-    input_data = contract.decode_function_input(inputs)
-    try:
-        assistant = input_data[1]['_assistantId']
-    except Exception as err:
-        logging.debug('no assistant detected {0}'.format(str(err)))
-    logging.debug('Summon input: {0}'.format(input_data))
+    if inputs != None:
+        input_data = contract.decode_function_input(inputs)
+        try:
+            summoner = input_data[1]['_summonerId']
+            assistant = input_data[1]['_assistantId']
+        except Exception as err:
+            logging.debug('no assistant detected {0}'.format(str(err)))
+        logging.debug('Summon input: {0}'.format(input_data))
 
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.info('Summonning Crystal log: summonerId {0} assistantId {1} generation {2} summonerTears {3} assistantTears {4}'.format(log['args']['summonerId'], log['args']['assistantId'], log['args']['generation'], log['args']['summonerTears'], log['args']['assistantTears']))
         if type(log['args']['generation']) is int:
-            rc = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
+            rc = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
-            r = records.TavernTransaction('hero', '/'.join((str(input_data[1]['_summonerId']),str(input_data[1]['_assistantId']))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
+            r = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
-            logging.debug('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
+            logging.info('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
 
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -626,7 +630,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
         if hiredFromAccount != '':
             # Saves record of owner of hired hero gaining proceeds from hire
             hiredHero = log['args']['tokenId']
-            if assistant != None:
+            if assistant != 'unk':
                 hiredHero = assistant
             rs = records.TavernTransaction('hero', hiredHero, 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
@@ -681,15 +685,13 @@ def extractAuctionResults(w3, txn, inputs, account, timestamp, receipt):
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.debug('Jewel transfer for auction from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value']))
-        if log['args']['to'] not in contracts.jewel_pools:
+        if log['args']['to'] not in contracts.summon_fee_targets:
             heroSeller = log['args']['to']
             sellerProceeds = Web3.fromWei(log['args']['value'], 'ether')
 
     with open('abi/SaleAuction.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', abi=ABI)
-    input_data = contract.decode_function_input(inputs)
-    logging.debug('{1} Auction input: {0}'.format(input_data, txn))
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     r = None
     rs = None
