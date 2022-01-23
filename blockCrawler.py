@@ -31,7 +31,7 @@ def handleLogs(w3, event):
 
 def main():
     handler = logging.handlers.RotatingFileHandler('../blockCrawler.log', maxBytes=33554432, backupCount=10)
-    logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(handlers=[handler], level=logging.WARNING, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('started crawler')
     # Connect to w3
     w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
@@ -44,16 +44,28 @@ def main():
             blockNumber = int(f.read().strip())
     except IOError as e:
         logging.error("No last checked block using default")
-        blockNumber = 22039954
+        blockNumber = 22036051
     except ValueError as e:
         logging.error("No last checked block using default")
-        blockNumber = 22039954
+        blockNumber = 22036051
 
     logging.info('Getting events from block {0} through {1}'.format(str(blockNumber), 'latest'))
     # create a filter for unsearched blocks of auction house and summoning portal contracts
-    hmyFilter = w3.eth.filter({'fromBlock': blockNumber, 'toBlock': 'latest', 'address': ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892','0x65DEA93f7b886c33A78c10343267DD39727778c2']})
-    hmyChanges = hmyFilter.get_all_entries()
-    w3.eth.uninstall_filter(hmyFilter.filter_id)
+    with open('abi/SaleAuction.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', abi=ABI)
+    tavernFilter = contract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber)
+    tavernChanges = tavernFilter.get_all_entries()
+    w3.eth.uninstall_filter(tavernFilter.filter_id)
+
+    with open('abi/HeroSummoningUpgradeable.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
+    portalFilter = contract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber)
+    portalChanges = portalFilter.get_all_entries()
+    w3.eth.uninstall_filter(portalFilter.filter_id)
+
+    hmyChanges = tavernChanges + portalChanges
     for event in hmyChanges:
         handleLogs(w3, event)
         # keep track of what block we are on
