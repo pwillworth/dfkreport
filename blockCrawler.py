@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import logging.handlers
-import traceback
-import time
+import os
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import jsonpickle
@@ -30,6 +29,9 @@ def handleLogs(w3, event):
 
 
 def main():
+    # get in the right spot when running this so file paths can be managed relatively
+    location = os.path.abspath(__file__)
+    os.chdir('/'.join(location.split('/')[0:-1]))
     handler = logging.handlers.RotatingFileHandler('../blockCrawler.log', maxBytes=33554432, backupCount=10)
     logging.basicConfig(handlers=[handler], level=logging.WARNING, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('started crawler')
