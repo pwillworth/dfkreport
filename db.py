@@ -79,7 +79,7 @@ def findReport(wallet, startDate, endDate):
     if not settings.CONCURRENT_REPORTS:
         cur.execute("SELECT * FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
         existRow = cur.fetchone()
-        con.close()
+    con.close()
     if existRow != None:
         return existRow
     else:

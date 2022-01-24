@@ -101,8 +101,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         results = None
         if receipt['status'] == 1:
             logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} gas'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
-            if result['input'] != '0x' and 'Quest' in action:
-                results = extractQuestResults(w3, tx, result['input'], timestamp, receipt)
+            if 'Quest' in action and result['input'] != '0x':
+                results = extractQuestResults(w3, tx, timestamp, receipt)
                 if len(results) > 0:
                     events_map['quests'] += results
                     eventsFound = True
@@ -111,7 +111,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.info('{0} quest with no rewards.'.format(tx))
             elif 'Auction' in action:
-                results = extractAuctionResults(w3, tx, result['input'], account, timestamp, receipt)
+                results = extractAuctionResults(w3, tx, account, timestamp, receipt)
                 if results != None and results[0] != None:
                     events_map['tavern'].append(results[0])
                     eventsFound = True
@@ -125,7 +125,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
                     db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
             elif 'Uniswap' in action:
-                results = extractSwapResults(w3, tx, result, account, timestamp, receipt, network)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt, network)
                 if results != None:
                     if type(results) is records.TraderTransaction:
                         events_map['swaps'].append(results)
@@ -140,7 +140,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
             elif 'Gardener' in action:
-                results = extractGardenerResults(w3, tx, result, account, timestamp, receipt)
+                results = extractGardenerResults(w3, tx, account, timestamp, receipt)
                 if results != None and len(results) > 0:
                     for item in results:
                         events_map['gardens'].append(item)
@@ -150,7 +150,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
             elif 'Airdrop' in action:
-                results = extractAirdropResults(w3, tx, result['input'], account, timestamp, receipt)
+                results = extractAirdropResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     events_map['airdrops'].append(results)
                     eventsFound = True
@@ -159,7 +159,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
             elif result['input'] != '0x' and 'xJewel' in action:
-                results = extractBankResults(w3, tx, result, account, timestamp, receipt)
+                results = extractBankResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     events_map['bank'].append(results)
                     eventsFound = True
@@ -176,7 +176,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         logging.info('banklog: ' + str(log))
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
-                results = extractSwapResults(w3, tx, result, account, timestamp, receipt, network)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt, network)
                 if results != None and type(results) is records.TraderTransaction:
                     events_map['swaps'].append(results)
                     eventsFound = True
@@ -186,7 +186,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
                 logging.debug('Summoning activity: {0}'.format(tx))
-                results = extractSummonResults(w3, tx, result['input'], account, timestamp, receipt)
+                results = extractSummonResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     if type(results) == int:
                         eventsFound = True
@@ -249,7 +249,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Error: Failed to parse a summon result. {0}'.format(tx))
             elif 'Meditation' in action:
                 logging.debug('Meditation activity: {0}'.format(tx))
-                results = extractMeditationResults(w3, tx, result['input'], account, timestamp, receipt)
+                results = extractMeditationResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     for record in results:
                         if type(record) is records.TavernTransaction:
@@ -261,7 +261,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
             elif 'Alchemist' in action:
                 logging.debug('Alchemist activity: {0}'.format(tx))
-                results = extractAlchemistResults(w3, tx, result['input'], account, timestamp, receipt)
+                results = extractAlchemistResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     events_map['alchemist'].append(results)
                     eventsFound = True
@@ -293,7 +293,6 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(r), account)
             elif 'HeroSale' in action:
                 # Special Gen0 sale events are like a summon but are crystals are bought with jewel
-                #results = extractHeroSaleResults(w3, tx, result['input'], account, timestamp, receipt)
                 with open('abi/HeroSale.json', 'r') as f:
                     ABI = f.read()
                 contract = w3.eth.contract(address='0xdF0Bf714e80F5e6C994F16B05b7fFcbCB83b89e9', abi=ABI)
@@ -415,7 +414,7 @@ def lookupEvent(fm, to, account):
 
     return "{0} -> {1}".format(fmStr, toStr)
 
-def extractBankResults(w3, txn, details, account, timestamp, receipt):
+def extractBankResults(w3, txn, account, timestamp, receipt):
     with open('abi/xJewel.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
@@ -444,7 +443,7 @@ def extractBankResults(w3, txn, details, account, timestamp, receipt):
             return r
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
 
-def extractGardenerResults(w3, txn, details, account, timestamp, receipt):
+def extractGardenerResults(w3, txn, account, timestamp, receipt):
     # events record amount of jewel received when claiming at the gardens
     with open('abi/MasterGardener.json', 'r') as f:
         ABI = f.read()
@@ -487,7 +486,7 @@ def extractGardenerResults(w3, txn, details, account, timestamp, receipt):
 
     return events
 
-def extractSwapResults(w3, txn, details, account, timestamp, receipt, network):
+def extractSwapResults(w3, txn, account, timestamp, receipt, network):
     abiPath = "abi/{0}.json".format('JewelToken')
     with open(abiPath, 'r') as f:
         ABI = f.read()
@@ -576,7 +575,7 @@ def getSwapFiatValues(timestamp, sentToken, sentAmount, rcvdToken, rcvdAmount):
 
     return [fiatSwapValue, fiatReceiveValue]
 
-def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
+def extractSummonResults(w3, txn, account, timestamp, receipt):
     # Get the summon costs data
     tearsAmount = decimal.Decimal(0.0)
     jewelAmount = decimal.Decimal(0.0)
@@ -605,19 +604,12 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
     summoner = 'unk'
     assistant = 'unk'
     contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
-    if inputs != None:
-        input_data = contract.decode_function_input(inputs)
-        try:
-            summoner = input_data[1]['_summonerId']
-            assistant = input_data[1]['_assistantId']
-        except Exception as err:
-            logging.debug('no assistant detected {0}'.format(str(err)))
-        logging.debug('Summon input: {0}'.format(input_data))
-
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.info('Summonning Crystal log: summonerId {0} assistantId {1} generation {2} summonerTears {3} assistantTears {4}'.format(log['args']['summonerId'], log['args']['assistantId'], log['args']['generation'], log['args']['summonerTears'], log['args']['assistantTears']))
         if type(log['args']['generation']) is int:
+            summoner = log['args']['summonerId']
+            assistant = log['args']['assistantId']
             rc = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
             r = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
@@ -644,7 +636,7 @@ def extractSummonResults(w3, txn, inputs, account, timestamp, receipt):
 
     return [r, rc, rs]
 
-def extractMeditationResults(w3, txn, inputs, account, timestamp, receipt):
+def extractMeditationResults(w3, txn, account, timestamp, receipt):
     # Get the meditation costs data
     shvasAmount = decimal.Decimal(0.0)
     jewelAmount = decimal.Decimal(0.0)
@@ -675,7 +667,7 @@ def extractMeditationResults(w3, txn, inputs, account, timestamp, receipt):
             logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
     return [r, rs]
 
-def extractAuctionResults(w3, txn, inputs, account, timestamp, receipt):
+def extractAuctionResults(w3, txn, account, timestamp, receipt):
     # Get the seller data
     heroSeller = ""
     sellerProceeds = decimal.Decimal(0.0)
@@ -708,7 +700,7 @@ def extractAuctionResults(w3, txn, inputs, account, timestamp, receipt):
             rs.seller = heroSeller
     return [r, rs]
 
-def extractAirdropResults(w3, txn, inputs, account, timestamp, receipt):
+def extractAirdropResults(w3, txn, account, timestamp, receipt):
     with open('abi/Airdrop.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0xa678d193fEcC677e137a00FEFb43a9ccffA53210', abi=ABI)
@@ -724,7 +716,7 @@ def extractAirdropResults(w3, txn, inputs, account, timestamp, receipt):
             r.fiatValue = prices.priceLookup(timestamp, 'defi-kingdoms') * r.tokenAmount
         return r
 
-def extractQuestResults(w3, txn, inputs, timestamp, receipt):
+def extractQuestResults(w3, txn, timestamp, receipt):
     with open('abi/QuestCoreV2.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4', abi=ABI)
@@ -749,7 +741,7 @@ def extractQuestResults(w3, txn, inputs, timestamp, receipt):
         txns.append(r)
     return txns
 
-def extractAlchemistResults(w3, txn, inputs, account, timestamp, receipt):
+def extractAlchemistResults(w3, txn, account, timestamp, receipt):
     # Create record of the alchemist crafting activity with total costs
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()

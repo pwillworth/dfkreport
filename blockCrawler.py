@@ -16,11 +16,11 @@ def handleLogs(w3, event):
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
     receipt = w3.eth.get_transaction_receipt(tx)
     if event['address'] == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
-        results = events.extractAuctionResults(w3, tx, None, None, timestamp, receipt)
+        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
     elif event['address'] == '0x65DEA93f7b886c33A78c10343267DD39727778c2':
-        results = events.extractSummonResults(w3, tx, None, None, timestamp, receipt)
+        results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
         if results != None and type(results) != int and len(results) > 2 and results[2] != None:
             if db.findTransaction(tx, results[2].seller) == None:
                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[2]), results[2].seller)
@@ -38,7 +38,7 @@ def main():
     # Connect to w3
     w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
     if not w3.isConnected():
-        logging.error('Error: Critical w3 connection failure for '.format(nets.hmy_web3))
+        logging.critical('Error: Critical w3 connection failure for '.format(nets.hmy_web3))
         return 'Error: Blockchain connection failure.'
     # pick up where last process left off in blocks
     try:
@@ -75,7 +75,7 @@ def main():
             with open("last_block_checked.txt", "w") as f:
                 f.write(str(event['blockNumber']))
         except IOError as e:
-            logging.error('failed to write last block checked {0}'.format(e))
+            logging.critical('failed to write last block checked {0}'.format(e))
 
 
 if __name__ == "__main__":
