@@ -551,7 +551,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
                 r.coin2FiatValue = fiatValues[1]
                 return r
             else:
-                errStr = ''
+                errStr = 'txn: {0}|'.format(txn)
                 for i in range(len(sentToken)):
                     errStr += 'Sent {0} {1}|'.format(sentAmount[i], sentToken[i])
                 for i in range(len(rcvdToken)):

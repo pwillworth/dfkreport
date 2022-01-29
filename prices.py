@@ -7,6 +7,7 @@ import datetime
 import logging
 import decimal
 import db
+import contracts
 
 token_map = {
     '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'harmony',
@@ -22,13 +23,18 @@ token_map = {
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms'
 }
 
+today_prices = {}
+
 def priceLookup(timestamp, token, fiatType='usd'):
     lookupDate = datetime.date.fromtimestamp(timestamp).strftime('%d-%m-%Y')
     # if token is in map, switch to gecko token name instead
     if token in token_map:
         token = token_map[token]
-    # TODO - if fail to lookup price in DFK graph, try to get current price as fallback, but do not store
-    return decimal.Decimal(getPrice(token, lookupDate, fiatType))
+    # Calculate based on gold price if convertible to gold
+    if token in contracts.gold_values and contracts.gold_values[token] > 0:
+        return decimal.Decimal(getPrice('0x3a4edcf3312f44ef027acfd8c21382a5259936e7', lookupDate, fiatType) * contracts.gold_values[token])
+    else:
+        return decimal.Decimal(getPrice(token, lookupDate, fiatType))
 
 # Date format DD-MM-YYYY for da gecko api
 def fetchPriceData(token, date):
@@ -93,9 +99,14 @@ def fetchItemPrice(token, date):
         else:
             logging.info('Failed to lookup a price for {0} on {1}, trying current price'.format(token, date))
             # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
-            jewelPair = fetchCurrentPrice(token, '0x72cb10c6bfa5624dd07ef608027e366bd690048f')
+            # use cache for today prices since we dont save in db and we aren't hitting graph so much
+            if token in today_prices:
+                jewelPair = today_prices[token]
+            else:
+                jewelPair = fetchCurrentPrice(token, '0x72cb10c6bfa5624dd07ef608027e366bd690048f')
             price = 0
             if len(jewelPair) == 2:
+                today_prices[token] = jewelPair
                 jewelPrice = priceLookup(realDate, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
                 logging.debug('got current price ' + str(jewelPair[1]))
                 price = decimal.Decimal(jewelPair[1]) * jewelPrice
