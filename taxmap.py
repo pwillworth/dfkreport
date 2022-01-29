@@ -154,6 +154,10 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
 def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
     results = []
     for event in swapEvents:
+        # swapping an item for gold does not need to be on tax report (I think)
+        # questionable where to draw the line between game and currency trades
+        if event.swapType in contracts.gold_values and event.receiveType == '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7':
+            continue
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         if eventDate >= startDate and eventDate <= endDate:
             swapType = event.swapType

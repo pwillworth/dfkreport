@@ -158,7 +158,7 @@ address_map = {
 }
 
 gold_values = {
-    '0x3a4edcf3312f44ef027acfd8c21382a5259936e7': 0, # DFK gold
+    '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 0, # DFK gold
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 0, #Gaia's Tears
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 0, #Shvas Rune
     '0x9678518e04Fe02FB30b55e2D0e554E26306d0892': 0, #Blue Pet Egg

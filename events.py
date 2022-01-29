@@ -87,7 +87,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 time.sleep(1)
                 continue
         blockDate = datetime.date.fromtimestamp(timestamp)
-        #TODO add try/catch bad gateway, retry here
+        #TODO return list of failed transaction lookups as discrepancies for investigation
         try:
             receipt = w3.eth.get_transaction_receipt(tx)
         except Exception as err:
