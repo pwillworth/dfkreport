@@ -14,6 +14,7 @@ sys.path.append("../")
 import transactions
 import contracts
 import db
+import pymysql
 import pickle
 import jsonpickle
 import logging
@@ -193,9 +194,12 @@ if costBasis not in ['fifo', 'lifo', 'hifo']:
 if not failure:
     try:
         status = getReportStatus(wallet, startDate, endDate, costBasis)
+    except pymysql.err.OperationalError:
+        logging.error('Responding DB unavailable report error.')
+        status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."
     except Exception as err:
         # Failure can happen here if harmony api is completely down
-        logging.error('responding report failure for {0}'.format(str(err)))
+        logging.error('responding report start failure for {0}'.format(str(err)))
         status = "Generation failed!  Harmony API could not be contacted!."
     if len(status) == 12:
         if status[5] == 2:

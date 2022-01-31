@@ -54,7 +54,10 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         eventsFound = False
         # Update report tracking record for status every 10 txs
         if txCount % 10 == 0:
-            db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+            try:
+                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+            except Exception as err:
+                logging.error('Failed to update tx count {0}'.format(str(err)))
 
         if settings.USE_CACHE:
             checkCache = db.findTransaction(str(tx), account)

@@ -17,56 +17,82 @@ def aConn():
 	return conn
 
 def findPriceData(date, token):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT * FROM prices WHERE date=%s AND token=%s", (date, token))
-    row = cur.fetchone()
-    con.close()
+    try:
+        con = aConn()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM prices WHERE date=%s AND token=%s", (date, token))
+        row = cur.fetchone()
+        con.close()
+    except Exception as err:
+        logging.error('DB failure looking up prices {0}'.format(str(err)))
+        row = None
 
     return row
 
 def savePriceData(date, token, price, liquid, volume):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("INSERT INTO prices VALUES (%s, %s, %s, %s, %s)", (date, token, price, liquid, volume))
-    con.commit()
-    con.close()
+    try:
+        con = aConn()
+        cur = con.cursor()
+        cur.execute("INSERT INTO prices VALUES (%s, %s, %s, %s, %s)", (date, token, price, liquid, volume))
+        con.commit()
+        con.close()
+    except Exception as err:
+        # incase DB is down, it's ok we just wont cache
+        logging.error('db error saving price data {0}'.format(str(err)))
 
 def findTransaction(txHash, account):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT * FROM transactions WHERE txHash=%s AND account=%s", (txHash, account))
-    row = cur.fetchone()
-    con.close()
+    try:
+        con = aConn()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM transactions WHERE txHash=%s AND account=%s", (txHash, account))
+        row = cur.fetchone()
+        con.close()
+    except Exception as err:
+        # if db is unavailable we can just continue
+        logging.error('Error finding tx {0}'.format(str(err)))
+        row = None
 
     return row
 
 def saveTransaction(tx, timestamp, type, events, wallet):
-    con = aConn()
-    cur = con.cursor()
     try:
-        cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet))
-        con.commit()
+        con = aConn()
+        cur = con.cursor()
     except Exception as err:
-        logging.error('Unexpected Error {0} caching transaction {1} - '.format(err, tx))
-    con.close()
+        logging.error('Failed to save tx {0}'.format(str(err)))
+        con = None
+    if con != None and con.open:
+        try:
+            cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet))
+            con.commit()
+        except Exception as err:
+            logging.error('Unexpected Error {0} caching transaction {1} - '.format(err, tx))
+        con.close()
+    else:
+        logging.info('Skipping tx save due to previous db failure.')
 
 # Look up and return any transaction events where wallet was the seller
 def getTavernSales(wallet, startDate, endDate):
     sales = []
     startStamp = int(datetime.datetime(startDate.year, startDate.month, startDate.day).timestamp())
     endStamp = int(datetime.datetime(endDate.year, endDate.month, endDate.day).timestamp() + 86400)
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
-    row = cur.fetchone()
-    while row != None:
-        r = jsonpickle.decode(row[3])
-        if type(r) is records.TavernTransaction and r.seller == wallet:
-            sales.append(r)
+    try:
+        con = aConn()
+        cur = con.cursor()
+    except Exception as err:
+        logging.error('DB error trying to look up tavern sales. {0}'.format(str(err)))
+    if con != None and con.open:
+        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
         row = cur.fetchone()
+        while row != None:
+            r = jsonpickle.decode(row[3])
+            if type(r) is records.TavernTransaction and r.seller == wallet:
+                sales.append(r)
+            row = cur.fetchone()
 
-    con.close()
+        con.close()
+    else:
+        logging.info('Skipping sales lookup due to db conn failure.')
     return sales
 
 def findReport(wallet, startDate, endDate):

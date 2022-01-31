@@ -58,7 +58,10 @@ def main():
         transactionsFile = uuid.uuid4().hex
         with open('../transactions/{0}'.format(transactionsFile), 'wb') as f:
             pickle.dump(txData, f)
-        db.completeTransactions(args.wallet, args.startDate, args.endDate, transactionsFile)
+        try:
+            db.completeTransactions(args.wallet, args.startDate, args.endDate, transactionsFile)
+        except Exception as err:
+            logging.error('DB report update tx complete failure: {0}'.format(str(err)))
 
     # With transaction list, we now generate the events and tax map
     try:
@@ -74,7 +77,10 @@ def main():
             statusCode = 8
         else:
             statusCode = 9
-        db.updateReportError(args.wallet, args.startDate, args.endDate, statusCode)
+        try:
+            db.updateReportError(args.wallet, args.startDate, args.endDate, statusCode)
+        except Exception as err:
+            logging.error('DB report update error failure: {0}'.format(str(err)))
         return 1
 
     for item in reportData['taxes']:
@@ -84,8 +90,10 @@ def main():
     reportFile = uuid.uuid4().hex
     with open('../reports/{0}'.format(reportFile), 'wb') as f:
         pickle.dump(reportData, f)
-    db.completeReport(args.wallet, args.startDate, args.endDate, reportFile)
-
+    try:
+        db.completeReport(args.wallet, args.startDate, args.endDate, reportFile)
+    except Exception as err:
+        logging.error('DB report update complete failure: {0}'.format(str(err)))
 
 if __name__ == "__main__":
 	main()
