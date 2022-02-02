@@ -157,11 +157,11 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
             elif 'Airdrop' in action:
                 results = extractAirdropResults(w3, tx, account, timestamp, receipt)
-                if results != None:
-                    events_map['airdrops'].append(results)
+                for item in results:
+                    events_map['airdrops'].append(item)
                     eventsFound = True
-                    if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
+                if settings.USE_CACHE and len(results) > 0:
+                    db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
             elif result['input'] != '0x' and 'xJewel' in action:
@@ -707,20 +707,29 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt):
     return [r, rs]
 
 def extractAirdropResults(w3, txn, account, timestamp, receipt):
-    with open('abi/Airdrop.json', 'r') as f:
+    # Create record of the alchemist crafting activity with total costs
+    with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
-    contract = w3.eth.contract(address='0xa678d193fEcC677e137a00FEFb43a9ccffA53210', abi=ABI)
-    #decoded_logs = contract.events.OwnershipTransferred().processReceipt(receipt, errors=DISCARD)
-    #for log in decoded_logs:
-    #    logging.info('AirdropXfer: ' + str(log))
-    decoded_logs = contract.events.Claimed().processReceipt(receipt, errors=DISCARD)
+    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    rcvdToken = []
+    rcvdAmount = []
+    results = []
     for log in decoded_logs:
-        logging.debug('AirdropClaim: ' + str(log))
-        airdropAmount = Web3.fromWei(log['args']['amount'], 'ether')
-        if log['args']['recipient'] == account:
-            r = records.AirdropTransaction(txn, timestamp, 'jewel', airdropAmount)
-            r.fiatValue = prices.priceLookup(timestamp, 'defi-kingdoms') * r.tokenAmount
-        return r
+        # Token Transfers
+        if 'to' in log['args'] and 'from' in log['args']:
+            if log['args']['to'] == account:
+                rcvdToken.append(log['address'])
+                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
+            else:
+                logging.info('ignored airdrop log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+    for i in range(len(rcvdToken)):
+        logging.info('AirdropClaimed: {0} {1}'.format(rcvdAmount[i], rcvdToken[i]))
+        airdropAmount = rcvdAmount[i]
+        r = records.AirdropTransaction(txn, timestamp, rcvdToken[i], airdropAmount)
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[i]) * r.tokenAmount
+        results.append(r)
+    return results
 
 def extractQuestResults(w3, txn, timestamp, receipt):
     with open('abi/QuestCoreV2.json', 'r') as f:
