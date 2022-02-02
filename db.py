@@ -87,6 +87,7 @@ def getTavernSales(wallet, startDate, endDate):
         while row != None:
             r = jsonpickle.decode(row[3])
             if type(r) is records.TavernTransaction and r.seller == wallet:
+                r.txHash = row[0]
                 sales.append(r)
             row = cur.fetchone()
 
