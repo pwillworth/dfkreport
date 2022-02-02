@@ -2,7 +2,8 @@
 
 # Records for Capital Gains
 class TavernTransaction:
-    def __init__(self, itemType, itemID, event, timestamp, coinType, coinCost=0, fiatType='usd', fiatAmount=0, seller=''):
+    def __init__(self, txHash, itemType, itemID, event, timestamp, coinType, coinCost=0, fiatType='usd', fiatAmount=0, seller=''):
+        self.txHash = txHash
         # hero or pet
         self.itemType = itemType
         self.itemID = itemID
@@ -17,7 +18,8 @@ class TavernTransaction:
         self.seller = seller
 
 class TraderTransaction:
-    def __init__(self, timestamp, swapType, receiveType, swapAmount=0, receiveAmount=0, fiatType='usd', fiatSwapValue=0, fiatReceiveValue=0):
+    def __init__(self, txHash, timestamp, swapType, receiveType, swapAmount=0, receiveAmount=0, fiatType='usd', fiatSwapValue=0, fiatReceiveValue=0):
+        self.txHash = txHash
         # timestamp of block when this transaction was done
         self.timestamp = timestamp
         # token type that was traded away
@@ -35,7 +37,8 @@ class TraderTransaction:
         self.receiveAmountNotAccounted = receiveAmount
 
 class LiquidityTransaction:
-    def __init__(self, timestamp, action, poolAddress, poolAmount, coin1Type, coin1Amount, coin2Type, coin2Amount, fiatType='usd', coin1FiatValue=0, coin2FiatValue=0):
+    def __init__(self, txHash, timestamp, action, poolAddress, poolAmount, coin1Type, coin1Amount, coin2Type, coin2Amount, fiatType='usd', coin1FiatValue=0, coin2FiatValue=0):
+        self.txHash = txHash
         # timestamp of block when transaction was done
         self.timestamp = timestamp
         # deposit tokens or withdraw (LP tokens)
@@ -57,7 +60,8 @@ class LiquidityTransaction:
 
 # Records for Income
 class GardenerTransaction:
-    def __init__(self, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         # deposit, staking-reward, staking-reward-locked
         self.event = event
@@ -67,7 +71,8 @@ class GardenerTransaction:
         self.fiatValue = fiatValue
 
 class BankTransaction:
-    def __init__(self, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         # deposit or withdraw
         self.action = action
@@ -81,7 +86,8 @@ class BankTransaction:
         self.amountNotAccounted = coinAmount / xRate
 
 class AirdropTransaction:
-    def __init__(self, timestamp, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         self.tokenReceived = tokenReceived
         self.tokenAmount = tokenAmount
@@ -89,7 +95,8 @@ class AirdropTransaction:
         self.fiatValue = fiatValue
 
 class QuestTransaction:
-    def __init__(self, timestamp, rewardType, rewardAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, rewardType, rewardAmount=0, fiatType='usd', fiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         # what did we get on the quest, address of it
         self.rewardType = rewardType
@@ -98,7 +105,8 @@ class QuestTransaction:
         self.fiatValue = fiatValue
 
 class walletActivity:
-    def __init__(self, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         # deposit or withdraw
         self.action = action
@@ -111,7 +119,8 @@ class walletActivity:
         self.amountNotAccounted = coinAmount
 
 class AlchemistTransaction:
-    def __init__(self, timestamp, craftingType, craftingAmount=0, fiatType='usd', fiatValue=0, craftingCosts=0, costsFiatValue=0):
+    def __init__(self, txHash, timestamp, craftingType, craftingAmount=0, fiatType='usd', fiatValue=0, craftingCosts=0, costsFiatValue=0):
+        self.txHash = txHash
         self.timestamp = timestamp
         # what did we craft with alchemist, address of it
         self.craftingType = craftingType

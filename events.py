@@ -274,7 +274,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Failed to parse alchemist results tx {0}'.format(tx))
             # Native token wallet transfers
             elif 'Deposit from' in action and value > 0:
-                r = records.walletActivity(timestamp, 'deposit', result['from'], getNativeToken(network), value)
+                r = records.walletActivity(tx, timestamp, 'deposit', result['from'], getNativeToken(network), value)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                 events_map['wallet'].append(r)
                 eventsFound = True
@@ -288,7 +288,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
                     for log in decoded_logs:
                         logging.info('sendjewel: ' + str(log))
-                r = records.walletActivity(timestamp, 'withdraw', result['to'], '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', value)
+                r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', value)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                 events_map['wallet'].append(r)
                 eventsFound = True
@@ -321,7 +321,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         heroCrystals[log['args']['crystalId']][3] = max(heroId, heroCrystals[log['args']['crystalId']][3])
                         if heroCrystals[log['args']['crystalId']][2] > 0 and heroCrystals[log['args']['crystalId']][3] > 0:
                             heroPrice = Web3.fromWei(heroCrystals[log['args']['crystalId']][2], 'ether')
-                            r = records.TavernTransaction('hero', heroCrystals[log['args']['crystalId']][3], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', heroPrice)
+                            r = records.TavernTransaction(tx, 'hero', heroCrystals[log['args']['crystalId']][3], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', heroPrice)
                             r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
                             events_map['tavern'].append(r)
                             if settings.USE_CACHE:
@@ -351,7 +351,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         tokenName = contracts.address_map[log['address']]
                     if tokenValue > 0 and log['address'] in contracts.address_map:
                         logging.info('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, tokenName))
-                        r = records.walletActivity(timestamp, event, otherAddress, log['address'], tokenValue)
+                        r = records.walletActivity(tx, timestamp, event, otherAddress, log['address'], tokenValue)
                         r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
                         transfers.append(r)
                         events_map['wallet'].append(r)
@@ -437,11 +437,11 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
         if sentAmount > 0 and rcvdAmount > 0:
             if sentToken == '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': # TODO: make this an array including crystal when crystalvale launches
                 # Dumping xJewel and getting Jewel from bank
-                r = records.BankTransaction(timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
+                r = records.BankTransaction(txn, timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
             else:
                 # Depositing Jewel in the Bank for xJewel
-                r = records.BankTransaction(timestamp, 'deposit', sentAmount / rcvdAmount, sentToken, sentAmount)
+                r = records.BankTransaction(txn, timestamp, 'deposit', sentAmount / rcvdAmount, sentToken, sentAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
             return r
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
@@ -456,8 +456,8 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
     for log in decoded_logs:
         receivedAmount = Web3.fromWei(log['args']['amount'], 'ether')
         lockedAmount = Web3.fromWei(log['args']['lockAmount'], 'ether')
-        r = records.GardenerTransaction(timestamp, 'staking-reward', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', receivedAmount - lockedAmount)
-        rl = records.GardenerTransaction(timestamp, 'staking-reward-locked', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', lockedAmount)
+        r = records.GardenerTransaction(txn, timestamp, 'staking-reward', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', receivedAmount - lockedAmount)
+        rl = records.GardenerTransaction(txn, timestamp, 'staking-reward-locked', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', lockedAmount)
         jewelPrice = prices.priceLookup(timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
         r.fiatValue = jewelPrice * r.coinAmount
         rl.fiatValue = jewelPrice * rl.coinAmount
@@ -484,7 +484,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
                 gardenToken = log['address']
                 gardenAmount = Web3.fromWei(log['args']['value'], 'ether')
     if gardenAmount > 0:
-        r = records.GardenerTransaction(timestamp, gardenEvent, gardenToken, gardenAmount)
+        r = records.GardenerTransaction(txn, timestamp, gardenEvent, gardenToken, gardenAmount)
         events.append(r)
 
     return events
@@ -527,7 +527,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
             # simple 1 coin in 1 coin out swaps
-            r = records.TraderTransaction(timestamp, sentToken[0], rcvdToken[0], sentAmount[0], rcvdAmount[0])
+            r = records.TraderTransaction(txn, timestamp, sentToken[0], rcvdToken[0], sentAmount[0], rcvdAmount[0])
             fiatValues = getSwapFiatValues(timestamp, sentToken[0], sentAmount[0], rcvdToken[0], rcvdAmount[0])
             r.fiatSwapValue = fiatValues[0]
             r.fiatReceiveValue = fiatValues[1]
@@ -540,7 +540,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
             if len(sentToken) == 1 and len(rcvdToken) == 2:
                 # if sending 1 and receiving 2, it is withdraw, sending LP tokens, rcv 2 currency
                 logging.info('Liquidity withdraw event {2} send {0} rcvd {1}'.format(str(sentToken), str(rcvdToken), txn))
-                r = records.LiquidityTransaction(timestamp, 'withdraw', sentToken[0], sentAmount[0], rcvdToken[0], rcvdAmount[0], rcvdToken[1], rcvdAmount[1])
+                r = records.LiquidityTransaction(txn, timestamp, 'withdraw', sentToken[0], sentAmount[0], rcvdToken[0], rcvdAmount[0], rcvdToken[1], rcvdAmount[1])
                 fiatValues = getSwapFiatValues(timestamp, rcvdToken[0], rcvdAmount[0], rcvdToken[1], rcvdAmount[1])
                 r.coin1FiatValue = fiatValues[0]
                 r.coin2FiatValue = fiatValues[1]
@@ -548,7 +548,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
             elif len(rcvdToken) == 1 and len(sentToken) == 2:
                 # receiving LP tokens, sending 2 currencies is LP deposit
                 logging.info('Liquidity deposit event {2} send {0} rcvd {1}'.format(str(sentToken), str(rcvdToken), txn))
-                r = records.LiquidityTransaction(timestamp, 'deposit', rcvdToken[0], rcvdAmount[0], sentToken[0], sentAmount[0], sentToken[1], sentAmount[1])
+                r = records.LiquidityTransaction(txn, timestamp, 'deposit', rcvdToken[0], rcvdAmount[0], sentToken[0], sentAmount[0], sentToken[1], sentAmount[1])
                 fiatValues = getSwapFiatValues(timestamp, sentToken[0], sentAmount[0], sentToken[1], sentAmount[1])
                 r.coin1FiatValue = fiatValues[0]
                 r.coin2FiatValue = fiatValues[1]
@@ -613,9 +613,9 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
         if type(log['args']['generation']) is int:
             summoner = log['args']['summonerId']
             assistant = log['args']['assistantId']
-            rc = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
+            rc = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
-            r = records.TavernTransaction('hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
+            r = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
             logging.info('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
 
@@ -627,7 +627,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
             hiredHero = log['args']['tokenId']
             if assistant != 'unk':
                 hiredHero = assistant
-            rs = records.TavernTransaction('hero', hiredHero, 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
+            rs = records.TavernTransaction(txn, 'hero', hiredHero, 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             rs.seller = hiredFromAccount
             logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))
@@ -663,9 +663,9 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
     for log in complete_logs:
         heroID = log['args']['heroId']
         if type(heroID) is int:
-            rs = records.TavernTransaction('hero', heroID, 'levelup', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
+            rs = records.TavernTransaction(txn, 'hero', heroID, 'levelup', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
-            r = records.TavernTransaction('hero', heroID, 'meditate', timestamp, '0x66F5BfD910cd83d3766c4B39d13730C911b2D286', int(shvasAmount))
+            r = records.TavernTransaction(txn, 'hero', heroID, 'meditate', timestamp, '0x66F5BfD910cd83d3766c4B39d13730C911b2D286', int(shvasAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
             logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
     return [r, rs]
@@ -693,12 +693,12 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt):
     for log in decoded_logs:
         auctionPrice = Web3.fromWei(log['args']['totalPrice'], 'ether')
         logging.info("  {2}  Bought hero {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, log['args']['winner']))
-        r = records.TavernTransaction('hero', log['args']['tokenId'], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', auctionPrice)
+        r = records.TavernTransaction(txn, 'hero', log['args']['tokenId'], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', auctionPrice)
         r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
 
         if heroSeller != "":
             logging.info("  {2}  Sold hero {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, heroSeller))
-            rs = records.TavernTransaction('hero', log['args']['tokenId'], 'sale', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', sellerProceeds)
+            rs = records.TavernTransaction(txn, 'hero', log['args']['tokenId'], 'sale', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', sellerProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * rs.coinCost
             rs.seller = heroSeller
     return [r, rs]
@@ -715,7 +715,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt):
         logging.debug('AirdropClaim: ' + str(log))
         airdropAmount = Web3.fromWei(log['args']['amount'], 'ether')
         if log['args']['recipient'] == account:
-            r = records.AirdropTransaction(timestamp, 'jewel', airdropAmount)
+            r = records.AirdropTransaction(txn, timestamp, 'jewel', airdropAmount)
             r.fiatValue = prices.priceLookup(timestamp, 'defi-kingdoms') * r.tokenAmount
         return r
 
@@ -739,7 +739,7 @@ def extractQuestResults(w3, txn, timestamp, receipt):
             else:
                 logging.info('    Hero {2} on quest {3} got reward of {0} unknown({1})\n'.format(rewardQuantity, log['args']['rewardItem'], log['args']['heroId'], log['args']['questId']))
     for k, v in rewardTotals.items():
-        r = records.QuestTransaction(timestamp, k, v)
+        r = records.QuestTransaction(txn, timestamp, k, v)
         r.fiatValue = prices.priceLookup(timestamp, k) * v
         txns.append(r)
     return txns
@@ -776,7 +776,7 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt):
         ingredientList = ingredientList[:-2]
     # should be just 1 thing received, the potion, create the record if so
     if len(rcvdToken) == 1:
-        r = records.AlchemistTransaction(timestamp, rcvdToken[0], rcvdAmount[0])
+        r = records.AlchemistTransaction(txn, timestamp, rcvdToken[0], rcvdAmount[0])
         r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0])
         r.craftingCosts = ingredientList
         r.costsFiatValue = ingredientValue

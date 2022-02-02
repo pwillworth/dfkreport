@@ -8,7 +8,6 @@
 import sys
 import cgi
 import datetime
-import json
 from web3 import Web3
 sys.path.append("../")
 import transactions
@@ -20,42 +19,135 @@ import jsonpickle
 import logging
 
 
-def getResponseCSV(records, contentType):
+def getResponseCSV(records, contentType, format):
     taxRecords = records['taxes']
     eventRecords = records['events']
 
     if contentType == 'transaction':
-        # using 9 kind of genericized column headings and fit each records fields in where it makes most sense
-        response = 'category,block date,event,type 1,type 1 amount,type 2,type 2 amount,type 1 fiat value,type 2 fiat value\n'
+        # translate output based on req format
+        if format == 'koinlyuniversal':
+            response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
+        else:
+            # using 9 kind of genericized column headings and fit each records fields in where it makes most sense
+            response = 'category,block date,event,type 1,type 1 amount,type 2,type 2 amount,type 1 fiat value,type 2 fiat value,txHash\n'
         for record in eventRecords['tavern']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount),'\n'))
+            if format == 'koinlyuniversal':
+                if record.event == 'sale' or record.event == 'hire':
+                    sentAmount = ''
+                    sentType = ''
+                    rcvdAmount = record.coinCost
+                    rcvdType = contracts.getAddressName(record.coinType)
+                    if record.event == 'sale':
+                        label = 'realized gain'
+                    else:
+                        label = 'income'
+                else:
+                    sentAmount = record.coinCost
+                    sentType = contracts.getAddressName(record.coinType)
+                    rcvdAmount = ''
+                    rcvdType = ''
+                    label = 'cost'
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, '', '', str(record.fiatAmount), record.fiatType, label, 'Hero {0} {1}'.format(record.itemID, record.event), record.txHash, '\n'))
+            else:
+                response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount), record.txHash, '\n'))
         for record in eventRecords['swaps']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue),'\n'))
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, str(record.swapAmount), contracts.getAddressName(record.swapType), str(record.receiveAmount), contracts.getAddressName(record.receiveType), '', '', str(record.fiatSwapValue), record.fiatType, '', 'swap', record.txHash, '\n'))
+            else:
+                response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash,'\n'))
         for record in eventRecords['liquidity']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue),'\n'))
+            if format == 'koinlyuniversal':
+                if record.action == 'withdraw':
+                    sentAmount = record.poolAmount
+                    sentType = contracts.getAddressName(contracts.getAddressName(record.poolAddress))
+                    rcvdAmount = '{0}/{1}'.format(record.coin1Amount, record.coin2Amount)
+                    rcvdType = '{0}/{1}'.format(contracts.getAddressName(record.coin1Type), contracts.getAddressName(record.coin2Type))
+                else:
+                    sentAmount = '{0}/{1}'.format(record.coin1Amount, record.coin2Amount)
+                    sentType = '{0}/{1}'.format(contracts.getAddressName(record.coin1Type), contracts.getAddressName(record.coin2Type))
+                    rcvdAmount = record.poolAmount
+                    rcvdType = contracts.getAddressName(record.poolAddress)
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, '', '', str(record.coin1FiatValue + record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+            else:
+                response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue), record.txHash,'\n'))
         for record in eventRecords['gardens']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('gardens', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
+            if format == 'koinlyuniversal':
+                if record.event == 'staking-reward':
+                    label = 'reward'
+                else:
+                    label = 'ignored'
+                if record.event == 'deposit':
+                    sentAmount = record.coinAmount
+                    sentType = contracts.getAddressName(record.coinType)
+                    rcvdAmount = ''
+                    rcvdType = ''
+                else:
+                    sentAmount = ''
+                    sentType = ''
+                    rcvdAmount = record.coinAmount
+                    rcvdType = contracts.getAddressName(record.coinType)
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, '', '', str(record.fiatValue), record.fiatType, label, record.event, record.txHash, '\n'))
+            else:
+                response += ','.join(('gardens', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['bank']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue),'\n'))
+            if format == 'koinlyuniversal':
+                if record.action == 'deposit':
+                    sentAmount = record.coinAmount
+                    sentType = contracts.getAddressName(record.coinType)
+                    rcvdAmount = record.coinAmount / record.xRate
+                    rcvdType = 'xJewel'
+                else:
+                    sentAmount = record.coinAmount / record.xRate
+                    sentType = 'xJewel'
+                    rcvdAmount = record.coinAmount
+                    rcvdType = contracts.getAddressName(record.coinType)
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, '', '', str(record.fiatValue), record.fiatType, '', 'bank {0}'.format(record.action), record.txHash, '\n'))
+            else:
+                response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue), record.txHash,'\n'))
         for record in eventRecords['alchemist']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), record.craftingCosts, '', str(record.fiatValue), str(record.costsFiatValue),'\n'))
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, '', record.craftingCosts, str(record.craftingAmount), contracts.getAddressName(record.craftingType), '', '', str(record.fiatValue), record.fiatType, 'ignored', 'potion crafting', record.txHash, '\n'))
+            else:
+                response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), record.craftingCosts, '', str(record.fiatValue), str(record.costsFiatValue), record.txHash,'\n'))
         for record in eventRecords['airdrops']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '','\n'))
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, '', '', str(record.tokenAmount), contracts.getAddressName(record.tokenReceived), '', '', str(record.fiatValue), record.fiatType, 'airdrop', '', record.txHash, '\n'))
+            else:
+                response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['quests']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '','\n'))
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, '', '', str(record.rewardAmount), contracts.getAddressName(record.rewardType), '', '', str(record.fiatValue), record.fiatType, 'reward', 'quest', record.txHash, '\n'))
+            else:
+                response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['wallet']:
             blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%m:%S %Z")
-            response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '','\n'))
+            if format == 'koinlyuniversal':
+                if record.action == 'deposit':
+                    sentAmount = ''
+                    sentType = ''
+                    rcvdAmount = record.coinAmount
+                    rcvdType = contracts.getAddressName(record.coinType)
+                else:
+                    sentAmount = record.coinAmount
+                    sentType = contracts.getAddressName(record.coinType)
+                    rcvdAmount = ''
+                    rcvdType = ''
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, '', '', str(record.fiatValue), record.fiatType, '', 'wallet transfer', record.txHash, '\n'))
+            else:
+                response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
     else:
-        response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted\n'
+        if format == 'koinlyuniversal':
+            response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
+        else:
+            response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted,txHash\n'
 
         for record in taxRecords:
             acquiredDateStr = ''
@@ -64,7 +156,27 @@ def getResponseCSV(records, contentType):
                 acquiredDateStr = record.acquiredDate.strftime('%Y-%m-%d')
             if record.soldDate != None:
                 soldDateStr = record.soldDate.strftime('%Y-%m-%d')
-            response += ','.join((record.category,record.description,acquiredDateStr,soldDateStr,str(record.proceeds),str(record.costs),str(record.get_gains()),record.term,str(record.amountNotAccounted), '\n'))
+            if format == 'koinlyuniversal':
+                # translate for koinly labels https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
+                label = ''
+                if record.description.startswith('Sold Hero '):
+                    label = 'realized gain'
+                elif record.description.startswith('Hero '):
+                    # skip stuff with proceeds in the expenses because it is already listed in gains
+                    if record.category == 'expenses' and record.proceeds > 0:
+                        continue
+                    else:
+                        label = 'cost'
+                elif record.category == 'income':
+                    label = 'reward'
+
+                if record.soldDate != None:
+                    eventDateStr = record.soldDate.strftime('%Y-%m-%d %H:%m:%S %Z')
+                else:
+                    eventDateStr = record.acquiredDate.strftime('%Y-%m-%d %H:%m:%S %Z')
+                response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.rcvdAmount), contracts.getAddressName(record.rcvdType), '0', '', str(record.proceeds), record.fiatType, label, record.description, record.txHash, '\n'))
+            else:
+                response += ','.join((record.category,record.description,acquiredDateStr,soldDateStr,str(record.proceeds),str(record.costs),str(record.get_gains()),record.term,str(record.amountNotAccounted), record.txHash, '\n'))
 
     return response
 
@@ -154,6 +266,8 @@ costBasis = form.getfirst('costBasis', 'fifo')
 formatType = form.getfirst('formatType', '')
 # can be tax or transaction, only used for CSV
 contentType = form.getfirst('contentType', '')
+# can by koinlyuniversal or anything else for default
+csvFormat = form.getfirst('csvFormat', 'manual')
 # can be any event group to return only that group of events instead of all
 eventGroup = form.getfirst('eventGroup', 'all')
 failure = False
@@ -210,7 +324,7 @@ if not failure:
                 with open('../reports/{0}'.format(status[9]), 'rb') as file:
                     results = pickle.load(file)
                 if formatType == 'csv':
-                    response = getResponseCSV(results, contentType)
+                    response = getResponseCSV(results, contentType, csvFormat)
                 else:
                     response = getResponseJSON(results, contentType, eventGroup)
         elif status[5] == 8:
