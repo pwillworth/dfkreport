@@ -67,8 +67,11 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     events = jsonpickle.decode(checkCache[3])
                     if type(events) is list:
                         for evt in events:
+                            evt.txHash = tx
                             events_map[checkCache[2]].append(evt)
                     else:
+                        # cache records saved before feb 2022 did not have txHash property
+                        events.txHash = tx
                         events_map[checkCache[2]].append(events)
                 txCount += 1
                 continue
