@@ -19,7 +19,7 @@ def handleLogs(w3, event):
         results = events.extractAuctionResults(w3, tx, None, timestamp, receipt)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
-    elif event['address'] == '0x65DEA93f7b886c33A78c10343267DD39727778c2':
+    elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355']:
         results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
         if results != None and type(results) != int and len(results) > 2 and results[2] != None:
             if db.findTransaction(tx, results[2].seller) == None:
@@ -51,7 +51,7 @@ def main():
         logging.error("No last checked block using default")
         blockNumber = 22036051
 
-    logging.info('Getting events from block {0} through {1}'.format(str(blockNumber), 'latest'))
+    logging.warning('Getting events from block {0} through {1}'.format(str(blockNumber), 'latest'))
     # create a filter for unsearched blocks of auction house and summoning portal contracts
     with open('abi/SaleAuction.json', 'r') as f:
         ABI = f.read()
