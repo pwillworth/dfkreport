@@ -327,6 +327,13 @@ if not failure:
                     response = getResponseCSV(results, contentType, csvFormat)
                 else:
                     response = getResponseJSON(results, contentType, eventGroup)
+        elif status[5] == 7:
+            # too busy right now
+            logging.warning('responding report too busy for {0}'.format(str(status)))
+            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
+            response = ''.join(('{ \n', '  "response" : "Unfortunately too many people are generating reports right now.  Please try again later!"\n', '}'))
+            logging.warning(response)
+            failure = True
         elif status[5] == 8:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))
@@ -350,24 +357,18 @@ if not failure:
             failure = True
         else:
             # report is not ready
-            if status[10] == None:
-                # too busy right now
-                logging.warning('responding report too busy for {0}'.format(str(status)))
-                db.deleteReport(status[0], status[1], status[2], status[8], status[9])
-                response = ''.join(('{ \n', '  "response" : "Unfortunately too many people are generating reports right now.  Please try again later!"\n', '}'))
-                logging.warning(response)
-                failure = True
+            response = '{ "response" : {\n'
+            if status[5] == 0:
+                response += '  "status" : "fetchingtx",\n '
+            elif status[5] == None:
+                response += '  "status" : "initiated",\n '
             else:
-                response = '{ "response" : {\n'
-                if status[5] == 0:
-                    response += '  "status" : "fetchingtx",\n '
-                else:
-                    response += '  "status" : "generating",\n '
-                response += '  "transactionsFetched" : {0},\n '.format(status[6])
-                response += '  "transactionsComplete" : {0},\n '.format(status[7])
-                response += '  "transactionsTotal" : {0},\n '.format(status[4])
-                response += '  "startedOn" : {0}\n   '.format(status[3])
-                response += '  }\n}'
+                response += '  "status" : "generating",\n '
+            response += '  "transactionsFetched" : {0},\n '.format(status[6])
+            response += '  "transactionsComplete" : {0},\n '.format(status[7])
+            response += '  "transactionsTotal" : {0},\n '.format(status[4])
+            response += '  "startedOn" : {0}\n   '.format(status[3])
+            response += '  }\n}'
     elif len(status) == 5:
         response = '{ "response" : {\n'
         response += '  "status" : "initiated",\n '

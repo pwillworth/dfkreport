@@ -19,6 +19,7 @@ token_map = {
     '0xFbdd194376de19a88118e84E279b977f165d01b8': 'matic-network',
     '0x735aBE48e8782948a37C7765ECb76b98CdE97B0F': 'fantom',
     '0xCf1709Ad76A79d5a60210F23e81cE2460542A836': 'tranquil-finance',
+    '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms'

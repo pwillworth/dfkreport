@@ -39,6 +39,9 @@ def main():
                     logging.info('Started report generation process')
                     time.sleep(1)
                     logging.debug('done waiting 1s')
+                else:
+                    db.updateReportError(row[0], row[1], row[2], 7)
+                    logging.info('Update report too busy for {0}'.format(row[0]))
             else:
                 logging.debug('No report records waiting')
         else:
