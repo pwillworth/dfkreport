@@ -93,31 +93,45 @@ def costBasisSort(eventList, costBasis):
     else:
         return eventList
 
-# Generate Trader Auction House Tax records from the events
+# Generate Auction House Tax records from the events
 def buildTavernRecords(tavernEvents, startDate, endDate):
     results = []
     heroExpenses = {}
     heroIncome = {}
-    # Grab a list of all hero purchases, summons, and levelups to list as expenses
+    landExpenses = {}
+    # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if (event.event in ['purchase','summon','crystal','meditate','levelup']) and eventDate >= startDate and eventDate <= endDate:
-            if event.itemID in heroExpenses:
-                if event.event in heroExpenses[event.itemID].description:
-                    heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+        if event.event in ['purchase','summon','crystal','meditate','levelup'] and eventDate >= startDate and eventDate <= endDate:
+            if event.itemType == 'land':
+                if event.itemID in landExpenses:
+                    if event.event in landExpenses[event.itemID].description:
+                        landExpenses[event.itemID].description = landExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+                    else:
+                        landExpenses[event.itemID].description += ''.join((' ', event.event))
+                    landExpenses[event.itemID].costs += event.fiatAmount
+                    if landExpenses[event.itemID].acquiredDate == None or eventDate < landExpenses[event.itemID].acquiredDate:
+                        landExpenses[event.itemID].acquiredDate = eventDate
                 else:
-                    heroExpenses[event.itemID].description += ''.join((' ', event.event))
-                heroExpenses[event.itemID].costs += event.fiatAmount
-                if heroExpenses[event.itemID].acquiredDate == None or eventDate < heroExpenses[event.itemID].acquiredDate:
-                    heroExpenses[event.itemID].acquiredDate = eventDate
+                    ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
+                    landExpenses[event.itemID] = ti
             else:
-                ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', 'Hero {0} {1}'.format(event.itemID, event.event), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
-                heroExpenses[event.itemID] = ti
+                if event.itemID in heroExpenses:
+                    if event.event in heroExpenses[event.itemID].description:
+                        heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+                    else:
+                        heroExpenses[event.itemID].description += ''.join((' ', event.event))
+                    heroExpenses[event.itemID].costs += event.fiatAmount
+                    if heroExpenses[event.itemID].acquiredDate == None or eventDate < heroExpenses[event.itemID].acquiredDate:
+                        heroExpenses[event.itemID].acquiredDate = eventDate
+                else:
+                    ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
+                    heroExpenses[event.itemID] = ti
 
     # Grab a list of all hero hires to list as income
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if (event.event in ['hire']) and eventDate >= startDate and eventDate <= endDate:
+        if event.event in ['hire'] and eventDate >= startDate and eventDate <= endDate:
             if event.itemID in heroIncome:
                 if event.event in heroIncome[event.itemID].description:
                     heroIncome[event.itemID].description = heroIncome[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
@@ -137,11 +151,14 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create a tax record for any sale event in the requested range
         if event.event == 'sale' and eventDate >= startDate and eventDate <= endDate:
-            ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Sold Hero {0}'.format(event.itemID), 'gains', eventDate, event.fiatType, event.fiatAmount)
+            ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Sold {1} {0}'.format(event.itemID, event.itemType), 'gains', eventDate, event.fiatType, event.fiatAmount)
             ti.amountNotAccounted = 1
-            # Check hero cost data so gains can be calculated
-
-            for k, v in heroExpenses.items():
+            # Check NFT cost data so gains can be calculated
+            if event.itemType == 'land':
+                expenseList = landExpenses
+            else:
+                expenseList = heroExpenses
+            for k, v in expenseList.items():
                 if k == event.itemID and v.acquiredDate <= eventDate:
                     if ti.acquiredDate == None:
                         ti.acquiredDate = v.acquiredDate
@@ -151,7 +168,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                         ti.term = "long"
                     v.proceeds = event.fiatAmount
             results.append(ti)
-
+    for k, v in landExpenses.items():
+        results.append(v)
     for k, v in heroExpenses.items():
         results.append(v)
     for k, v in heroIncome.items():

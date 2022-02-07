@@ -13,6 +13,7 @@ token_map = {
     '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'harmony',
     '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'defi-kingdoms',
     '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'usd-coin',
+    '0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664': 'usd-coin',
     '0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f': 'tether',
     '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9': 'bitcoin',
     '0x6983D1E6DEf3690C4d616b13597A09e6193EA013': 'ethereum',
@@ -22,7 +23,8 @@ token_map = {
     '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
-    '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms'
+    '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms',
+    '0x60781C2586D68229fde47564546784ab3fACA982': 'pangolin'
 }
 
 today_prices = {}

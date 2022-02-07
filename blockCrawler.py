@@ -24,8 +24,8 @@ def handleLogs(w3, event):
         results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
-    # Two possible addresses for summoning portal
-    elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355']:
+    # Three possible addresses for summoning portal
+    elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355','0xa2D001C829328aa06a2DB2740c05ceE1bFA3c6bb']:
         results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
         if results != None and type(results) != int and len(results) > 2 and results[2] != None:
             if db.findTransaction(tx, results[2].seller) == None:
