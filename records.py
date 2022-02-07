@@ -4,7 +4,7 @@
 class TavernTransaction:
     def __init__(self, txHash, itemType, itemID, event, timestamp, coinType, coinCost=0, fiatType='usd', fiatAmount=0, seller=''):
         self.txHash = txHash
-        # hero or pet
+        # hero or pet or land
         self.itemType = itemType
         self.itemID = itemID
         # purchase/sale/hire/summon/crystal

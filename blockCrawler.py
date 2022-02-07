@@ -15,10 +15,16 @@ def handleLogs(w3, event):
     tx = event['transactionHash'].hex()
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
     receipt = w3.eth.get_transaction_receipt(tx)
-    if event['address'] == '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892':
-        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt)
+    # Heroes or Lands
+    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547']:
+        if event['address'] == '0x77D991987ca85214f9686131C58c1ABE4C93E547':
+            auctionType = 'land'
+        else:
+            auctionType = 'hero'
+        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
+    # Two possible addresses for summoning portal
     elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355']:
         results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
         if results != None and type(results) != int and len(results) > 2 and results[2] != None:

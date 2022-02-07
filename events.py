@@ -116,8 +116,22 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account)
                 else:
                     logging.info('{0} quest with no rewards.'.format(tx))
-            elif 'Auction' in action:
-                results = extractAuctionResults(w3, tx, account, timestamp, receipt)
+            elif 'AuctionHouse' in action:
+                results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'hero')
+                if results != None and results[0] != None:
+                    events_map['tavern'].append(results[0])
+                    eventsFound = True
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account)
+                else:
+                    logging.info('Ignored an auction interaction, probably listing.')
+                # Second record is to be saved in db and will be looked up when seller runs thier tax report
+                # All of these get populated by running a report for the Tavern Address though, so we need to
+                # skip if record has already been created.
+                if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
+                    db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
+            elif 'LandAuction' in action:
+                results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'land')
                 if results != None and results[0] != None:
                     events_map['tavern'].append(results[0])
                     eventsFound = True
@@ -596,7 +610,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
         if log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
             jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
             # capture transfer amount to other player so we can create a record for thier gains
-            if log['args']['to'] not in contracts.summon_fee_targets:
+            if log['args']['to'] not in contracts.tx_fee_targets:
                 hiringProceeds = Web3.fromWei(log['args']['value'], 'ether')
                 hiredFromAccount = log['args']['to']
         else:
@@ -673,9 +687,10 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
             logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
     return [r, rs]
 
-def extractAuctionResults(w3, txn, account, timestamp, receipt):
+def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     # Get the seller data
-    heroSeller = ""
+    auctionSeller = ""
+    auctionToken = ""
     sellerProceeds = decimal.Decimal(0.0)
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
@@ -683,8 +698,9 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt):
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.debug('Jewel transfer for auction from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value']))
-        if log['args']['to'] not in contracts.summon_fee_targets:
-            heroSeller = log['args']['to']
+        if log['args']['to'] not in contracts.tx_fee_targets:
+            auctionSeller = log['args']['to']
+            auctionToken = log['address']
             sellerProceeds = Web3.fromWei(log['args']['value'], 'ether')
 
     with open('abi/SaleAuction.json', 'r') as f:
@@ -695,15 +711,15 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt):
     rs = None
     for log in decoded_logs:
         auctionPrice = Web3.fromWei(log['args']['totalPrice'], 'ether')
-        logging.info("  {2}  Bought hero {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, log['args']['winner']))
-        r = records.TavernTransaction(txn, 'hero', log['args']['tokenId'], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', auctionPrice)
-        r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
+        logging.info("  {2}  Bought {3} {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, log['args']['winner'], auctionType))
+        r = records.TavernTransaction(txn, auctionType, log['args']['tokenId'], 'purchase', timestamp, auctionToken, auctionPrice)
+        r.fiatAmount = prices.priceLookup(timestamp, auctionToken) * r.coinCost
 
-        if heroSeller != "":
-            logging.info("  {2}  Sold hero {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, heroSeller))
-            rs = records.TavernTransaction(txn, 'hero', log['args']['tokenId'], 'sale', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', sellerProceeds)
-            rs.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * rs.coinCost
-            rs.seller = heroSeller
+        if auctionSeller != "":
+            logging.info("  {2}  Sold {3} {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, auctionSeller, auctionType))
+            rs = records.TavernTransaction(txn, auctionType, log['args']['tokenId'], 'sale', timestamp, auctionToken, sellerProceeds)
+            rs.fiatAmount = prices.priceLookup(timestamp, auctionToken) * rs.coinCost
+            rs.seller = auctionSeller
     return [r, rs]
 
 def extractAirdropResults(w3, txn, account, timestamp, receipt):
