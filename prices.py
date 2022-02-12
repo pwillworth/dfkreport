@@ -49,9 +49,13 @@ def fetchPriceData(token, date):
         r = requests.get(gecko_uri)
         if r.status_code == 200:
             result = r.json()
-            prices = result['market_data']['current_price']
-            marketcap = result['market_data']['market_cap']
-            volume = result['market_data']['total_volume']
+            try:
+                prices = result['market_data']['current_price']
+                marketcap = result['market_data']['market_cap']
+                volume = result['market_data']['total_volume']
+            except Exception as err:
+                result = "Error: failed to get prices no market data {0}".format(r.text)
+                logging.error(result + '\n')
             db.savePriceData(date, token, json.dumps(prices), json.dumps(marketcap), json.dumps(volume))
             logging.info('Saved a new price for {0} on {1} from coin gecko'.format(token, date))
             result = prices
