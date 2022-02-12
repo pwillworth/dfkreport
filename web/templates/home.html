@@ -86,8 +86,11 @@ function switchView(view) {
   }
 }
 function clearReports() {
-  $(".taxTable").html('<tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
+  $(".taxTable").html('<tr><th>Description</th><th>Acquired Date</th><th>Event Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
   event_groups.forEach(txGroupReset);
+  $('#paymentsTotalValue').html('');
+  paymentsTotal = 0;
+  paymentsTotalValue = 0;
 }
 function txGroupReset(value) {
   $('#tx_' + value + '_data').html('');
@@ -293,6 +296,12 @@ function downloadDone() {
         <div id="reportPercent"></div>
       </div>
       <div id="summaryReport" style="display: none;">
+        <div id="paymentsTotal" class="summaryBox" style="width:95%;height:40px;" title="Totals your Jewel income from payments, airdrops, staking, and quests.">
+          <h3 style="font-size:28px;">
+          <span>Total Income from Payments: </span>
+          <span id="paymentsTotalValue"></span>
+          </h3>
+        </div>
         <div id="quests_summary" class="summaryBox inlineBlock" style="height: 680px;">
           <div id="smy_quests_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="smyIcon" /><span>Quest</span></div>
           <div id="smy_quests_data"></div>
@@ -338,7 +347,7 @@ function downloadDone() {
         </table>
         <h2 id="tax_income_header">Income</h2>
         <table id="tax_income_data" class="taxTable" style="display: none;">
-          <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+          <tr><th>Description</th><th>Acquired Date</th><th>Income Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
         </table>
         <h2 id="tax_expenses_header">Expenses <span style="font-size: 10px;font-style:italic;">(Proceeds here are already represented above, this section is just informational to show potential unrealized gains.)</span></h2>
         <table id="tax_expenses_data" class="taxTable" style="display: none;">

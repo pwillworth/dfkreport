@@ -186,6 +186,20 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     eventsFound = True
                 if settings.USE_CACHE and len(results) > 0:
                     db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
+            elif 'Payment Service' in action:
+                # Some payment distributions do not get associated to users wallet, so populate record in db for recipient
+                # these transactions are discovered by block crawler
+                results = extractAirdropResults(w3, tx, account, timestamp, receipt)
+                for item in results:
+                    recipientAccount = ''
+                    for item in results:
+                        if recipientAccount not in ['', item.address]:
+                            logging.error('Bailing from multi recipient payment {0}'.format(tx))
+                            continue
+                        recipientAccount = item.address
+                        item.address = result['from']
+                    if recipientAccount != '' and db.findTransaction(tx, recipientAccount) == None:
+                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
             elif result['input'] != '0x' and 'xJewel' in action:
@@ -366,18 +380,6 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     eventsFound = True
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                         db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account)
-                        # Some payment distributions do not get associated to users wallet, so populate record in db for recipient
-                        if result['from'] in contracts.payment_wallets and account == result['from']:
-                            recipientAccount = ''
-                            for item in results:
-                                if recipientAccount not in ['', item.address]:
-                                    logging.error('Bailing from multi recipient payment {0}'.format(tx))
-                                    continue
-                                item.action = 'payment'
-                                recipientAccount = item.address
-                                item.address = result['from']
-                            if recipientAccount != '' and db.findTransaction(tx, recipientAccount) == None:
-                                db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), recipientAccount)
                 else:
                     logging.info('Got no results from anything tx {0}'.format(tx))
         else:
@@ -766,17 +768,25 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     return [r, rs]
 
 def extractAirdropResults(w3, txn, account, timestamp, receipt):
-    # Create record of the alchemist crafting activity with total costs
+    # Create record of the airdrop tokens received
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdTokens = {}
     results = []
+    address = ''
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
+                address = log['args']['from']
+                if log['address'] in rcvdTokens:
+                    rcvdTokens[log['address']] += valueFromWei(log['args']['value'], log['address'])
+                else:
+                    rcvdTokens[log['address']] = valueFromWei(log['args']['value'], log['address'])
+            elif log['args']['from'] == account:
+                address = log['args']['to']
                 if log['address'] in rcvdTokens:
                     rcvdTokens[log['address']] += valueFromWei(log['args']['value'], log['address'])
                 else:
@@ -785,8 +795,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt):
                 logging.info('ignored airdrop log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
     for k, v in rcvdTokens.items():
         logging.info('AirdropClaimed: {0} {1}'.format(v, k))
-        airdropAmount = v
-        r = records.AirdropTransaction(txn, timestamp, k, airdropAmount)
+        r = records.AirdropTransaction(txn, timestamp, address, k, v)
         r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
         results.append(r)
     return results

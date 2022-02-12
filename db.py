@@ -97,7 +97,7 @@ def getTavernSales(wallet, startDate, endDate):
     return sales
 
 # Look up and return any transaction events where wallet was paid through Jewel contract
-def getWalletPayments(wallet, currentEvents):
+def getWalletPayments(wallet):
     payments = []
     try:
         con = aConn()
@@ -105,17 +105,17 @@ def getWalletPayments(wallet, currentEvents):
     except Exception as err:
         logging.error('DB error trying to look up wallet payments. {0}'.format(str(err)))
     if con != None and con.open:
-        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='wallet'", (wallet))
+        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='airdrops'", (wallet))
         row = cur.fetchone()
         while row != None:
             r = jsonpickle.decode(row[3])
             if type(r) is list:
                 for item in r:
-                    if type(item) is records.walletActivity and item.action == 'payment' and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                    if type(item) is records.AirdropTransaction and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
                         payments.append(item)
             else:
-                if type(item) is records.walletActivity and item.action == 'payment' and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
-                        payments.append(item)
+                if type(item) is records.AirdropTransaction and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                    payments.append(item)
             row = cur.fetchone()
 
         con.close()

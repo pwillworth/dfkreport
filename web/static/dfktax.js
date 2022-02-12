@@ -42,8 +42,8 @@ var address_map = {
   '0x14A7B318fED66FfDcc80C1517C172c13852865De': '1AXS',
   '0xA5445d24E5dbF641f76058CD7a95b1c402Eb97b5': 'bscTLM',
   '0x2A719aF848bf365489E548BE5edbEC1D65858e59': 'Fira',
-  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'stONE',
-  '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'stONE2',
+  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'Tranquil ONE Staking',
+  '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'stONE',
   '0x093956649D43f23fe4E7144fb1C3Ad01586cCf1e': 'Jewel LP Token AVAX/Jewel',
   '0xEb579ddcD49A7beb3f205c9fF6006Bb6390F138f': 'Jewel LP Token ONE/Jewel',
   '0xFdAB6B23053E22b74f21ed42834D7048491F8F32': 'Jewel LP Token ONE/xJewel',
@@ -103,6 +103,7 @@ var address_map = {
   '0x24ad62502d1C652Cc7684081169D04896aC20f30': 'UniswapV2Router02 Serendale',
   '0xf012702a5f0e54015362cBCA26a26fc90AA832a3': 'UniswapV2Router02 VenomSwap',
   '0xcEEB22Faf32FF4EAd24565225503807e41E5FE87': 'Uniswap SonicSwap',
+  '0x481721B918c698ff5f253c56684bAC8dCa84346c': '1BTC Bridge',
   '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'Jewel',
   '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': 'xJewels',
   '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'USD Coin',
@@ -117,6 +118,12 @@ var address_map = {
   '0x77D991987ca85214f9686131C58c1ABE4C93E547': 'LandAuction',
   '0xD5f5bE1037e457727e011ADE9Ca54d21c21a3F8A': 'Land',
   '0xa678d193fEcC677e137a00FEFb43a9ccffA53210': 'Airdrop',
+  '0x8AbEbcDBF5AF9FC602814Eabf6Fbf952acF682A2': 'Airdrop Bounties',
+  '0x2b12D9A2480D6Dd9F71DabAa366C87134195b679': 'Airdrop Payments Portal',
+  '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C': 'Payment Service',
+  '0xa4b9A93013A5590dB92062CF58D4b0ab4F35dBfB': 'Dev Fund',
+  '0x1e3B6b278BA3b340d4BE7321e9be6DfeD0121Eac': 'Old Dev Fund',
+  '0x3875e5398766a29c1B28cC2068A0396cba36eF99': 'Marketing Fund',
   '0xabD4741948374b1f5DD5Dd7599AC1f85A34cAcDD': 'Profiles',
   '0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4': 'Serendale Quest',
   '0x3132c76acF2217646fB8391918D28a16bD8A8Ef4': 'Foraging Quest',
@@ -173,8 +180,18 @@ var address_map = {
   '0x1f806f7C8dED893fd3caE279191ad7Aa3798E928': 'Pangolin Farms V2',
   '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
   '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX'
-}
+};
 event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops'];
+paymentsTotal = 0;
+paymentsTotalValue = 0;
+
+// Update running total summary of airdrop/payment income
+function updatePaymentTotal(addAmount, addValue) {
+  paymentsTotal += addAmount;
+  paymentsTotalValue += addValue;
+  $("#paymentsTotalValue").html(paymentsTotal.toFixed(3) + " Jewel (" + usdFormat.format(paymentsTotalValue) + ")");
+  $("#paymentsTotal").show();
+}
 
 // Populates the transaction data that was generated into the page
 function loadReport(results, contentType, eventGroup='all') {
@@ -423,6 +440,10 @@ function loadGardensEvents(gardensEvents) {
     } else {
       gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] = Number(coinAmount);
     }
+    // Maintain header total of Jewel income
+    if (fiatValue > 0 && gardensEvents[i].coinType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+      updatePaymentTotal(Number(coinAmount), Number(fiatValue));
+    }
     $('#tx_gardens_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
@@ -520,6 +541,7 @@ function loadAlchemistEvents(alchemistEvents) {
 function loadAirdropEvents(airdropEvents) {
   // Populate the transaction list with Airdrop events
   var airdropTotals = {};
+  var airdropValues = {};
   $("#tx_airdrops_data").html('<tr><th>Block Date</th><th>Location</th><th>Token Type</th><th>Token Amount</th><th>Token USD Value</th></tr>');
   for (var i = 0; i < airdropEvents.length; i++) {
     var eventDate = new Date(airdropEvents[i].timestamp * 1000)
@@ -531,10 +553,14 @@ function loadAirdropEvents(airdropEvents) {
     if (airdropEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = airdropEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
+    var location = 'Airdrop'
+    if (airdropEvents[i].address != undefined && airdropEvents[i].address in address_map) {
+      location = address_map[airdropEvents[i].address]
+    }
     $('#tx_airdrops_data').show();
     $('#tx_airdrops_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + 'Airdrop' + '</td>' +
+      '<td>' + location + '</td>' +
       '<td>' + address_map[airdropEvents[i].tokenReceived] + '</td>' +
       '<td>' + tokenAmount + '</td>' +
       '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
@@ -544,12 +570,21 @@ function loadAirdropEvents(airdropEvents) {
     } else {
       airdropTotals[address_map[airdropEvents[i].tokenReceived]] = Number(tokenAmount);
     }
+    if ( address_map[airdropEvents[i].tokenReceived] in airdropValues ) {
+      airdropValues[address_map[airdropEvents[i].tokenReceived]] += Number(fiatValue);
+    } else {
+      airdropValues[address_map[airdropEvents[i].tokenReceived]] = Number(fiatValue);
+    }
+    // Maintain header total of Jewel income
+    if (fiatValue > 0 && airdropEvents[i].tokenReceived == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+      updatePaymentTotal(Number(tokenAmount), Number(fiatValue));
+    }
     $('#tx_airdrops_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin
-  var airdropTable = '<table><tr><th>token</th><th>Total of Airdrops</th></tr>';
+  var airdropTable = '<table><tr><th>token</th><th>Total of Airdrops</th><th>USD Value</th></tr>';
   for (let k in airdropTotals) {
-    airdropTable = airdropTable + '<tr><td>' + k + '</td><td>' + airdropTotals[k].toFixed(3) + '</td></tr>';
+    airdropTable = airdropTable + '<tr><td>' + k + '</td><td>' + airdropTotals[k].toFixed(3) + '</td><td>' + usdFormat.format(airdropValues[k]) + '</td></tr>';
   }
   $("#smy_airdrops_data").html(airdropTable + '</table>');
 }
@@ -580,6 +615,10 @@ function loadQuestEvents(questEvents) {
       questTotals[address_map[questEvents[i].rewardType]] += rewardAmount;
     } else {
       questTotals[address_map[questEvents[i].rewardType]] = rewardAmount;
+    }
+    // Maintain header total of Jewel income
+    if (fiatValue > 0 && questEvents[i].rewardType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+      updatePaymentTotal(Number(rewardAmount), Number(fiatValue));
     }
     $('#tx_quests_count').html(' (' + (i + 1) + ')');
   }
@@ -626,6 +665,10 @@ function loadWalletEvents(walletEvents) {
       } else {
         walletTotals[address_map[walletEvents[i].coinType]] = [0, coinAmount];
       }
+    }
+    // Maintain header total of jewel income
+    if (walletEvents[i].action == 'payment' && walletEvents[i].coinType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F' && fiatValue > 0) {
+      updatePaymentTotal(Number(coinAmount), Number(fiatValue));
     }
     $('#tx_wallet_count').html(' (' + (i + 1) + ')');
   }

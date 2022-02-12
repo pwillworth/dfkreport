@@ -52,16 +52,16 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
-    # Look up wallet payments distributed by interacting with Jewel contract also
-    eventMap['wallet'] += eventMapAvax['wallet'] + db.getWalletPayments(account, eventMap['wallet'])
+    eventMap['wallet'] += eventMapAvax['wallet']
     eventMap['bank'] += eventMapAvax['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
     eventMap['quests'] += eventMapAvax['quests']
     eventMap['alchemist'] += eventMapAvax['alchemist']
-    eventMap['airdrops'] += eventMapAvax['airdrops']
+    # Look up wallet payments distributed by interacting with Jewel contract also
+    eventMap['airdrops'] += eventMapAvax['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
-    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], costBasis)
+    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], costBasis)
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
     bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
@@ -178,9 +178,9 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
         results.append(v)
     return results
 
-def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
+def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, costBasis):
     results = []
-    #TODO Also search income for cost basis like payments and staking rewards
+    #TODO Also search income for cost basis like bank gains and staking rewards
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
         # questionable where to draw the line between game and currency trades
@@ -211,6 +211,69 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
                         searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
                         event.swapAmountNotAccounted = 0
                         break
+            # Also run through airdrop transactions to try and fill remaining gaps in received value accounting
+            if event.swapAmountNotAccounted > 0:
+                for airdropEvent in airdropEvents:
+                    airdropEventDate = datetime.date.fromtimestamp(airdropEvent.timestamp)
+                    # This can be removed after a clean of airdrops cached records
+                    if not hasattr(airdropEvent, 'amountNotAccounted'):
+                        airdropEvent.amountNotAccounted = airdropEvent.tokenAmount
+                    if event.swapType == airdropEvent.tokenReceived and airdropEvent.amountNotAccounted > 0 and airdropEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
+                        if ti.acquiredDate == None:
+                            ti.acquiredDate = airdropEventDate
+                        if airdropEvent.amountNotAccounted <= event.swapAmountNotAccounted:
+                            # use up all receive transaction amount and update amount left to match still
+                            ti.costs += airdropEvent.fiatValue * (airdropEvent.amountNotAccounted / airdropEvent.tokenAmount)
+                            event.swapAmountNotAccounted -= airdropEvent.amountNotAccounted
+                            airdropEvent.amountNotAccounted = 0
+                        else:
+                            # use up as much of recieve transaction as swap was for and update amount left to account for on receive
+                            ti.costs += (airdropEvent.fiatValue / airdropEvent.amountNotAccounted) * event.swapAmountNotAccounted
+                            event.swapAmountNotAccounted = 0
+                            airdropEvent.amountNotAccounted -= event.swapAmountNotAccounted
+                            break
+            # Also run through garden/farming staking reward transactions to try and fill remaining gaps in received value accounting
+            if event.swapAmountNotAccounted > 0:
+                for gardensEvent in gardensEvents:
+                    gardensEventDate = datetime.date.fromtimestamp(gardensEvent.timestamp)
+                    # This can be removed after a clean of gardens cached records
+                    if not hasattr(gardensEvent, 'amountNotAccounted'):
+                        gardensEvent.amountNotAccounted = gardensEvent.coinAmount
+                    if event.swapType == gardensEvent.coinType and gardensEvent.amountNotAccounted > 0 and gardensEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
+                        if ti.acquiredDate == None:
+                            ti.acquiredDate = gardensEventDate
+                        if gardensEvent.amountNotAccounted <= event.swapAmountNotAccounted:
+                            # use up all receive transaction amount and update amount left to match still
+                            ti.costs += gardensEvent.fiatValue * (gardensEvent.amountNotAccounted / gardensEvent.coinAmount)
+                            event.swapAmountNotAccounted -= gardensEvent.amountNotAccounted
+                            gardensEvent.amountNotAccounted = 0
+                        else:
+                            # use up as much of recieve transaction as swap was for and update amount left to account for on receive
+                            ti.costs += (gardensEvent.fiatValue / gardensEvent.amountNotAccounted) * event.swapAmountNotAccounted
+                            event.swapAmountNotAccounted = 0
+                            gardensEvent.amountNotAccounted -= event.swapAmountNotAccounted
+                            break
+            # Also run through quest transactions to try and fill remaining gaps in received value accounting
+            if event.swapAmountNotAccounted > 0:
+                for questEvent in questEvents:
+                    questEventDate = datetime.date.fromtimestamp(questEvent.timestamp)
+                    # This can be removed after a clean of quests cached records
+                    if not hasattr(questEvent, 'amountNotAccounted'):
+                        questEvent.amountNotAccounted = questEvent.rewardAmount
+                    if event.swapType == questEvent.rewardType and questEvent.amountNotAccounted > 0 and questEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
+                        if ti.acquiredDate == None:
+                            ti.acquiredDate = questEventDate
+                        if questEvent.amountNotAccounted <= event.swapAmountNotAccounted:
+                            # use up all receive transaction amount and update amount left to match still
+                            ti.costs += questEvent.fiatValue * (questEvent.amountNotAccounted / questEvent.rewardAmount)
+                            event.swapAmountNotAccounted -= questEvent.amountNotAccounted
+                            questEvent.amountNotAccounted = 0
+                        else:
+                            # use up as much of recieve transaction as swap was for and update amount left to account for on receive
+                            ti.costs += (questEvent.fiatValue / questEvent.amountNotAccounted) * event.swapAmountNotAccounted
+                            event.swapAmountNotAccounted = 0
+                            questEvent.amountNotAccounted -= event.swapAmountNotAccounted
+                            break
             # Also run through direct wallet transactions to try and fill remaining gaps in received value accounting
             # This works assuming the asset was purchased on same day it was transferred in, TODO: maybe add to disclaimer/FAQ
             if event.swapAmountNotAccounted > 0:
@@ -337,12 +400,15 @@ def buildAirdropRecords(airdropEvents, startDate, endDate):
     results = []
     for event in airdropEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
+        eventTitle = 'Airdrop'
+        if hasattr(event, 'address') and event.address in contracts.payment_wallets:
+            eventTitle = 'Payment'
         # Create basic income tax record for any airdrop
         if eventDate >= startDate and eventDate <= endDate:
             if event.tokenAmount % 1 > 0:
-                desc = 'Airdrop {0:.3f} {1}'.format(event.tokenAmount, contracts.getAddressName(event.tokenReceived))
+                desc = '{2} {0:.3f} {1}'.format(event.tokenAmount, contracts.getAddressName(event.tokenReceived), eventTitle)
             else:
-                desc = 'Airdrop {0} {1}'.format(int(event.tokenAmount), contracts.getAddressName(event.tokenReceived))
+                desc = '{2} {0} {1}'.format(int(event.tokenAmount), contracts.getAddressName(event.tokenReceived), eventTitle)
             ti = TaxItem(event.txHash, 0, '', event.tokenAmount, contracts.getAddressName(event.tokenReceived), desc, 'income', eventDate, event.fiatType, event.fiatValue)
             ti.amountNotAccounted = 0
             results.append(ti)

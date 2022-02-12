@@ -69,6 +69,7 @@ class GardenerTransaction:
         self.coinAmount = coinAmount
         self.fiatType = fiatType
         self.fiatValue = fiatValue
+        self.amountNotAccounted = coinAmount
 
 class BankTransaction:
     def __init__(self, txHash, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
@@ -86,13 +87,16 @@ class BankTransaction:
         self.amountNotAccounted = coinAmount / xRate
 
 class AirdropTransaction:
-    def __init__(self, txHash, timestamp, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0):
+    def __init__(self, txHash, timestamp, address, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0):
         self.txHash = txHash
         self.timestamp = timestamp
+        self.address = address
         self.tokenReceived = tokenReceived
         self.tokenAmount = tokenAmount
         self.fiatType = fiatType
         self.fiatValue = fiatValue
+        # Just for tracking amounts that have been allocated to tax records during mapping
+        self.amountNotAccounted = tokenAmount
 
 class QuestTransaction:
     def __init__(self, txHash, timestamp, rewardType, rewardAmount=0, fiatType='usd', fiatValue=0):
@@ -103,6 +107,7 @@ class QuestTransaction:
         self.rewardAmount = rewardAmount
         self.fiatType = fiatType
         self.fiatValue = fiatValue
+        self.amountNotAccounted = rewardAmount
 
 class walletActivity:
     def __init__(self, txHash, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
