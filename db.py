@@ -111,10 +111,10 @@ def getWalletPayments(wallet):
             r = jsonpickle.decode(row[3])
             if type(r) is list:
                 for item in r:
-                    if type(item) is records.AirdropTransaction and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                    if type(item) is records.AirdropTransaction and hasattr(item, 'address') and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
                         payments.append(item)
             else:
-                if type(item) is records.AirdropTransaction and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                if type(item) is records.AirdropTransaction and hasattr(item, 'address') and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
                     payments.append(item)
             row = cur.fetchone()
 
