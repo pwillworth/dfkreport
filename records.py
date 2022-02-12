@@ -63,7 +63,7 @@ class GardenerTransaction:
     def __init__(self, txHash, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
         self.txHash = txHash
         self.timestamp = timestamp
-        # deposit, staking-reward, staking-reward-locked
+        # deposit, withdraw, staking-reward, staking-reward-locked
         self.event = event
         self.coinType = coinType
         self.coinAmount = coinAmount
@@ -108,7 +108,7 @@ class walletActivity:
     def __init__(self, txHash, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0):
         self.txHash = txHash
         self.timestamp = timestamp
-        # deposit or withdraw or bridge
+        # deposit/payment/withdraw/bridge
         self.action = action
         self.address = address
         self.coinType = coinType

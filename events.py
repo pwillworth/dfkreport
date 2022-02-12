@@ -169,6 +169,16 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account)
                 else:
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
+            elif 'Farms' in action:
+                results = extractFarmResults(w3, tx, account, timestamp, receipt)
+                if results != None and len(results) > 0:
+                    for item in results:
+                        events_map['gardens'].append(item)
+                        eventsFound = True
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account)
+                else:
+                    logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
             elif 'Airdrop' in action:
                 results = extractAirdropResults(w3, tx, account, timestamp, receipt)
                 for item in results:
@@ -289,28 +299,6 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'alchemist', jsonpickle.encode(results), account)
                 else:
                     logging.info('Failed to parse alchemist results tx {0}'.format(tx))
-            # Native token wallet transfers
-            elif 'Deposit from' in action and value > 0:
-                r = records.walletActivity(tx, timestamp, 'deposit', result['from'], getNativeToken(network), value)
-                r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
-                events_map['wallet'].append(r)
-                eventsFound = True
-                if settings.USE_CACHE:
-                    db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(r), account)
-            elif 'Withdrawal to' in action and value > 0:
-                if 'JewelToken' in action:
-                    with open('abi/JewelToken.json', 'r') as f:
-                        ABI = f.read()
-                    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
-                    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
-                    for log in decoded_logs:
-                        logging.info('sendjewel: ' + str(log))
-                r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', value)
-                r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
-                events_map['wallet'].append(r)
-                eventsFound = True
-                if settings.USE_CACHE:
-                    db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(r), account)
             elif 'HeroSale' in action:
                 # Special Gen0 sale events are like a summon but are crystals are bought with jewel
                 with open('abi/HeroSale.json', 'r') as f:
@@ -344,7 +332,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             if settings.USE_CACHE:
                                 db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(r), account)
                                 db.saveTransaction(heroCrystals[log['args']['crystalId']][0], heroCrystals[log['args']['crystalId']][1], 'noneg', '', account)
-            elif 'anySwap' in action:
+            elif 'anySwap' in action or 'Bridge' in action:
                 logging.debug('Bridge activity: {0}'.format(tx))
                 results = extractBridgeResults(w3, tx, account, timestamp, receipt)
                 if results != None:
@@ -355,38 +343,43 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.info('Failed to parse bridge results tx {0}'.format(tx))
             else:
-                # Last possibility, check for any random token trasfers in the wallet
-                with open('abi/JewelToken.json', 'r') as f:
-                    ABI = f.read()
-                contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
-                decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
-                transfers = []
-                for log in decoded_logs:
-                    if log['args']['from'] == account:
-                        event = 'withdraw'
-                        otherAddress = log['args']['to']
-                    elif log['args']['to'] == account:
-                        event = 'deposit'
-                        otherAddress = log['args']['from']
-                    else:
-                        logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], tx))
-                        continue
-                    tokenValue = valueFromWei(log['args']['value'], log['address'])
-                    # People might be moving weird tokens around in thier wallet not related to DFK
-                    tokenName = 'Unknown({0})'.format(log['address'])
-                    if log['address'] in contracts.address_map:
-                        tokenName = contracts.address_map[log['address']]
-                    if tokenValue > 0 and log['address'] in contracts.address_map and log['address'] not in contracts.tx_fee_targets:
-                        logging.info('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, tokenName))
-                        r = records.walletActivity(tx, timestamp, event, otherAddress, log['address'], tokenValue)
-                        r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
-                        transfers.append(r)
-                        events_map['wallet'].append(r)
-                        eventsFound = True
-                    else:
-                        logging.info('zero value wallet transfer ignored {0}|{1}'.format(tx, action))
-                if settings.USE_CACHE and len(transfers) > 0:
-                    db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(transfers), account)
+                # Native token wallet transfers
+                results = []
+                # Transfers from fund wallets should be considered income payments
+                if result['from'] in contracts.payment_wallets:
+                    depositEvent = 'payment'
+                else:
+                    depositEvent = 'deposit'
+                if 'Deposit from' in action and value > 0:
+                    r = records.walletActivity(tx, timestamp, depositEvent, result['from'], getNativeToken(network), value)
+                    r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
+                    results.append(r)
+                if 'Withdrawal to' in action and value > 0:
+                    r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], getNativeToken(network), value)
+                    r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
+                    results.append(r)
+                # also check for any random token trasfers in the wallet
+                results += extractTokenResults(w3, tx, account, timestamp, receipt, depositEvent)
+                if results != None:
+                    for item in results:
+                        events_map['wallet'].append(item)
+                    eventsFound = True
+                    if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                        db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account)
+                        # Some payment distributions do not get associated to users wallet, so populate record in db for recipient
+                        if result['from'] in contracts.payment_wallets and account == result['from']:
+                            recipientAccount = ''
+                            for item in results:
+                                if recipientAccount not in ['', item.address]:
+                                    logging.error('Bailing from multi recipient payment {0}'.format(tx))
+                                    continue
+                                item.action = 'payment'
+                                recipientAccount = item.address
+                                item.address = result['from']
+                            if recipientAccount != '' and db.findTransaction(tx, recipientAccount) == None:
+                                db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), recipientAccount)
+                else:
+                    logging.info('Got no results from anything tx {0}'.format(tx))
         else:
             # transaction failed, mark to ignore later
             eventsFound = True
@@ -403,7 +396,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
 # Simple way to determine conversion, maybe change to lookup on chain later
 def valueFromWei(amount, token):
     #w3.fromWei doesn't seem to have an 8 decimal option for BTC
-    if token == '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9':
+    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d']:
         return amount / decimal.Decimal(100000000)
     else:
         if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
@@ -516,6 +509,45 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
 
     return events
 
+def extractFarmResults(w3, txn, account, timestamp, receipt):
+    # events record amount of rewards received when claiming at the farms
+    with open('abi/ERC20.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0x1f806f7C8dED893fd3caE279191ad7Aa3798E928', abi=ABI)
+    events = []
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    farmEvent = ''
+    farmToken = ''
+    farmAmount = 0
+    rewardEvent = ''
+    rewardToken = ''
+    rewardAmount = 0
+    for log in decoded_logs:
+        # Token Transfers
+        if 'to' in log['args'] and 'from' in log['args']:
+            if 'Pangolin LP' in contracts.getAddressName(log['address']) and log['args']['to'] == account:
+                farmEvent = 'withdraw'
+                farmToken = log['address']
+                farmAmount = Web3.fromWei(log['args']['value'], 'ether')
+            if log['args']['to'] == account:
+                rewardEvent = 'staking-reward'
+                rewardToken = log['address']
+                rewardAmount = Web3.fromWei(log['args']['value'], 'ether')
+            elif 'Pangolin LP' in contracts.getAddressName(log['address']) and log['args']['from'] == account:
+                farmEvent = 'deposit'
+                farmToken = log['address']
+                farmAmount = Web3.fromWei(log['args']['value'], 'ether')
+    if farmAmount > 0:
+        r = records.GardenerTransaction(txn, timestamp, farmEvent, farmToken, farmAmount)
+        events.append(r)
+    if rewardAmount > 0:
+        rr = records.GardenerTransaction(txn, timestamp, rewardEvent, rewardToken, rewardAmount)
+        rewardPrice = prices.priceLookup(timestamp, rewardToken)
+        rr.fiatValue = rewardPrice * rr.coinAmount
+        events.append(rr)
+
+    return events
+
 def extractSwapResults(w3, txn, account, timestamp, receipt, network):
     abiPath = "abi/{0}.json".format('JewelToken')
     with open(abiPath, 'r') as f:
@@ -543,7 +575,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
                 sentAmount.append(valueFromWei(log['args']['value'], log['address']))
             else:
                 logging.debug('ignored swap log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
-        # Native token transfers (src and dst also in args but used yet)
+        # Native token transfers (src and dst also in args but not used yet)
         if 'wad' in log['args']:
             if log['event'] == 'Withdrawal':
                 rcvdToken.append(log['address'])
@@ -551,6 +583,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
             if log['event'] == 'Deposit':
                 sentToken.append(log['address'])
                 sentAmount.append(valueFromWei(log['args']['wad'], log['address']))
+
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
             # simple 1 coin in 1 coin out swaps
@@ -561,7 +594,7 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
             return r
         elif len(sentToken) == 0 or len(rcvdToken) == 0:
             # just incase something weird shows up
-            logging.error('wtf swap: {0}: {1} {2}'.format(log['address'], Web3.fromWei(log['args']['value'], 'ether'), log['args']['from']))
+            logging.error('wtf swap: {0}: sent-{1} rcvd-{2}'.format(txn, str(sentToken), str(rcvdToken)))
         else:
             # Others should be LP deposit/withdraws
             if len(sentToken) == 1 and len(rcvdToken) == 2:
@@ -616,7 +649,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('{3} transfer for summon from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.address_map[log['address']]))
+        logging.debug('{3} transfer for summon from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.getAddressName(log['address'])))
         if log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
             jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
             # capture transfer amount to other player so we can create a record for thier gains
@@ -736,24 +769,25 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt):
     # Create record of the alchemist crafting activity with total costs
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
-    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
-    rcvdToken = []
-    rcvdAmount = []
+    rcvdTokens = {}
     results = []
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
-                rcvdToken.append(log['address'])
-                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
+                if log['address'] in rcvdTokens:
+                    rcvdTokens[log['address']] += valueFromWei(log['args']['value'], log['address'])
+                else:
+                    rcvdTokens[log['address']] = valueFromWei(log['args']['value'], log['address'])
             else:
                 logging.info('ignored airdrop log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
-    for i in range(len(rcvdToken)):
-        logging.info('AirdropClaimed: {0} {1}'.format(rcvdAmount[i], rcvdToken[i]))
-        airdropAmount = rcvdAmount[i]
-        r = records.AirdropTransaction(txn, timestamp, rcvdToken[i], airdropAmount)
-        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[i]) * r.tokenAmount
+    for k, v in rcvdTokens.items():
+        logging.info('AirdropClaimed: {0} {1}'.format(v, k))
+        airdropAmount = v
+        r = records.AirdropTransaction(txn, timestamp, k, airdropAmount)
+        r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
         results.append(r)
     return results
 
@@ -786,7 +820,7 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt):
     # Create record of the alchemist crafting activity with total costs
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
-    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdToken = []
     rcvdAmount = []
@@ -826,7 +860,7 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event
     with open('abi/JewelToken.json', 'r') as f:
         ABI = f.read()
-    contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     r = None
     for log in decoded_logs:
@@ -844,3 +878,30 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
             r = records.walletActivity(txn, timestamp, 'bridge', otherAddress, log['address'], tokenValue)
             r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
     return r
+
+def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
+    with open('abi/JewelToken.json', 'r') as f:
+        ABI = f.read()
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    transfers = []
+    for log in decoded_logs:
+        if log['args']['from'] == account:
+            event = 'withdraw'
+            otherAddress = log['args']['to']
+        elif log['args']['to'] == account:
+            event = depositEvent
+            otherAddress = log['args']['from']
+        else:
+            logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], txn))
+            continue
+        tokenValue = valueFromWei(log['args']['value'], log['address'])
+
+        if tokenValue > 0:
+            logging.info('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, contracts.getAddressName(log['address'])))
+            r = records.walletActivity(txn, timestamp, event, otherAddress, log['address'], tokenValue)
+            r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
+            transfers.append(r)
+        else:
+            logging.info('zero value wallet transfer ignored')
+    return transfers

@@ -48,11 +48,12 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
         raise ConnectionError('Service Unavailable')
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
-    # Have to look up Tavern sales events because they are not associated direct to wallet
+    # Have to look up Tavern sale/hire events because they are not associated direct to wallet
     eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
-    eventMap['wallet'] += eventMapAvax['wallet']
+    # Look up wallet payments distributed by interacting with Jewel contract also
+    eventMap['wallet'] += eventMapAvax['wallet'] + db.getWalletPayments(account, eventMap['wallet'])
     eventMap['bank'] += eventMapAvax['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
     eventMap['quests'] += eventMapAvax['quests']
@@ -66,6 +67,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
     questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
     airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
+    walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
     # pop out all events not in date range
     eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
     eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
@@ -78,7 +80,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis):
     eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
     # Return all tax records combined and events
     return {
-        'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData,
+        'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData + walletData,
         'events': eventMap
     }
 
@@ -178,6 +180,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
 
 def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
     results = []
+    #TODO Also search income for cost basis like payments and staking rewards
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
         # questionable where to draw the line between game and currency trades
@@ -213,7 +216,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, costBasis):
             if event.swapAmountNotAccounted > 0:
                 for walletEvent in walletEvents:
                     walletEventDate = datetime.date.fromtimestamp(walletEvent.timestamp)
-                    if walletEvent.action == 'deposit' and event.swapType == walletEvent.coinType and walletEvent.amountNotAccounted > 0 and walletEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
+                    if walletEvent.action in ['deposit','payment'] and event.swapType == walletEvent.coinType and walletEvent.amountNotAccounted > 0 and walletEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0:
                         if ti.acquiredDate == None:
                             ti.acquiredDate = walletEventDate
                         if walletEvent.amountNotAccounted <= event.swapAmountNotAccounted:
@@ -312,31 +315,36 @@ def buildGardensRecords(gardensEvents, startDate, endDate):
         # Create basic income tax record for any staking reward claim that is not locked
         # Locked Jewel is accounted for when mined from mining quest and it actually is available and realized
         if event.event == 'staking-reward' and eventDate >= startDate and eventDate <= endDate:
-            if ''.join((eventDate.strftime('%d-%m-%Y'), event.event)) in rewardGroups:
-                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event))].proceeds += event.fiatValue
+            if ''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType)) in rewardGroups:
+                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType))].proceeds += event.fiatValue
                 # this is hacky, but I'm just gonna use it to keep track of total jewel since it is not needed
-                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event))].costs += event.coinAmount
+                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType))].costs += event.coinAmount
             else:
-                ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), 'Gardens Staking Reward', 'income', eventDate, event.fiatType, event.fiatValue)
+                ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), '{0} Staking Reward'.format(contracts.getAddressName(event.coinType)), 'income', eventDate, event.fiatType, event.fiatValue)
                 # Not really!
                 ti.costs = event.coinAmount
                 ti.amountNotAccounted = 0
                 rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event))] = ti
 
     for k, v in rewardGroups.items():
-        v.description = 'Gardens Staking Reward {:.3f}'.format(v.costs)
+        v.description += ' {:.3f}'.format(v.costs)
         v.costs = 0
         results.append(v)
     return results
 
-# Generate Airdrop Tax events
+# Generate Airdrop income Tax events
 def buildAirdropRecords(airdropEvents, startDate, endDate):
     results = []
     for event in airdropEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create basic income tax record for any airdrop
         if eventDate >= startDate and eventDate <= endDate:
-            ti = TaxItem(event.txHash, 0, '', event.tokenAmount, contracts.getAddressName(event.tokenReceived), 'Airdrop {0} {1}'.format(event.tokenAmount, contracts.getAddressName(event.tokenReceived)), 'income', eventDate, event.fiatType, event.fiatValue)
+            if event.tokenAmount % 1 > 0:
+                desc = 'Airdrop {0:.3f} {1}'.format(event.tokenAmount, contracts.getAddressName(event.tokenReceived))
+            else:
+                desc = 'Airdrop {0} {1}'.format(int(event.tokenAmount), contracts.getAddressName(event.tokenReceived))
+            ti = TaxItem(event.txHash, 0, '', event.tokenAmount, contracts.getAddressName(event.tokenReceived), desc, 'income', eventDate, event.fiatType, event.fiatValue)
+            ti.amountNotAccounted = 0
             results.append(ti)
 
     return results
@@ -363,6 +371,33 @@ def buildQuestRecords(questEvents, startDate, endDate):
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))] = ti
     for k, v in itemGroups.items():
         v.description = 'Quest Jewel Rewards {:.3f}'.format(v.costs)
+        # zero out costs because we were just using it to trace the sum of coin amount
+        v.costs = 0
+        v.amountNotAccounted = 0
+        results.append(v)
+
+    return results
+
+# Generate Payment income Tax events
+def buildPaymentRecords(walletEvents, startDate, endDate):
+    results = []
+    # use dict to summarize payments by type/day
+    itemGroups = {}
+    for event in walletEvents:
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
+        # Create basic income tax record for any wallet deposit from a payment address
+        if event.action == 'payment' and eventDate >= startDate and eventDate <= endDate:
+            if ''.join((eventDate.strftime('%d-%m-%Y'), event.coinType)) in itemGroups:
+                itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))].proceeds += event.fiatValue
+                # this is hacky, but I'm just gonna use it to keep track of total jewel since it is not needed
+                itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))].costs += event.coinAmount
+            else:
+                ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), 'Payment', 'income', eventDate, event.fiatType, event.fiatValue)
+                # Not really!
+                ti.costs = event.coinAmount
+                itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))] = ti
+    for k, v in itemGroups.items():
+        v.description += ' {0:.3f} {1}'.format(v.costs, v.rcvdType)
         # zero out costs because we were just using it to trace the sum of coin amount
         v.costs = 0
         v.amountNotAccounted = 0

@@ -96,6 +96,33 @@ def getTavernSales(wallet, startDate, endDate):
         logging.info('Skipping sales lookup due to db conn failure.')
     return sales
 
+# Look up and return any transaction events where wallet was paid through Jewel contract
+def getWalletPayments(wallet, currentEvents):
+    payments = []
+    try:
+        con = aConn()
+        cur = con.cursor()
+    except Exception as err:
+        logging.error('DB error trying to look up wallet payments. {0}'.format(str(err)))
+    if con != None and con.open:
+        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='wallet'", (wallet))
+        row = cur.fetchone()
+        while row != None:
+            r = jsonpickle.decode(row[3])
+            if type(r) is list:
+                for item in r:
+                    if type(item) is records.walletActivity and item.action == 'payment' and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                        payments.append(item)
+            else:
+                if type(item) is records.walletActivity and item.action == 'payment' and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
+                        payments.append(item)
+            row = cur.fetchone()
+
+        con.close()
+    else:
+        logging.info('Skipping payments lookup due to db conn failure.')
+    return payments
+
 def findReport(wallet, startDate, endDate):
     con = aConn()
     cur = con.cursor()

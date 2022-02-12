@@ -36,10 +36,14 @@ var address_map = {
   '0x3F56e0c36d275367b8C502090EDF38289b3dEa0d': 'MAI',
   '0x6983D1E6DEf3690C4d616b13597A09e6193EA013': '1ETH',
   '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9': 'wBTC',
+  '0xdc54046c0451f9269FEe1840aeC808D36015697d': '1BTC',
   '0x735aBE48e8782948a37C7765ECb76b98CdE97B0F': 'Fantom',
   '0x39aB439897380eD10558666C4377fACB0322Ad48': '1FTM',
   '0x14A7B318fED66FfDcc80C1517C172c13852865De': '1AXS',
   '0xA5445d24E5dbF641f76058CD7a95b1c402Eb97b5': 'bscTLM',
+  '0x2A719aF848bf365489E548BE5edbEC1D65858e59': 'Fira',
+  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'stONE',
+  '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'stONE2',
   '0x093956649D43f23fe4E7144fb1C3Ad01586cCf1e': 'Jewel LP Token AVAX/Jewel',
   '0xEb579ddcD49A7beb3f205c9fF6006Bb6390F138f': 'Jewel LP Token ONE/Jewel',
   '0xFdAB6B23053E22b74f21ed42834D7048491F8F32': 'Jewel LP Token ONE/xJewel',
@@ -157,6 +161,8 @@ var address_map = {
   '0x872dD1595544CE22ad1e0174449C7ECE6F0bb01b': 'Switftness Potion',
   '0x27dC6AaaD95580EdF25F8B9676f1B984e09e413d': 'Atonement Crystal',
   '0x1f3F655079b70190cb79cE5bc5AE5F19dAf2A6Cf': 'Atonement Crystal Lesser',
+  '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 'Lesser Chaos Stone',
+  '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
   '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  // Start Avalanche list
   '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
   '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70': 'DAI',
@@ -164,6 +170,7 @@ var address_map = {
   '0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB': 'wETH',
   '0x60781C2586D68229fde47564546784ab3fACA982': 'PNG',
   '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106': 'Uniswap AVAX',
+  '0x1f806f7C8dED893fd3caE279191ad7Aa3798E928': 'Pangolin Farms V2',
   '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
   '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX'
 }
@@ -396,19 +403,25 @@ function loadGardensEvents(gardensEvents) {
     if (gardensEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = gardensEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
+    var location = 'Gardens'
+    if (address_map[gardensEvents[i].coinType].includes('Jewel')) {
+      location = 'Serendale'
+    } else {
+      location = 'Pangolin'
+    }
     $('#tx_gardens_data').show();
     $('#tx_gardens_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + 'Gardens' + '</td>' +
+      '<td>' + location + '</td>' +
       '<td>' + gardensEvents[i].event + '</td>' +
       '<td>' + address_map[gardensEvents[i].coinType] + '</td>' +
       '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
       '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
     );
-    if ( gardensEvents[i].event in gardensTotals ) {
-      gardensTotals[gardensEvents[i].event] += Number(coinAmount);
+    if ( address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event in gardensTotals ) {
+      gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] += Number(coinAmount);
     } else {
-      gardensTotals[gardensEvents[i].event] = Number(coinAmount);
+      gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] = Number(coinAmount);
     }
     $('#tx_gardens_count').html(' (' + (i + 1) + ')');
   }
