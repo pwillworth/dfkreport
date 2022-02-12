@@ -43,6 +43,7 @@ def priceLookup(timestamp, token, fiatType='usd'):
 # Date format DD-MM-YYYY for da gecko api
 def fetchPriceData(token, date):
     realDate = datetime.datetime.strptime(date, '%d-%m-%Y')
+    prices = None
     # Coin Gecko only has prices from October 20th 2021 forward for JEWEL
     if (realDate > datetime.datetime.strptime('19-10-2021', '%d-%m-%Y') or token != 'defi-kingdoms') and token[0] != '0':
         gecko_uri = "https://api.coingecko.com/api/v3/coins/{0}/history?date={1}&localization=false".format(token, date)
@@ -56,9 +57,10 @@ def fetchPriceData(token, date):
             except Exception as err:
                 result = "Error: failed to get prices no market data {0}".format(r.text)
                 logging.error(result + '\n')
-            db.savePriceData(date, token, json.dumps(prices), json.dumps(marketcap), json.dumps(volume))
-            logging.info('Saved a new price for {0} on {1} from coin gecko'.format(token, date))
-            result = prices
+            if prices != None:
+                db.savePriceData(date, token, json.dumps(prices), json.dumps(marketcap), json.dumps(volume))
+                logging.info('Saved a new price for {0} on {1} from coin gecko'.format(token, date))
+                result = prices
         else:
             result = "Error: failed to get prices - {0}".format(r.text)
             logging.error(result + '\n')
