@@ -78,7 +78,7 @@ def getTransactionList(address, startDate, endDate, page_size, includedChains=co
         avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
     return [hmy_txs, avx_txs]
 
-def getTransactionCount(address, includedChains=1):
+def getTransactionCount(address, includedChains=constants.HARMONY):
     result = ""
     hmy_result = 0
     avx_result = 0

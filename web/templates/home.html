@@ -137,7 +137,7 @@ function completeReport(generateAddress, generateStart, generateEnd, costBasis, 
     return false;
 }
 // This function is recursively called to check on report status and will trigger report load when done
-function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='undefined', includeAvalanche='undefined') {
+function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='false', includeAvalanche='false') {
     $("#loadingSection").css("display","block");
     $("#mappingSection").css("display","block");
     clearReports();
