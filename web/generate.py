@@ -331,7 +331,7 @@ if not failure:
         # Failure can happen here if harmony api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
         status = "Generation failed!  Harmony API could not be contacted!."
-    if len(status) == 13:
+    if len(status) == 14:
         if status[5] == 2:
             # report is ready
             if contentType == '':
