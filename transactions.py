@@ -7,6 +7,7 @@ import requests
 import time
 import logging
 import settings
+import constants
 
 # Return array of transactions on Harmony for the address
 def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE_SIZE):
@@ -64,46 +65,50 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
 
     return txs
 
-def getTransactionList(address, startDate, endDate, page_size):
+def getTransactionList(address, startDate, endDate, page_size, includedChains=constants.HARMONY):
     hmy_txs = []
     avx_txs = []
-    logging.info('Get Harmony data for {0}'.format(address))
-    hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
-    # Sometimes the paged return tx lookup can result in duplicate txs in the list
-    hmy_txs = list(dict.fromkeys(hmy_txs))
-    logging.info('Get Avalanche data for {0}'.format(address))
-    avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
+    if includedChains & constants.HARMONY > 0:
+        logging.info('Get Harmony data for {0}'.format(address))
+        hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
+        # Sometimes the paged return tx lookup can result in duplicate txs in the list
+        hmy_txs = list(dict.fromkeys(hmy_txs))
+    if includedChains & constants.AVALANCHE > 0:
+        logging.info('Get Avalanche data for {0}'.format(address))
+        avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs))
     return [hmy_txs, avx_txs]
 
-def getTransactionCount(address):
+def getTransactionCount(address, includedChains=1):
     result = ""
     hmy_result = 0
     avx_result = 0
 
-    try:
-        hmy_result = account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
-    except ConnectionError:
-        result = 'Error: Failed to connect to Harmony API'
-        logging.error("connection to harmony api failed")
-
-    try:
-        r = requests.get("{1}/api?module=proxy&action=eth_getTransactionCount&address={0}&tag=latest&apikey={2}".format(address, nets.avax_main, nets.avax_key))
-    except ConnectionError:
-        logging.error("connection to AVAX api failed")
-
-    if r.status_code == 200:
-        results = r.json()
+    if includedChains & constants.HARMONY > 0:
         try:
-            avx_result = int(results['result'], base=16)
-            logging.info("got {0} transactions".format(avx_result))
-        except Exception as err:
-            result = 'Error: invalid response from Avalanche Snowtrace API - {0}'.format(str(err))
-            logging.error(result)
-    else:
-        result = 'Error: Failed to connect to Avalanche Snowtrace API'
-        logging.error(result)
+            hmy_result = account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
+        except ConnectionError:
+            result = 'Error: Failed to connect to Harmony API'
+            logging.error("connection to harmony api failed")
 
-    if result != "":
+    if includedChains & constants.AVALANCHE > 0:
+        try:
+            r = requests.get("{1}/api?module=proxy&action=eth_getTransactionCount&address={0}&tag=latest&apikey={2}".format(address, nets.avax_main, nets.avax_key))
+        except ConnectionError:
+            logging.error("connection to AVAX api failed")
+
+        if r.status_code == 200:
+            results = r.json()
+            try:
+                avx_result = int(results['result'], base=16)
+                logging.info("got {0} transactions".format(avx_result))
+            except Exception as err:
+                result = 'Error: invalid response from Avalanche Snowtrace API - {0}'.format(str(err))
+                logging.error(result)
+        else:
+            result = 'Error: Failed to connect to Avalanche Snowtrace API'
+            logging.error(result)
+
+    if result != "" or hmy_result + avx_result == 0:
         return result
     else:
         return hmy_result + avx_result

@@ -193,6 +193,29 @@ ul {
 	padding: 8px;
 }
 
+.chainSelect {
+	padding-right: 6px;
+	border: none;
+	float: right;
+}
+.chainSelect input[type="checkbox"] {
+	opacity: 0;
+	position: fixed;
+	width: 0;
+	display: none;
+}
+.chainSelect label {
+	border: solid 2px grey;
+	border-radius: 4px;
+	padding: 5px;
+	margin: 0px;
+	height: 36px;
+	float: right;
+}
+.chainSelect input[type="checkbox"]:checked + label {
+    border: solid 2px yellow;
+}
+
 .multiToggle, #dateRangeSet {
 	border: none;
 }

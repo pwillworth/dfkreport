@@ -230,10 +230,10 @@ def getResponseJSON(results, contentType, eventGroup='all'):
     return response
 
 # Get an existing report record or create a new one and return it
-def getReportStatus(wallet, startDate, endDate, costBasis):
+def getReportStatus(wallet, startDate, endDate, costBasis, includedChains):
     reportRow = db.findReport(wallet, startDate, endDate)
     if reportRow != None:
-        if reportRow[11] == costBasis or reportRow[10] == 1:
+        if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
             # if cost basis same or its different but report still running, just return existing
             return reportRow
         else:
@@ -242,16 +242,16 @@ def getReportStatus(wallet, startDate, endDate, costBasis):
             result = transactions.getTransactionCount(wallet)
             if type(result) is int:
                 generateTime = datetime.datetime.now()
-                db.resetReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, reportRow[8], reportRow[9])
+                db.resetReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains, reportRow[8], reportRow[9])
                 return [reportRow[0], reportRow[1], reportRow[2], int(datetime.datetime.timestamp(generateTime)), result]
             else:
                 return 'Error: No Transactions for that wallet found'
     else:
         logging.debug('start new report row')
-        result = transactions.getTransactionCount(wallet)
+        result = transactions.getTransactionCount(wallet, includedChains)
         if type(result) is int:
             generateTime = datetime.datetime.now()
-            db.createReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis)
+            db.createReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains)
             report = db.findReport(wallet, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
@@ -265,6 +265,8 @@ form = cgi.FieldStorage()
 wallet = form.getfirst('walletAddress', '')
 startDate = form.getfirst('startDate', '')
 endDate = form.getfirst('endDate', '')
+includeHarmony = form.getfirst('includeHarmony', 'on')
+includeAvalanche = form.getfirst('includeAvalanche', 'false')
 costBasis = form.getfirst('costBasis', 'fifo')
 # can be set to csv, otherwise json response is returned
 formatType = form.getfirst('formatType', '')
@@ -275,6 +277,7 @@ csvFormat = form.getfirst('csvFormat', 'manual')
 # can be any event group to return only that group of events instead of all
 eventGroup = form.getfirst('eventGroup', 'all')
 failure = False
+includedChains = 0
 
 if formatType == 'csv':
 	print('Content-type: text/csv')
@@ -309,9 +312,18 @@ if costBasis not in ['fifo', 'lifo', 'hifo']:
     response = '{ "response" : "Error: Invalid option specified for cost basis." }'
     failure = True
 
+# Build up the bitwise integer of chains to be included
+if includeHarmony == 'on':
+    includedChains += 1
+if includeAvalanche == 'on':
+    includedChains += 2
+if includedChains < 1:
+    response = '{ "response" : "Error: You have to select at least 1 blockchain to include." }'
+    failure = True
+
 if not failure:
     try:
-        status = getReportStatus(wallet, startDate, endDate, costBasis)
+        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains)
     except pymysql.err.OperationalError:
         logging.error('Responding DB unavailable report error.')
         status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."
@@ -319,7 +331,7 @@ if not failure:
         # Failure can happen here if harmony api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
         status = "Generation failed!  Harmony API could not be contacted!."
-    if len(status) == 12:
+    if len(status) == 13:
         if status[5] == 2:
             # report is ready
             if contentType == '':

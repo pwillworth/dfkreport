@@ -21,6 +21,7 @@ def main():
     parser.add_argument("startDate", help="The starting date for the report")
     parser.add_argument("endDate", help="The ending date for the report")
     parser.add_argument("--costbasis", choices=['fifo','lifo','hifo'], help="Method for mapping cost basis to gains")
+    parser.add_argument("--chains", choices=['1', '2','3'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax")
     args = parser.parse_args()
     if args.costbasis == None:
         costBasis = 'fifo'
@@ -41,14 +42,17 @@ def main():
         if reportInfo == None:
             generateTime = datetime.datetime.now()
             txResult = transactions.getTransactionCount(args.wallet)
-            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, 1)
+            includedChains = 1
+            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, includedChains, 1)
+        else:
+            includedChains = reportInfo[12]
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
         # Scale up default page size for very large accounts
         if reportInfo != None and reportInfo[4] > page_size*50:
             page_size = min(1000, page_size*5)
         try:
-            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, page_size)
+            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, page_size, includedChains)
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()
@@ -65,7 +69,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis)
+        reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()

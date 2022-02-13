@@ -34,7 +34,7 @@ def main():
                         cur2.execute("UPDATE reports SET proc=1 WHERE account=%s AND startDate=%s AND endDate=%s", (row[0], row[1], row[2]))
                     con.commit()
                     logging.debug('kickoff proc')
-                    cmds = '../main.py {0} "{1}" "{2}" --costbasis {3}'.format(row[0], row[1], row[2], row[11])
+                    cmds = '../main.py {0} "{1}" "{2}" --costbasis {3} --chains {4}'.format(row[0], row[1], row[2], row[11], row[12])
                     subprocess.Popen(shlex.split(cmds), start_new_session=True)
                     logging.info('Started report generation process')
                     time.sleep(1)

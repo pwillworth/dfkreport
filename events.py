@@ -14,20 +14,23 @@ import decimal
 import jsonpickle
 import logging
 
+def EventsMap():
+    return {
+        'tavern': [],
+        'swaps': [],
+        'liquidity': [],
+        'wallet': [],
+        'bank': [],
+        'gardens': [],
+        'quests': [],
+        'alchemist': [],
+        'airdrops': [],
+        'gas': 0
+    }
+
 #TODO fix fail path references so abis don't need to be replicated under web or look em up another way
 def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete=0):
-    events_map = {
-        'tavern': [],
-        'swaps' : [],
-        'liquidity' : [],
-        'wallet' : [],
-        'bank' : [],
-        'gardens' : [],
-        'quests' : [],
-        'alchemist' : [],
-        'airdrops' : [],
-        'gas' : 0
-    }
+    events_map = EventsMap()
 
     # Connect to right network that txs are for
     if network == 'avalanche':

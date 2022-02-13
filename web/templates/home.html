@@ -46,6 +46,8 @@ $( function() {
   } );
 // Restore defaults for options
 function optionsReset() {
+  $("#optHarmony").prop('checked', true);
+  $("#optAvalanche").prop('checked', false);
   // Default to last year if it is early in year, this year otherwise
   var dt = new Date();
   var setYear = dt.getFullYear();
@@ -98,9 +100,11 @@ function txGroupReset(value) {
   $('#smy_' + value + '_data').html('');
 }
 // Load the report in two steps after it is done, first tax report, then events
-function completeReport(generateAddress, generateStart, generateEnd, costBasis, contentType, eventGroup='all') {
+function completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeAvalanche, contentType, eventGroup='all') {
   $.post(BASE_SCRIPT_URL + "generate.py",{
         walletAddress: generateAddress,
+        includeHarmony: includeHarmony,
+        includeAvalanche: includeAvalanche,
         contentType: contentType,
         eventGroup: eventGroup,
         startDate: generateStart,
@@ -115,7 +119,7 @@ function completeReport(generateAddress, generateStart, generateEnd, costBasis, 
             $("#reportProgress").progressbar( "option", "value", false);
             $("#reportPercent").html("");
             for (let i = 0; i < event_groups.length; i++) {
-              setTimeout('completeReport("' + generateAddress + '","' + generateStart + '","' + generateEnd + '","' + costBasis + '","transaction","' + event_groups[i] + '")', 500);
+              setTimeout('completeReport("' + generateAddress + '","' + generateStart + '","' + generateEnd + '","' + costBasis + '","' + includeHarmony + '","' + includeAvalanche + '","transaction","' + event_groups[i] + '")', 500);
             }
           } else {
             reportRecords = data.response.event_records;
@@ -133,19 +137,21 @@ function completeReport(generateAddress, generateStart, generateEnd, costBasis, 
     return false;
 }
 // This function is recursively called to check on report status and will trigger report load when done
-function generateReport(generateAddress, generateStart, generateEnd, costBasis) {
+function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='undefined', includeAvalanche='undefined') {
     $("#loadingSection").css("display","block");
     $("#mappingSection").css("display","block");
     clearReports();
     $.post(BASE_SCRIPT_URL + "generate.py",{
         walletAddress: generateAddress,
+        includeHarmony: includeHarmony,
+        includeAvalanche: includeAvalanche,
         startDate: generateStart,
         endDate: generateEnd,
         costBasis: costBasis}, async function( data ) {
           reportStatus = data.response.status
           if (reportStatus == 'complete') {
             $( "#loadingMessage").html('Lila: I have that report ready now, here it is...');
-            completeReport(generateAddress, generateStart, generateEnd, costBasis, 'tax');
+            completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeAvalanche, 'tax');
           } else if (reportStatus == 'generating') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
@@ -156,19 +162,19 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
             }
             $("#reportPercent").html('.:' + (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 4000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeAvalanche);
           } else if (reportStatus == 'fetchingtx') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsFetched );
             $("#loadingMessage").html('Lila: Oh, I know I have that info here somewhere, looking for your records now.')
             $("#reportPercent").html('.:' + (data.response.transactionsFetched / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 2000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeAvalanche);
           } else if (reportStatus == 'initiated') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#exportContainer").hide(500);
             await new Promise(r => setTimeout(r, 2000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeAvalanche);
           } else {
             // If no status was returned, there must have been some kind of failure and an Error message should be in response
             $("#loadingSection").css("display","none");
@@ -187,7 +193,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis) 
 
 function exportData(format) {
   // TODO tie the parameters to saved of last report run instead of current selections
-  var url = BASE_SCRIPT_URL + "generate.py?formatType=" + format + "&contentType=" + currentView + "&walletAddress=" + $("#ethAddress").val() + "&startDate=" + $("#startDate").val() + "&endDate=" + $("#endDate").val() + "&costBasis=" + $('input[name=cbs]:checked').val() + "&csvFormat=" + $('input[name=csvf]:checked').val();
+  var url = BASE_SCRIPT_URL + "generate.py?formatType=" + format + "&contentType=" + currentView + "&walletAddress=" + $("#ethAddress").val() + "&startDate=" + $("#startDate").val() + "&endDate=" + $("#endDate").val() + "&costBasis=" + $('input[name=cbs]:checked').val() + "&csvFormat=" + $('input[name=csvf]:checked').val() + "&includeHarmony=" + $('input[name=optHarmony]:checked').val() + "&includeAvalanche=" + $('input[name=optAvalanche]:checked').val();
   var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
   document.getElementById('frame_box').innerHTML = htm;
 }
@@ -199,9 +205,14 @@ function downloadDone() {
 <body>
 <div>
 <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
-  <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val());">Generate!</button>
+  <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optAvalanche]:checked').val());">Generate!</button>
   <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
-  
+  <fieldset class="chainSelect">
+    <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
+    <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
+    <input type="checkbox" id="optAvalanche" name="optAvalanche"/>
+    <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
+  </fieldset>
 </h1>
 
 </div>
@@ -249,10 +260,6 @@ function downloadDone() {
       <div class="searchInput" style="text-align:center">
         <input type="button" value="Reset" class="ui-button" onclick="optionsReset()"/>
       </div></form>
-      <div class="sectionHead"></div>
-      <table>
-        <tr><td><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" style="max-width: 64px;"/></td><td><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" style="max-width: 48px;"/></td></tr>
-      </table>
       <div style="display: flex; align-items: center; justify-content: center;height: 100%;"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 200px;position: relative;bottom: -4px;" /></div>
     </div>
     </div>

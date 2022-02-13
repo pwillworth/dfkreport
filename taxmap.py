@@ -4,6 +4,7 @@ import contracts
 import datetime
 import logging
 import db
+import constants
 from decimal import *
 
 # Record for final tax report data
@@ -37,15 +38,21 @@ def inReportRange(item, startDate, endDate):
     return itemDate >= startDate and itemDate <= endDate
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(txns, account, startDate, endDate, costBasis):
+def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains):
     # Generate map of all events from transaction list
     logging.info('Start Event map build')
-    eventMap = events.checkTransactions(txns[0], account, startDate, endDate, 'harmony')
-    if eventMap == 'Error: Blockchain connection failure.':
-        raise ConnectionError('Service Unavailable')
-    eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0]))
-    if eventMapAvax == 'Error: Blockchain connection failure.':
-        raise ConnectionError('Service Unavailable')
+    if includedChains & constants.HARMONY > 0:
+        eventMap = events.checkTransactions(txns[0], account, startDate, endDate, 'harmony')
+        if eventMap == 'Error: Blockchain connection failure.':
+            raise ConnectionError('Service Unavailable')
+    else:
+        eventMap = events.EventsMap()
+    if includedChains & constants.AVALANCHE > 0:
+        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0]))
+        if eventMapAvax == 'Error: Blockchain connection failure.':
+            raise ConnectionError('Service Unavailable')
+    else:
+        eventMapAvax = events.EventsMap()
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
     # Have to look up Tavern sale/hire events because they are not associated direct to wallet
