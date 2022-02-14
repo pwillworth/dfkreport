@@ -178,7 +178,11 @@ def getResponseCSV(records, contentType, format):
                     eventDateStr = record.soldDate.strftime('%Y-%m-%d %H:%m:%S %Z')
                 else:
                     eventDateStr = record.acquiredDate.strftime('%Y-%m-%d %H:%m:%S %Z')
-                response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.rcvdAmount), contracts.getAddressName(record.rcvdType), '0', '', str(record.proceeds), record.fiatType, label, record.description, record.txHash, '\n'))
+                # Record the bank multiplier gains as income properly for koinly format
+                if record.description.startswith('Bank Reward'):
+                    response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.get_gains() / (record.proceeds / record.rcvdAmount)), contracts.getAddressName(record.rcvdType), '0', '', str(record.get_gains()), record.fiatType, label, record.description, record.txHash, '\n'))
+                else:
+                    response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.rcvdAmount), contracts.getAddressName(record.rcvdType), '0', '', str(record.proceeds), record.fiatType, label, record.description, record.txHash, '\n'))
             else:
                 response += ','.join((record.category,record.description,acquiredDateStr,soldDateStr,str(record.proceeds),str(record.costs),str(record.get_gains()),record.term,str(record.amountNotAccounted), record.txHash, '\n'))
 

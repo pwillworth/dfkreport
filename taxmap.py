@@ -444,6 +444,7 @@ def buildQuestRecords(questEvents, startDate, endDate):
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))] = ti
     for k, v in itemGroups.items():
         v.description = 'Quest Jewel Rewards {:.3f}'.format(v.costs)
+        v.rcvdAmount = v.costs
         # zero out costs because we were just using it to trace the sum of coin amount
         v.costs = 0
         v.amountNotAccounted = 0
