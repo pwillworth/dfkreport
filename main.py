@@ -7,6 +7,7 @@ import datetime
 import argparse
 import uuid
 import pickle
+import jsonpickle
 import logging
 import logging.handlers
 import traceback
@@ -31,6 +32,7 @@ def main():
     page_size = settings.TX_PAGE_SIZE
     txResult = 0
     txData = []
+    moreOptions = db.ReportOptions()
 
     # list of transactions if loaded from file if available, otherwise fetched
     reportInfo = db.findReport(args.wallet, args.startDate, args.endDate)
@@ -46,6 +48,7 @@ def main():
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, includedChains, 1)
         else:
             includedChains = reportInfo[12]
+            moreOptions = jsonpickle.loads(reportInfo[13])
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
         # Scale up default page size for very large accounts
@@ -69,7 +72,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains)
+        reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import events
 import contracts
+import records
 import datetime
 import logging
 import db
@@ -38,7 +39,7 @@ def inReportRange(item, startDate, endDate):
     return itemDate >= startDate and itemDate <= endDate
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains):
+def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, moreOptions):
     # Generate map of all events from transaction list
     logging.info('Start Event map build')
     if includedChains & constants.HARMONY > 0:
@@ -68,7 +69,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains):
     eventMap['airdrops'] += eventMapAvax['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
-    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], costBasis)
+    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], costBasis, moreOptions['purchaseAddresses'])
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
     bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
@@ -185,9 +186,17 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
         results.append(v)
     return results
 
-def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, costBasis):
+def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, costBasis, purchaseAddresses):
     results = []
-    #TODO Also search income for cost basis like bank gains and staking rewards
+    # Find any wallet transfers to purchase addresses and treat them like a swap for fiat '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+    for item in walletEvents:
+        if item.action == 'withdraw' and item.address in purchaseAddresses:
+            si = records.TraderTransaction(item.txHash, item.timestamp, item.coinType, 'fiat value', item.coinAmount, item.fiatValue)
+            si.fiatSwapValue = item.fiatValue
+            si.fiatReceiveValue = item.fiatValue
+            swapEvents.append(si)
+
+    #TODO consider also search bank gains income for cost basis
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
         # questionable where to draw the line between game and currency trades
@@ -195,7 +204,11 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             continue
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         if eventDate >= startDate and eventDate <= endDate:
-            ti = TaxItem(event.txHash, event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType), 'Sold {0:.5f} {1} for {2:.5f} {3}'.format(event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType)), 'gains', eventDate, event.fiatType, event.fiatSwapValue)
+            if event.receiveType == 'fiat value':
+                actionStr = 'Paid for goods/svcs with'
+            else:
+                actionStr = 'Sold'
+            ti = TaxItem(event.txHash, event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType), '{4} {0:.5f} {1} for {2:.5f} {3}'.format(event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType), actionStr), 'gains', eventDate, event.fiatType, event.fiatSwapValue)
             # Check all transactions for prior time when sold token was received to calc gains
             cbList = costBasisSort(swapEvents, costBasis)
             for searchEvent in cbList:

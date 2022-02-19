@@ -7,6 +7,7 @@
 
 import sys
 import cgi
+import urllib.parse
 import datetime
 from web3 import Web3
 sys.path.append("../")
@@ -234,7 +235,7 @@ def getResponseJSON(results, contentType, eventGroup='all'):
     return response
 
 # Get an existing report record or create a new one and return it
-def getReportStatus(wallet, startDate, endDate, costBasis, includedChains):
+def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions):
     reportRow = db.findReport(wallet, startDate, endDate)
     if reportRow != None:
         if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
@@ -255,7 +256,7 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains):
         result = transactions.getTransactionCount(wallet, includedChains)
         if type(result) is int:
             generateTime = datetime.datetime.now()
-            db.createReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains)
+            db.createReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
             report = db.findReport(wallet, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
@@ -280,6 +281,9 @@ contentType = form.getfirst('contentType', '')
 csvFormat = form.getfirst('csvFormat', 'manual')
 # can be any event group to return only that group of events instead of all
 eventGroup = form.getfirst('eventGroup', 'all')
+# Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
+purchaseAddresses = form.getfirst('purchaseAddresses', '')
+
 failure = False
 includedChains = 0
 
@@ -325,9 +329,29 @@ if includedChains < 1:
     response = '{ "response" : "Error: You have to select at least 1 blockchain to include." }'
     failure = True
 
+addressList = []
+otherOptions = db.ReportOptions()
+if purchaseAddresses != '':
+    purchaseAddresses = urllib.parse.unquote(purchaseAddresses)
+    if ',' in purchaseAddresses:
+        input = purchaseAddresses.split(',')
+    else:
+        input = purchaseAddresses.split()
+    for address in input:
+        address = address.strip()
+        if Web3.isAddress(address):
+            addressList.append(Web3.toChecksumAddress(address))
+        elif len(address) == 0:
+            continue
+        else:
+            response = ''.join(('{ "response" : "Error: You have an invalid address in the purchase address list ', address, '." }'))
+            failure = True
+    otherOptions['purchaseAddresses'] = addressList
+
+
 if not failure:
     try:
-        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains)
+        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions)
     except pymysql.err.OperationalError:
         logging.error('Responding DB unavailable report error.')
         status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."

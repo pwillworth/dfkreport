@@ -8,6 +8,11 @@ import jsonpickle
 import datetime
 import os
 
+def ReportOptions():
+    return {
+        'purchaseAddresses': []
+    }
+
 def aConn():
 	conn = pymysql.connect(host = dfkInfo.DB_HOST,
 	db= dfkInfo.DB_NAME,
