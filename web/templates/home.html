@@ -58,6 +58,8 @@ function optionsReset() {
   $("#endDate").val(setYear + "-12-31");
   $("#fifo").attr('checked', 'checked');
   $("#manual").attr('checked', 'checked');
+  $("#purchaseAddresses").val('');
+  $('#addressEntry').hide();
 }
 // Switch between Tax, Summary, and Transaction report views
 function switchView(view) {
