@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import nets
@@ -28,7 +28,12 @@ def EventsMap():
         'gas': 0
     }
 
-#TODO fix fail path references so abis don't need to be replicated under web or look em up another way
+def getABI(contractName):
+    location = os.path.abspath(__file__)
+    with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
+        ABI = f.read()
+    return ABI
+
 def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete=0):
     events_map = EventsMap()
 
@@ -443,8 +448,7 @@ def lookupEvent(fm, to, account):
     return "{0} -> {1}".format(fmStr, toStr)
 
 def extractBankResults(w3, txn, account, timestamp, receipt):
-    with open('abi/xJewel.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('xJewel')
     contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdToken = "unk"
@@ -473,8 +477,7 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
 
 def extractGardenerResults(w3, txn, account, timestamp, receipt):
     # events record amount of jewel received when claiming at the gardens
-    with open('abi/MasterGardener.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('MasterGardener')
     contract = w3.eth.contract(address='0xDB30643c71aC9e2122cA0341ED77d09D5f99F924', abi=ABI)
     events = []
     decoded_logs = contract.events.SendGovernanceTokenReward().processReceipt(receipt, errors=DISCARD)
@@ -490,8 +493,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
         events.append(rl)
 
     # events record amount of lp tokens put in and out of gardens for farming and when
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     gardenEvent = ''
@@ -516,8 +518,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
 
 def extractFarmResults(w3, txn, account, timestamp, receipt):
     # events record amount of rewards received when claiming at the farms
-    with open('abi/ERC20.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('ERC20')
     contract = w3.eth.contract(address='0x1f806f7C8dED893fd3caE279191ad7Aa3798E928', abi=ABI)
     events = []
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
@@ -554,14 +555,10 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
     return events
 
 def extractSwapResults(w3, txn, account, timestamp, receipt, network):
-    abiPath = "abi/{0}.json".format('JewelToken')
-    with open(abiPath, 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
-    abiPath = "abi/{0}.json".format('Wrapped ONE')
-    with open(abiPath, 'r') as f:
-        ABI = f.read()
+    ABI = getABI('Wrapped ONE')
     contract = w3.eth.contract(address='0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', abi=ABI)
     decoded_logs += contract.events.Withdrawal().processReceipt(receipt, errors=DISCARD)
     decoded_logs += contract.events.Deposit().processReceipt(receipt, errors=DISCARD)
@@ -649,8 +646,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
     jewelAmount = decimal.Decimal(0.0)
     hiringProceeds = decimal.Decimal(0.0)
     hiredFromAccount = ''
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -664,8 +660,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
         else:
             tearsAmount += log['args']['value']
 
-    with open('abi/HeroSummoningUpgradeable.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('HeroSummoningUpgradeable')
     r = None
     rc = None
     rs = None
@@ -708,8 +703,7 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
     # Get the meditation costs data
     shvasAmount = decimal.Decimal(0.0)
     jewelAmount = decimal.Decimal(0.0)
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -718,8 +712,7 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
         else:
             shvasAmount += log['args']['value']
 
-    with open('abi/MeditationCircle.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('MeditationCircle')
     contract = w3.eth.contract(address='0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1', abi=ABI)
     complete_logs = contract.events.MeditationBegun().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -740,8 +733,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     auctionSeller = ""
     auctionToken = ""
     sellerProceeds = decimal.Decimal(0.0)
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -751,8 +743,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
             auctionToken = log['address']
             sellerProceeds = Web3.fromWei(log['args']['value'], 'ether')
 
-    with open('abi/SaleAuction.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('SaleAuction')
     contract = w3.eth.contract(address='0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', abi=ABI)
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -772,8 +763,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
 
 def extractAirdropResults(w3, txn, account, timestamp, receipt):
     # Create record of the airdrop tokens received
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdTokens = {}
@@ -804,8 +794,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt):
     return results
 
 def extractQuestResults(w3, txn, timestamp, receipt):
-    with open('abi/QuestCoreV2.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('QuestCoreV2')
     contract = w3.eth.contract(address='0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4', abi=ABI)
     decoded_logs = contract.events.QuestReward().processReceipt(receipt, errors=DISCARD)
     rewardTotals = {}
@@ -830,8 +819,7 @@ def extractQuestResults(w3, txn, timestamp, receipt):
 
 def extractAlchemistResults(w3, txn, account, timestamp, receipt):
     # Create record of the alchemist crafting activity with total costs
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdToken = []
@@ -870,8 +858,7 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt):
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -892,8 +879,7 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
     return r
 
 def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
-    with open('abi/JewelToken.json', 'r') as f:
-        ABI = f.read()
+    ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     transfers = []
