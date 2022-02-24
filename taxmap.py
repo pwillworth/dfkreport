@@ -116,8 +116,6 @@ def costBasisSort(eventList, costBasis):
 
 # Generate Auction House Tax records from the events
 def buildTavernRecords(tavernEvents, startDate, endDate):
-    # TODO use jewel price at sale time for both purchase and sale so price action not included in gains for hero sales
-    # not holding jewel asset during that time so should not be realizing gains/losses on jewel price change unless you swap the jewel
     results = []
     heroExpenses = {}
     heroIncome = {}
@@ -208,6 +206,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             si.fiatSwapValue = item.fiatValue
             si.fiatReceiveValue = item.fiatValue
             swapEvents.append(si)
+    swapEvents = sorted(swapEvents, key=lambda x: x.timestamp)
 
     # Build list of token recieve events to search for cost basis that can all be sorted together
     cbList = []
