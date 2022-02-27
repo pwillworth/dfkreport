@@ -8,7 +8,7 @@
 import sys
 import cgi
 import urllib.parse
-import datetime
+from datetime import timezone, datetime, date
 from web3 import Web3
 sys.path.append("../")
 import transactions
@@ -32,7 +32,7 @@ def getResponseCSV(records, contentType, format):
             # using 9 kind of genericized column headings and fit each records fields in where it makes most sense
             response = 'category,block date,event,type 1,type 1 amount,type 2,type 2 amount,type 1 fiat value,type 2 fiat value,txHash\n'
         for record in eventRecords['tavern']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 if record.event == 'sale' or record.event == 'hire':
                     sentAmount = ''
@@ -53,13 +53,13 @@ def getResponseCSV(records, contentType, format):
             else:
                 response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount), record.txHash, '\n'))
         for record in eventRecords['swaps']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(record.swapAmount), contracts.getAddressName(record.swapType), str(record.receiveAmount), contracts.getAddressName(record.receiveType), '', '', str(record.fiatSwapValue), record.fiatType, '', 'swap', record.txHash, '\n'))
             else:
                 response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash,'\n'))
         for record in eventRecords['liquidity']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 if record.action == 'withdraw':
                     sentAmount = record.poolAmount
@@ -75,7 +75,7 @@ def getResponseCSV(records, contentType, format):
             else:
                 response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue), record.txHash,'\n'))
         for record in eventRecords['gardens']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 if record.event == 'staking-reward':
                     label = 'reward'
@@ -99,7 +99,7 @@ def getResponseCSV(records, contentType, format):
                     location = 'Pangolin'
                 response += ','.join((location, blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['bank']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 if record.action == 'deposit':
                     sentAmount = record.coinAmount
@@ -115,25 +115,25 @@ def getResponseCSV(records, contentType, format):
             else:
                 response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue), record.txHash,'\n'))
         for record in eventRecords['alchemist']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', record.craftingCosts, str(record.craftingAmount), contracts.getAddressName(record.craftingType), '', '', str(record.fiatValue), record.fiatType, 'ignored', 'potion crafting', record.txHash, '\n'))
             else:
                 response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), record.craftingCosts, '', str(record.fiatValue), str(record.costsFiatValue), record.txHash,'\n'))
         for record in eventRecords['airdrops']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '', str(record.tokenAmount), contracts.getAddressName(record.tokenReceived), '', '', str(record.fiatValue), record.fiatType, 'airdrop', '', record.txHash, '\n'))
             else:
                 response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['quests']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '', str(record.rewardAmount), contracts.getAddressName(record.rewardType), '', '', str(record.fiatValue), record.fiatType, 'reward', 'quest', record.txHash, '\n'))
             else:
                 response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '', record.txHash,'\n'))
         for record in eventRecords['wallet']:
-            blockDateStr = datetime.datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
             if format == 'koinlyuniversal':
                 if record.action == 'deposit':
                     sentAmount = ''
@@ -246,17 +246,17 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
             logging.debug('updating existing report row to regenerate')
             result = transactions.getTransactionCount(wallet)
             if type(result) is int:
-                generateTime = datetime.datetime.now()
-                db.resetReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains, reportRow[8], reportRow[9])
-                return [reportRow[0], reportRow[1], reportRow[2], int(datetime.datetime.timestamp(generateTime)), result]
+                generateTime = datetime.now(timezone.utc)
+                db.resetReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), result, costBasis, includedChains, reportRow[8], reportRow[9])
+                return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), result]
             else:
                 return 'Error: No Transactions for that wallet found'
     else:
         logging.debug('start new report row')
         result = transactions.getTransactionCount(wallet, includedChains)
         if type(result) is int:
-            generateTime = datetime.datetime.now()
-            db.createReport(wallet, startDate, endDate, int(datetime.datetime.timestamp(generateTime)), result, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
+            generateTime = datetime.now(timezone.utc)
+            db.createReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), result, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
             report = db.findReport(wallet, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
@@ -294,11 +294,11 @@ else:
     print('Content-type: text/json\n')
 
 try:
-    tmpStart = datetime.datetime.strptime(startDate, '%Y-%m-%d').date()
-    tmpEnd = datetime.datetime.strptime(endDate, '%Y-%m-%d').date()
+    tmpStart = datetime.strptime(startDate, '%Y-%m-%d').date()
+    tmpEnd = datetime.strptime(endDate, '%Y-%m-%d').date()
     # incase a date past today is entered, save the report with end date only up to current day
     # that way if it is run again a later day it will trigger a new report and get additional data
-    today = datetime.date.today()
+    today = date.today()
     if tmpEnd > today:
         logging.debug('Adjusted saved end date from {0} to {1}'.format(endDate, today.strftime('%Y-%m-%d')))
         endDate = today.strftime('%Y-%m-%d')
