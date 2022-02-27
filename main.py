@@ -48,7 +48,10 @@ def main():
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, includedChains, 1)
         else:
             includedChains = reportInfo[12]
-            moreOptions = jsonpickle.loads(reportInfo[13])
+            try:
+                moreOptions = jsonpickle.loads(reportInfo[13])
+            except Exception as err:
+                logging.warning('Ignoring failure to load more options, probably old ui not setting it.')
 
         logging.info('Loading transactions list for {0}'.format(args.wallet))
         # Scale up default page size for very large accounts
