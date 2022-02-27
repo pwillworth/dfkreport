@@ -220,8 +220,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     # if no bank result was parsed, it is just a direct xJewel transfer
                     logging.error('Error: Failed to parse a bank result.')
-                    with open('abi/xJewel.json', 'r') as f:
-                        ABI = f.read()
+                    ABI = getABI('xJewel')
                     contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
                     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
                     for log in decoded_logs:
@@ -323,8 +322,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Failed to parse alchemist results tx {0}'.format(tx))
             elif 'HeroSale' in action:
                 # Special Gen0 sale events are like a summon but are crystals are bought with jewel
-                with open('abi/HeroSale.json', 'r') as f:
-                    ABI = f.read()
+                ABI = getABI('HeroSale')
                 contract = w3.eth.contract(address='0xdF0Bf714e80F5e6C994F16B05b7fFcbCB83b89e9', abi=ABI)
                 decoded_logs = contract.events.Gen0Purchase().processReceipt(receipt, errors=DISCARD)
                 heroId = 0
