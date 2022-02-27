@@ -110,7 +110,7 @@ def costBasisSort(eventList, costBasis):
     elif costBasis == 'lifo':
         return sorted(eventList, key=lambda x: x.timestamp, reverse=True)
     elif costBasis == 'hifo':
-        return sorted(eventList, key=lambda x: x.fiatReceiveValue / x.receiveAmount, reverse=True)
+        return sorted(eventList, key=lambda x: x.fiatReceiveValue / x.receiveAmount if x.receiveAmount else 0, reverse=True)
     else:
         return eventList
 
