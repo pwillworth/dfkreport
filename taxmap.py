@@ -369,7 +369,7 @@ def buildGardensRecords(gardensEvents, startDate, endDate):
                 # Not really!
                 ti.costs = event.coinAmount
                 ti.amountNotAccounted = 0
-                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event))] = ti
+                rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType))] = ti
 
     for k, v in rewardGroups.items():
         v.description += ' {:.3f}'.format(v.costs)
