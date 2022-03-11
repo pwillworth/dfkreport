@@ -362,6 +362,29 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account)
                 else:
                     logging.info('Failed to parse bridge results tx {0}'.format(tx))
+            elif 'Potion Use' in action:
+                logging.debug('Used Potion: {0}'.format(tx))
+                results = extractPotionResults(w3, tx, account, timestamp, receipt, result['input'])
+                eventsFound = True
+                if results != None:
+                    events_map['tavern'].append(results)
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                else:
+                    logging.info('Failed to parse potion results {0}'.format(tx))
+            elif 'Perilous Journey' in action:
+                logging.debug('Perilous Journey activity: {0}'.format(tx))
+                # TODO process PJ claim unknown how this will work yet, for now mark all these tx so they can be re-processed later
+                results = None
+                eventsFound = True
+                if results != None:
+                    events_map['tavern'].append(results)
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                else:
+                    if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                        db.saveTransaction(tx, timestamp, 'nonepj', '', account)
+                    logging.info('No events for Perilous Journey tx {0}'.format(tx))
             else:
                 # Native token wallet transfers
                 results = []
@@ -853,6 +876,30 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt):
     else:
         logging.error('Failed to add alchemist record, wrong token rcvd {0}'.format(txn))
     return r
+
+def extractPotionResults(w3, txn, account, timestamp, receipt, inputs):
+    r = None
+    # Determine hero that is consuming potion from tx input
+    ABI = '[{"inputs":[{"internalType":"address","name":"_address","type":"address"},{"internalType":"uint256","name":"heroId","type":"uint256"}],"name":"consumeItem","outputs":[],"stateMutability":"view","type":"function"}]'
+    contract = w3.eth.contract(address='0x38e76972BD173901B5E5E43BA5cB464293B80C31', abi=ABI)
+    input_data = contract.decode_function_input(inputs)
+    logging.info(str(input_data))
+    heroId = input_data[1]['heroId']
+
+    ABI = getABI('JewelToken')
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    consumedItem = ''
+    consumedCount = 0
+    for log in decoded_logs:
+        if log['args']['from'] == account:
+            consumedItem = log['address']
+            consumedCount = log['args']['value']
+    if consumedItem != '':
+        r = records.TavernTransaction(txn, 'hero', heroId, 'consume', timestamp, consumedItem, consumedCount)
+
+    return r
+
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event
