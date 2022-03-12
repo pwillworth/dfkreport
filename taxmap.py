@@ -271,7 +271,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
                         searchEvent.receiveAmountNotAccounted = 0
                     else:
                         # use up as much of recieve transaction as swap was for and update amount left to account for on receive
-                        ti.costs += (searchEvent.fiatReceiveValue / searchEvent.receiveAmountNotAccounted) * event.swapAmountNotAccounted
+                        ti.costs += (searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
                         searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
                         event.swapAmountNotAccounted = 0
                         break
@@ -307,7 +307,7 @@ def buildLiquidityRecords(liquidityEvents, startDate, endDate):
                         searchEvent.amountNotAccounted = 0
                     else:
                         # deposit is larger than remaining cost basis we need to find so use part of it
-                        ti.costs += (searchEventTotalValue / searchEvent.amountNotAccounted) * event.amountNotAccounted
+                        ti.costs += (searchEventTotalValue / searchEvent.poolAmount) * event.amountNotAccounted
                         searchEvent.amountNotAccounted -= event.amountNotAccounted
                         event.amountNotAccounted = 0
             # Note any amount of cost basis not found for later red flag
