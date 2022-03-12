@@ -336,7 +336,7 @@ def buildBankRecords(bankEvents, startDate, endDate):
                     ti.acquiredDate = searchEventDate
                     if searchEvent.amountNotAccounted <= event.amountNotAccounted:
                         # deposit is smaller than this event, so use it all up as cost basis
-                        ti.costs += (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / searchEvent.coinAmount) * (searchEvent.xRate / event.xRate)
+                        ti.costs += (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / (searchEvent.coinAmount / searchEvent.xRate)) * (searchEvent.xRate / event.xRate)
                         event.amountNotAccounted -= searchEvent.amountNotAccounted
                         searchEvent.amountNotAccounted = 0
                     else:
