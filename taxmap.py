@@ -321,6 +321,7 @@ def buildLiquidityRecords(liquidityEvents, startDate, endDate):
 # Generate Bank xJewel rewards Tax records from the events
 def buildBankRecords(bankEvents, startDate, endDate):
     results = []
+    bankEvents = costBasisSort(bankEvents, 'fifo')
     for event in bankEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Withdrawal from Bank triggers realized xJewel rewards, make tax item and find cost basis
