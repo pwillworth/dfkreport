@@ -86,6 +86,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
     questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
     airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
+    lendingData = buildLendingRecords(eventMap['lending'], startDate, endDate)
     walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
     # pop out all events not in date range
     eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
@@ -97,9 +98,11 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
     eventMap['alchemist'] = [x for x in eventMap['alchemist'] if inReportRange(x, startDate, endDate)]
     eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
+    eventMap['lending'] = [x for x in eventMap['lending'] if inReportRange(x, startDate, endDate)]
+    eventMap['lending'] = costBasisSort(eventMap['lending'], 'fifo')
     # Return all tax records combined and events
     return {
-        'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData + walletData,
+        'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData + lendingData + walletData,
         'events': eventMap
     }
 
@@ -396,6 +399,18 @@ def buildAirdropRecords(airdropEvents, startDate, endDate):
             ti.amountNotAccounted = 0
             results.append(ti)
 
+    return results
+
+# Generate Lending income Tax events
+def buildLendingRecords(lendingEvents, startDate, endDate):
+    results = []
+    for event in lendingEvents:
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
+        if event.event == 'interest' and eventDate >= startDate and eventDate <= endDate:
+            desc = '{0} {1:.3f} {2}'.format(event.event, event.coinAmount, contracts.getAddressName(event.coinType))
+            ti = TaxItem(event.txHash, event.coinAmount, event.coinType, 0, '', desc, 'expenses', eventDate, event.fiatType, 0, None, event.fiatValue)
+            ti.amountNotAccounted = 0
+            results.append(ti)
     return results
 
 # Generate Quest rewards Tax events

@@ -25,6 +25,7 @@ def EventsMap():
         'quests': [],
         'alchemist': [],
         'airdrops': [],
+        'lending': [],
         'gas': 0
     }
 
@@ -187,6 +188,15 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account)
                 else:
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
+            elif 'Lending' in action:
+                logging.info("Lending activity {0}".format(tx))
+                eventsFound = True
+                results = extractLendingResults(w3, tx, account, timestamp, receipt, network, value)
+                if results != None:
+                    if results[0] != None:
+                        events_map['lending'].append(results[0])
+                    if results[1] != None:
+                        events_map['lending'].append(results[1])
             elif 'Airdrop' in action:
                 results = extractAirdropResults(w3, tx, account, timestamp, receipt)
                 for item in results:
@@ -922,6 +932,50 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
             r = records.walletActivity(txn, timestamp, 'bridge', otherAddress, log['address'], tokenValue)
             r.fiatValue = prices.priceLookup(timestamp, r.coinType) * tokenValue
     return r
+
+def extractLendingResults(w3, txn, account, timestamp, receipt, network, value):
+    # Create record of the lending events
+    lendingToken = ''
+    lendingValue = 0
+    ABI = getABI('TqErc20Delegator')
+    contract = w3.eth.contract(address='0xCa3e902eFdb2a410C952Fd3e4ac38d7DBDCB8E96', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        lendingToken = log['address']
+        lendingValue = valueFromWei(log['args']['amount'], lendingToken)
+    if lendingToken == '':
+        ABI = getABI('TqOne')
+        contract = w3.eth.contract(address='0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940', abi=ABI)
+        lendingToken = getNativeToken(network)
+        lendingValue = valueFromWei(value, lendingToken)
+
+    r = None
+    ri = None
+    decoded_logs = contract.events.RepayBorrow().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info('Pay back {0} of borrow, remaining borrow is now {1} {2}'.format(valueFromWei(log['args']['repayAmount'], lendingToken), valueFromWei(log['args']['accountBorrows'], lendingToken), contracts.getAddressName(log['address'])))
+        logging.info(log)
+        r = records.LendingTransaction(txn, timestamp, 'repay', log['address'], lendingToken, valueFromWei(log['args']['repayAmount'], lendingToken))
+        r.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['repayAmount'], lendingToken)
+    decoded_logs = contract.events.Borrow().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info('Borrowed {0} {1} total borrowed is now {2}'.format(valueFromWei(log['args']['borrowAmount'], lendingToken), contracts.getAddressName(log['address']), valueFromWei(log['args']['accountBorrows'], lendingToken)))
+        logging.info(log)
+        r = records.LendingTransaction(txn, timestamp, 'borrow', log['address'], lendingToken, valueFromWei(log['args']['borrowAmount'], lendingToken))
+        r.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['borrowAmount'], lendingToken)
+    # TODO figure out interest, the event seems to show in interest accumulated that is unrelated to the borrow being repaid, maybe global for user or contract
+    decoded_logs = contract.events.AccrueInterest().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info(log)
+        logging.info('Accumulated interest on borrow {0} {1}'.format(valueFromWei(log['args']['interestAccumulated'], lendingToken), contracts.getAddressName(log['address'])))
+        ri = records.LendingTransaction(txn, timestamp, 'interest', log['address'], lendingToken, valueFromWei(log['args']['interestAccumulated'], lendingToken))
+        ri.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['interestAccumulated'], lendingToken)
+    decoded_logs = contract.events.Redeem().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info(log)
+
+    return [r, ri]
+
 
 def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
     ABI = getABI('JewelToken')

@@ -184,7 +184,7 @@ var address_map = {
   '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
   '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX'
 };
-event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops'];
+event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
 paymentsTotalValue = 0;
 
@@ -226,6 +226,9 @@ function loadReport(results, contentType, eventGroup='all') {
         break;
       case 'airdrops':
         loadAirdropEvents(eventResult[eventGroup]);
+        break;
+      case 'lending':
+        loadLendingEvents(eventResult[eventGroup]);
         break;
       case 'quests':
         loadQuestEvents(eventResult[eventGroup]);
@@ -424,9 +427,17 @@ function loadGardensEvents(gardensEvents) {
       fiatValue = gardensEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
     var location = 'Gardens'
-    if (address_map[gardensEvents[i].coinType].includes('Jewel')) {
+    var lpName = String(address_map[gardensEvents[i].coinType])
+    if (lpName.includes('Venom')) {
+      location = 'ViperSwap'
+    }
+    if (lpName.includes('Tranquil')) {
+      location = 'Tranquil Finance'
+    }
+    if (lpName.includes('Jewel')) {
       location = 'Serendale'
-    } else {
+    }
+    if (lpName.includes('Pangolin')) {
       location = 'Pangolin'
     }
     $('#tx_gardens_data').show();
@@ -590,6 +601,24 @@ function loadAirdropEvents(airdropEvents) {
     airdropTable = airdropTable + '<tr><td>' + k + '</td><td>' + airdropTotals[k].toFixed(3) + '</td><td>' + usdFormat.format(airdropValues[k]) + '</td></tr>';
   }
   $("#smy_airdrops_data").html(airdropTable + '</table>');
+}
+
+function loadLendingEvents(lendingEvents) {
+  // Populate the transaction list with lending borrow/repay events
+  $("#tx_lending_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
+  for (var i = 0; i < lendingEvents.length; i++) {
+    var eventDate = new Date(lendingEvents[i].timestamp * 1000)
+    $('#tx_lending_data').show();
+    $('#tx_lending_data').append(
+      '<tr><td>' + eventDate.toUTCString() + '</td>' +
+      '<td>' + lendingEvents[i].address + '</td>' +
+      '<td>' + lendingEvents[i].event + '</td>' +
+      '<td>' + address_map[lendingEvents[i].coinType] + '</td>' +
+      '<td>' + Number(lendingEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]).toFixed(5) + '</td>' +
+      '<td>' + usdFormat.format(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]) + '</td></tr>'
+    );
+    $('#tx_lending_count').html(' (' + (i + 1) + ')');
+  }
 }
 
 function loadQuestEvents(questEvents) {
