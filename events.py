@@ -436,8 +436,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
 
 # Simple way to determine conversion, maybe change to lookup on chain later
 def valueFromWei(amount, token):
-    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
-    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d']:
+    #w3.fromWei doesn't seem to have an 8 decimal option for BTC and tqONE
+    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d', '0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940']:
         return amount / decimal.Decimal(100000000)
     else:
         if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
@@ -935,44 +935,65 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
 
 def extractLendingResults(w3, txn, account, timestamp, receipt, network, value):
     # Create record of the lending events
-    lendingToken = ''
-    lendingValue = 0
+    sentToken = ''
+    sentValue = 0
+    rcvdToken = ''
     ABI = getABI('TqErc20Delegator')
     contract = w3.eth.contract(address='0xCa3e902eFdb2a410C952Fd3e4ac38d7DBDCB8E96', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        lendingToken = log['address']
-        lendingValue = valueFromWei(log['args']['amount'], lendingToken)
-    if lendingToken == '':
+        if log['args']['from'] == account:
+            sentToken = log['address']
+            sentValue = valueFromWei(log['args']['amount'], sentToken)
+        elif  log['args']['to'] == account:
+            rcvdToken = log['address']
+    if rcvdToken == '':
+        rcvdToken = getNativeToken(network)
+    if sentToken == '' and value > 0:
         ABI = getABI('TqOne')
         contract = w3.eth.contract(address='0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940', abi=ABI)
-        lendingToken = getNativeToken(network)
-        lendingValue = valueFromWei(value, lendingToken)
+        sentToken = getNativeToken(network)
+        sentValue = value
 
     r = None
     ri = None
     decoded_logs = contract.events.RepayBorrow().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info('Pay back {0} of borrow, remaining borrow is now {1} {2}'.format(valueFromWei(log['args']['repayAmount'], lendingToken), valueFromWei(log['args']['accountBorrows'], lendingToken), contracts.getAddressName(log['address'])))
-        logging.info(log)
-        r = records.LendingTransaction(txn, timestamp, 'repay', log['address'], lendingToken, valueFromWei(log['args']['repayAmount'], lendingToken))
-        r.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['repayAmount'], lendingToken)
+        logging.info('Pay back {0} of borrow, remaining borrow is now {1} {2} total borrows {3}'.format(valueFromWei(log['args']['repayAmount'], sentToken), valueFromWei(log['args']['accountBorrows'], sentToken), contracts.getAddressName(log['address']), valueFromWei(log['args']['totalBorrows'], sentToken)))
+        r = records.LendingTransaction(txn, timestamp, 'repay', log['address'], sentToken, sentValue)
+        r.fiatValue = prices.priceLookup(timestamp, sentToken) * sentValue
     decoded_logs = contract.events.Borrow().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info('Borrowed {0} {1} total borrowed is now {2}'.format(valueFromWei(log['args']['borrowAmount'], lendingToken), contracts.getAddressName(log['address']), valueFromWei(log['args']['accountBorrows'], lendingToken)))
-        logging.info(log)
-        r = records.LendingTransaction(txn, timestamp, 'borrow', log['address'], lendingToken, valueFromWei(log['args']['borrowAmount'], lendingToken))
-        r.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['borrowAmount'], lendingToken)
+        logging.info('Borrowed {0} {1} account borrowed is now {2} total borrowed is {3}'.format(valueFromWei(log['args']['borrowAmount'], rcvdToken), contracts.getAddressName(log['address']), valueFromWei(log['args']['accountBorrows'], rcvdToken), valueFromWei(log['args']['totalBorrows'], rcvdToken)))
+        r = records.LendingTransaction(txn, timestamp, 'borrow', log['address'], rcvdToken, valueFromWei(log['args']['borrowAmount'], rcvdToken))
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken) * valueFromWei(log['args']['borrowAmount'], rcvdToken)
     # TODO figure out interest, the event seems to show in interest accumulated that is unrelated to the borrow being repaid, maybe global for user or contract
-    decoded_logs = contract.events.AccrueInterest().processReceipt(receipt, errors=DISCARD)
-    for log in decoded_logs:
-        logging.info(log)
-        logging.info('Accumulated interest on borrow {0} {1}'.format(valueFromWei(log['args']['interestAccumulated'], lendingToken), contracts.getAddressName(log['address'])))
-        ri = records.LendingTransaction(txn, timestamp, 'interest', log['address'], lendingToken, valueFromWei(log['args']['interestAccumulated'], lendingToken))
-        ri.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['interestAccumulated'], lendingToken)
+    #decoded_logs = contract.events.AccrueInterest().processReceipt(receipt, errors=DISCARD)
+    #for log in decoded_logs:
+    #    logging.info(log)
+    #    logging.info('Accumulated interest on borrow {0} {1}'.format(valueFromWei(log['args']['interestAccumulated'], lendingToken), contracts.getAddressName(log['address'])))
+    #    ri = records.LendingTransaction(txn, timestamp, 'interest', log['address'], lendingToken, valueFromWei(log['args']['interestAccumulated'], lendingToken))
+    #    ri.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['interestAccumulated'], lendingToken)
+    # Redeem is pulling money out of lending, looks like sending tqONE, getting ONE
     decoded_logs = contract.events.Redeem().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info(log)
+        logging.info('Redeemed {0} {1} for {2} tq tokens'.format(valueFromWei(log['args']['redeemAmount'], rcvdToken), contracts.getAddressName(log['address']), log['args']['redeemTokens']))
+        r = records.LendingTransaction(txn, timestamp, 'redeem', log['address'], rcvdToken, valueFromWei(log['args']['redeemAmount'], rcvdToken))
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken) * valueFromWei(log['args']['redeemAmount'], rcvdToken)
+    # Mint is Putting money up for lending, looks like sending token and geting tq tokens back
+    decoded_logs = contract.events.Mint().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info('Lended {0} {1} rcvd {2} tq tokens'.format(valueFromWei(log['args']['mintAmount'], sentToken), contracts.getAddressName(log['address']), log['args']['mintTokens']))
+        r = records.LendingTransaction(txn, timestamp, 'lend', log['address'], sentToken, sentValue)
+        r.fiatValue = prices.priceLookup(timestamp, sentToken) * sentValue
+    decoded_logs = contract.events.LiquidateBorrow().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info('Liquidate {0} {3} of borrow, seized {1} {2}'.format(valueFromWei(log['args']['repayAmount'], sentToken), valueFromWei(log['args']['seizeTokens'], log['args']['tqTokenCollateral']), contracts.getAddressName(log['args']['tqTokenCollateral']), contracts.getAddressName(rcvdToken)))
+        r = records.LendingTransaction(txn, timestamp, 'liquidate', log['address'], sentToken, sentValue)
+        r.fiatValue = prices.priceLookup(timestamp, sentToken) * sentValue
+        # seize assets are received as actively lended, so cannot determine value until redeem is done
+        #ri = records.LendingTransaction(txn, timestamp, 'seize', log['address'], rcvdToken, valueFromWei(log['args']['seizeTokens'], log['args']['tqTokenCollateral']))
+        #ri.fiatValue = prices.priceLookup(timestamp, rcvdToken)
 
     return [r, ri]
 

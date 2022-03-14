@@ -608,14 +608,22 @@ function loadLendingEvents(lendingEvents) {
   $("#tx_lending_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < lendingEvents.length; i++) {
     var eventDate = new Date(lendingEvents[i].timestamp * 1000)
+    var tokenAmount = lendingEvents[i].coinAmount;
+    var fiatValue = lendingEvents[i].fiatValue;
+    if (lendingEvents[i].coinAmount['py/reduce'] != undefined) {
+      tokenAmount = Number(lendingEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
+    }
+    if (lendingEvents[i].fiatValue['py/reduce'] != undefined) {
+      fiatValue = Number(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
+    }
     $('#tx_lending_data').show();
     $('#tx_lending_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
       '<td>' + lendingEvents[i].address + '</td>' +
       '<td>' + lendingEvents[i].event + '</td>' +
       '<td>' + address_map[lendingEvents[i].coinType] + '</td>' +
-      '<td>' + Number(lendingEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]).toFixed(5) + '</td>' +
-      '<td>' + usdFormat.format(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]) + '</td></tr>'
+      '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
+      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
     );
     $('#tx_lending_count').html(' (' + (i + 1) + ')');
   }
