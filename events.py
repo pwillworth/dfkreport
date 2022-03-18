@@ -374,13 +374,14 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Failed to parse potion results {0}'.format(tx))
             elif 'Perilous Journey' in action:
                 logging.debug('Perilous Journey activity: {0}'.format(tx))
-                # TODO process PJ claim unknown how this will work yet, for now mark all these tx so they can be re-processed later
-                results = None
+                # TODO Add perished tavern event for tavern results with rewards gained per hero and pair w/cost basis
+                results = extractAirdropResults(w3, tx, account, timestamp, receipt, '0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7')
+                for item in results:
+                    events_map['airdrops'].append(item)
                 eventsFound = True
-                if results != None:
-                    events_map['tavern'].append(results)
+                if len(results) > 0:
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
                 else:
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                         db.saveTransaction(tx, timestamp, 'nonepj', '', account)
@@ -782,14 +783,14 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
             rs.seller = auctionSeller
     return [r, rs]
 
-def extractAirdropResults(w3, txn, account, timestamp, receipt):
+def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
     # Create record of the airdrop tokens received
     ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdTokens = {}
     results = []
-    address = ''
+    address = source
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
@@ -807,6 +808,9 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt):
                     rcvdTokens[log['address']] = valueFromWei(log['args']['value'], log['address'])
             else:
                 logging.info('ignored airdrop log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+    # If some address was passed in, override source address with it instead of using from/to
+    if source != 'from':
+        address = source
     for k, v in rcvdTokens.items():
         logging.info('AirdropClaimed: {0} {1}'.format(v, k))
         r = records.AirdropTransaction(txn, timestamp, address, k, v)

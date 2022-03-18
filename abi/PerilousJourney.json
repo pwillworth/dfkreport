@@ -1,5 +1,30 @@
 [
     {
+        "name": "Transfer",
+        "type": "event",
+        "inputs": [
+            {
+                "type": "address",
+                "internalType": "address",
+                "indexed": true,
+                "name": "from"
+            },
+            {
+                "internalType": "address",
+                "name": "to",
+                "indexed": true,
+                "type": "address"
+            },
+            {
+                "name": "value",
+                "indexed": false,
+                "internalType": "uint256",
+                "type": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
         "anonymous": false,
         "inputs": [
             {
