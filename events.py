@@ -48,9 +48,6 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         return 'Error: Blockchain connection failure.'
 
     txCount = 0
-    summonCrystalStorage = [None, None, None]
-    heroIdStorage = None
-    heroIdTx = None
     heroCrystals = {}
     for txn in txs:
         # The AVAX list data includes the whole transaction, but harmony is just the hash
@@ -239,61 +236,57 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 logging.debug('Summoning activity: {0}'.format(tx))
                 results = extractSummonResults(w3, tx, account, timestamp, receipt)
                 if results != None:
-                    if type(results) == int:
+                    if type(results[1]) == int:
                         eventsFound = True
                         logging.info('heroid results {0} {1}'.format(tx, results))
-                        if summonCrystalStorage[2] != None:
+                        if results[0] in heroCrystals:
                             # crystal open event just returns the hero ID summoned so we can now add the full data
-                            for r in summonCrystalStorage[2]:
-                                r.itemID = results
-                            events_map['tavern'] = events_map['tavern'] + summonCrystalStorage[2]
-                            if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
-                                db.saveTransaction(summonCrystalStorage[0], summonCrystalStorage[1], 'tavern', jsonpickle.encode(summonCrystalStorage[2]), account)
+                            for r in heroCrystals[results[0]][2]:
+                                if r != None:
+                                    r.itemID = results[1]
+                            events = [heroCrystals[results[0]][2][0], heroCrystals[results[0]][2][1]]
+                            if heroCrystals[results[0]][2][3] != None:
+                                events.append(heroCrystals[results[0]][2][3])
+                            events_map['tavern'] += events
+                            if settings.USE_CACHE and db.findTransaction(heroCrystals[results[0]][0], account) == None:
+                                db.saveTransaction(heroCrystals[results[0]][0], heroCrystals[results[0]][1], 'tavern', jsonpickle.encode(events), account)
                             else:
                                 logging.info('tried to save portal record that already existed {0}'.format(tx))
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                                 db.saveTransaction(tx, timestamp, 'nones', '', account)
                             else:
                                 logging.info('tried to save none portal when record already existed {0}'.format(tx))
-                            summonCrystalStorage = [None, None, None]
-                            heroIdStorage = None
-                            heroIdTx = None
                         else:
                             # on rare occassion the crystal open even might get parsed before the summon crystal
-                            heroIdStorage = results
-                            heroIdTx = tx
-                    elif len(results) > 1 and results[1] != None:
+                            heroCrystals[results[0]] = [tx, timestamp, [], results[1]]
+                    elif len(results[1]) > 1 and results[1][1] != None:
                         eventsFound = True
-                        if heroIdStorage == None:
+                        if results[0] not in heroCrystals:
                             # store crystal creation events for later so we can tag it with the summoned hero id
-                            summonCrystalStorage[0] = tx
-                            summonCrystalStorage[1] = timestamp
-                            summonCrystalStorage[2] = [results[0], results[1]]
+                            heroCrystals[results[0]] = [tx, timestamp, results[1], 0]
                         else:
                             # events came in backwards and now we can save with hero id
-                            results[1].itemID = heroIdStorage
-                            if results[0] != None:
-                                results[0].itemID = heroIdStorage
-                            events_map['tavern'] = events_map['tavern'] + [results[0], results[1]]
+                            results[1][1].itemID = heroCrystals[results[0]][3]
+                            if results[1][0] != None:
+                                results[1][0].itemID = heroCrystals[results[0]][3]
+                            events = [results[1][0], results[1][1]]
+                            if results[1][3] != None:
+                                events.append(results[1][3])
+                            events_map['tavern'] += events
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([results[0], results[1]]), account)
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(events), account)
                             else:
                                 logging.info('tried to save backwards portal that already existed {0}'.format(tx))
-                            if settings.USE_CACHE and db.findTransaction(summonCrystalStorage[0], account) == None:
-                                db.saveTransaction(heroIdTx, timestamp, 'nonec', '', account)
+                            if settings.USE_CACHE and db.findTransaction(heroCrystals[results[0]][0], account) == None:
+                                db.saveTransaction(heroCrystals[results[0]][0], timestamp, 'nonec', '', account)
                             else:
                                 logging.info('tried to save a backwards noen that already existed {0}'.format(tx))
-                            heroIdStorage = None
-                            heroIdTx = None
-                            summonCrystalStorage = [None, None, None]
-                    if type(results) != int and len(results) > 2 and results[2] != None:
+                    if type(results[1]) != int and len(results[1]) > 2 and results[1][2] != None:
                         eventsFound = True
-                        # other events are single hero hires
+                        # If third event it is hero hire during summon
                         # record is to be saved in db and will be looked up when seller runs thier tax report
-                        # All of these get populated by running a report for the Tavern Address though, so we need to
-                        # skip if record has already been created.
-                        if db.findTransaction(tx, results[2].seller) == None:
-                            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[2]), results[2].seller)
+                        if db.findTransaction(tx, results[1][2].seller) == None:
+                            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller)
                         else:
                             logging.info('summon hire found but was already in db on {0}.'.format(tx))
                 else:
@@ -307,7 +300,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             events_map['tavern'].append(record)
                             eventsFound = True
                     if settings.USE_CACHE and eventsFound:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([r for r in results if r]), account)
                 else:
                     logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
             elif 'Alchemist' in action:
@@ -685,19 +678,26 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
     r = None
     rc = None
     rs = None
+    rt = None
+    crystalId = 0
     summoner = 'unk'
     assistant = 'unk'
     contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.info('Summonning Crystal log: summonerId {0} assistantId {1} generation {2} summonerTears {3} assistantTears {4}'.format(log['args']['summonerId'], log['args']['assistantId'], log['args']['generation'], log['args']['summonerTears'], log['args']['assistantTears']))
+        logging.info('Summonning Crystal log: {0}'.format(log))
         if type(log['args']['generation']) is int:
             summoner = log['args']['summonerId']
             assistant = log['args']['assistantId']
+            crystalId = log['args']['crystalId']
+            bonusItem = log['args']['bonusItem']
             rc = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
             r = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
+            if bonusItem != '0x0000000000000000000000000000000000000000':
+                rt = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'enhance', timestamp, bonusItem, 1)
+                rt.fiatAmount = prices.priceLookup(timestamp, bonusItem)
             logging.info('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
 
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
@@ -716,9 +716,9 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
     decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.info('{3} crystal open {0} hero {1} for {2}'.format(log['args']['crystalId'], log['args']['heroId'], log['args']['owner'], txn))
-        return log['args']['heroId']
+        return [log['args']['crystalId'], log['args']['heroId']]
 
-    return [r, rc, rs]
+    return [crystalId, [r, rc, rs, rt]]
 
 def extractMeditationResults(w3, txn, account, timestamp, receipt):
     # Get the meditation costs data
@@ -738,16 +738,21 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
     complete_logs = contract.events.MeditationBegun().processReceipt(receipt, errors=DISCARD)
     r = None
     rs = None
+    rt = None
     heroID = None
     for log in complete_logs:
         heroID = log['args']['heroId']
+        crystal = log['args']['attunementCrystal']
         if type(heroID) is int:
             rs = records.TavernTransaction(txn, 'hero', heroID, 'levelup', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             r = records.TavernTransaction(txn, 'hero', heroID, 'meditate', timestamp, '0x66F5BfD910cd83d3766c4B39d13730C911b2D286', int(shvasAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
+            if crystal != '0x0000000000000000000000000000000000000000':
+                rt = records.TavernTransaction(txn, 'hero', heroID, 'enhance', timestamp, crystal, 1)
+                rt.fiatAmount = prices.priceLookup(timestamp, crystal)
             logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
-    return [r, rs]
+    return [r, rs, rt]
 
 def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     # Get the seller data

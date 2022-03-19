@@ -124,7 +124,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if event.event in ['purchase','summon','crystal','meditate','levelup'] and eventDate >= startDate and eventDate <= endDate:
+        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance'] and eventDate >= startDate and eventDate <= endDate:
             if event.itemType == 'land':
                 if event.itemID in landExpenses:
                     if event.event in landExpenses[event.itemID].description:
@@ -191,7 +191,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     vp.amountNotAccounted = 0
                 if vp.soldDate - vp.acquiredDate > datetime.timedelta(days=365):
                     vp.term = "long"
-                v.proceeds = event.fiatAmount
+                v.proceeds = vp.proceeds
         results.append(vp)
 
     for event in tavernEvents:
@@ -256,7 +256,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
         ci = CostBasisItem(qEvent.txHash, qEvent.timestamp, qEvent.rewardType, qEvent.rewardAmount, qEvent.fiatType, qEvent.fiatValue)
         cbList.append(ci)
     for tEvent in tavernEvents:
-        if tEvent.event in ['hire','sale']:
+        if tEvent.event in ['hire','sale','perished']:
             ci = CostBasisItem(tEvent.txHash, tEvent.timestamp, tEvent.coinType, tEvent.coinCost, tEvent.fiatType, tEvent.fiatAmount)
             cbList.append(ci)
     # Also run through direct wallet transactions to try and fill remaining gaps in received value accounting

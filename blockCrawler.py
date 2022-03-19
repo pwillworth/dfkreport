@@ -27,9 +27,9 @@ def handleLogs(w3, event):
     # Three possible addresses for summoning portal
     elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355','0xa2D001C829328aa06a2DB2740c05ceE1bFA3c6bb']:
         results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
-        if results != None and type(results) != int and len(results) > 2 and results[2] != None:
-            if db.findTransaction(tx, results[2].seller) == None:
-                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[2]), results[2].seller)
+        if results != None and type(results[1]) != int and len(results[1]) > 2 and results[1][2] != None:
+            if db.findTransaction(tx, results[1][2].seller) == None:
+                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller)
     else:
         logging.error('Unknown contract in filter')
 
