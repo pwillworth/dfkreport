@@ -374,14 +374,13 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Failed to parse potion results {0}'.format(tx))
             elif 'Perilous Journey' in action:
                 logging.debug('Perilous Journey activity: {0}'.format(tx))
-                # TODO Add perished tavern event for tavern results with rewards gained per hero and pair w/cost basis
-                results = extractAirdropResults(w3, tx, account, timestamp, receipt, '0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7')
+                results = extractJourneyResults(w3, tx, account, timestamp, receipt, result['input'])
                 for item in results:
-                    events_map['airdrops'].append(item)
+                    events_map['tavern'].append(item)
                 eventsFound = True
                 if len(results) > 0:
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
                 else:
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                         db.saveTransaction(tx, timestamp, 'nonepj', '', account)
@@ -814,7 +813,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
     for k, v in rcvdTokens.items():
         logging.info('AirdropClaimed: {0} {1}'.format(v, k))
         r = records.AirdropTransaction(txn, timestamp, address, k, v)
-        r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
+        #r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
         results.append(r)
     return results
 
@@ -904,6 +903,34 @@ def extractPotionResults(w3, txn, account, timestamp, receipt, inputs):
 
     return r
 
+def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
+    # Perilous Journey - record dead heroes in tavern transactions with rewards
+    ABI = getABI('PerilousJourney')
+    contract = w3.eth.contract(address='0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7', abi=ABI)
+    input_data = contract.decode_function_input(inputs)
+    logging.info(str(input_data))
+    rewards = []
+    perishedHeroRewards = {}
+    # HeroClaimed event contains jewel/crystal rewards
+    decoded_logs = contract.events.HeroClaimed().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info(log)
+        if log['args']['player'] == account and log['args']['heroSurvived'] == False:
+            perishedHeroRewards[log['args']['heroId']] = {'0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': valueFromWei(log['args']['jewelAmount'], '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')}
+    # JourneyReward event contains other rewards runes/stones/crystals
+    decoded_logs = contract.events.JourneyReward().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.info(log)
+        if log['args']['heroId'] in perishedHeroRewards:
+            perishedHeroRewards[log['args']['heroId']][log['args']['rewardItem']] = log['args']['itemQuantity']
+
+    for k, v in perishedHeroRewards.items():
+        for k2, v2 in v.items():
+            r = records.TavernTransaction(txn, 'hero', k, 'perished', timestamp, k2, v2)
+            r.fiatAmount = prices.priceLookup(timestamp, k2) * v2
+            rewards.append(r)
+
+    return rewards
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event

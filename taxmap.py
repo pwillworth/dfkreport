@@ -120,6 +120,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     heroExpenses = {}
     heroIncome = {}
     landExpenses = {}
+    perishRewards = {}
     # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
@@ -167,6 +168,31 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             else:
                 ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Hero {0} {1}'.format(event.itemID, event.event), 'income', eventDate, event.fiatType, event.fiatAmount)
                 heroIncome[event.itemID] = ti
+
+    for event in tavernEvents:
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
+        # summarize rewards for any perished event in the requested range
+        if event.event == 'perished' and eventDate >= startDate and eventDate <= endDate:
+            if event.itemID in perishRewards:
+                perishRewards[event.itemID].proceeds += event.fiatAmount
+                perishRewards[event.itemID].soldDate = eventDate
+            else:
+                ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Perished {1} {0}'.format(event.itemID, event.itemType), 'gains', eventDate, event.fiatType, event.fiatAmount)
+                ti.amountNotAccounted = 1
+                perishRewards[event.itemID] = ti
+    # Create a tax record for any perished hero in the requested range and add cost basis
+    for kp, vp in perishRewards.items():
+        for k, v in heroExpenses.items():
+            if k == kp:
+                if vp.acquiredDate == None:
+                    vp.acquiredDate = v.acquiredDate
+                vp.costs = v.costs
+                if 'summon' in v.description or 'purchase' in v.description:
+                    vp.amountNotAccounted = 0
+                if vp.soldDate - vp.acquiredDate > datetime.timedelta(days=365):
+                    vp.term = "long"
+                v.proceeds = event.fiatAmount
+        results.append(vp)
 
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
