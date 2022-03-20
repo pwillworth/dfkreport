@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import nets
@@ -27,12 +26,6 @@ def EventsMap():
         'airdrops': [],
         'gas': 0
     }
-
-def getABI(contractName):
-    location = os.path.abspath(__file__)
-    with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
-        ABI = f.read()
-    return ABI
 
 def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete=0):
     events_map = EventsMap()
@@ -217,7 +210,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     # if no bank result was parsed, it is just a direct xJewel transfer
                     logging.error('Error: Failed to parse a bank result.')
-                    ABI = getABI('xJewel')
+                    ABI = contracts.getABI('xJewel')
                     contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
                     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
                     for log in decoded_logs:
@@ -315,7 +308,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.info('Failed to parse alchemist results tx {0}'.format(tx))
             elif 'HeroSale' in action:
                 # Special Gen0 sale events are like a summon but are crystals are bought with jewel
-                ABI = getABI('HeroSale')
+                ABI = contracts.getABI('HeroSale')
                 contract = w3.eth.contract(address='0xdF0Bf714e80F5e6C994F16B05b7fFcbCB83b89e9', abi=ABI)
                 decoded_logs = contract.events.Gen0Purchase().processReceipt(receipt, errors=DISCARD)
                 heroId = 0
@@ -417,28 +410,6 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     db.updateReport(account, startDate, endDate, 'complete', alreadyComplete + len(txs))
     return events_map
 
-# Simple way to determine conversion, maybe change to lookup on chain later
-def valueFromWei(amount, token):
-    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
-    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d']:
-        return amount / decimal.Decimal(100000000)
-    else:
-        if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
-            weiConvert = 'kwei'
-        elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4','0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f','0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664']: # 1USDC/1USDT
-            weiConvert = 'mwei'
-        elif token in contracts.gold_values:
-            weiConvert = 'wei'
-        else:
-            weiConvert = 'ether'
-        return Web3.fromWei(amount, weiConvert)
-
-def getNativeToken(network):
-    if network == 'avalanche':
-        return '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
-    else:
-        return '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a'
-
 def lookupEvent(fm, to, account):
     fmStr = ''
     toStr = ''
@@ -462,7 +433,7 @@ def lookupEvent(fm, to, account):
     return "{0} -> {1}".format(fmStr, toStr)
 
 def extractBankResults(w3, txn, account, timestamp, receipt):
-    ABI = getABI('xJewel')
+    ABI = contracts.getABI('xJewel')
     contract = w3.eth.contract(address='0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdToken = "unk"
@@ -491,7 +462,7 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
 
 def extractGardenerResults(w3, txn, account, timestamp, receipt):
     # events record amount of jewel received when claiming at the gardens
-    ABI = getABI('MasterGardener')
+    ABI = contracts.getABI('MasterGardener')
     contract = w3.eth.contract(address='0xDB30643c71aC9e2122cA0341ED77d09D5f99F924', abi=ABI)
     events = []
     decoded_logs = contract.events.SendGovernanceTokenReward().processReceipt(receipt, errors=DISCARD)
@@ -507,7 +478,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
         events.append(rl)
 
     # events record amount of lp tokens put in and out of gardens for farming and when
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     gardenEvent = ''
@@ -532,7 +503,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
 
 def extractFarmResults(w3, txn, account, timestamp, receipt):
     # events record amount of rewards received when claiming at the farms
-    ABI = getABI('ERC20')
+    ABI = contracts.getABI('ERC20')
     contract = w3.eth.contract(address='0x1f806f7C8dED893fd3caE279191ad7Aa3798E928', abi=ABI)
     events = []
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
@@ -569,10 +540,10 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
     return events
 
 def extractSwapResults(w3, txn, account, timestamp, receipt, network):
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
-    ABI = getABI('Wrapped ONE')
+    ABI = contracts.getABI('Wrapped ONE')
     contract = w3.eth.contract(address='0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a', abi=ABI)
     decoded_logs += contract.events.Withdrawal().processReceipt(receipt, errors=DISCARD)
     decoded_logs += contract.events.Deposit().processReceipt(receipt, errors=DISCARD)
@@ -585,20 +556,20 @@ def extractSwapResults(w3, txn, account, timestamp, receipt, network):
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
+                rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             elif log['args']['from'] == account:
                 sentToken.append(log['address'])
-                sentAmount.append(valueFromWei(log['args']['value'], log['address']))
+                sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             else:
                 logging.debug('ignored swap log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
         # Native token transfers (src and dst also in args but not used yet)
         if 'wad' in log['args']:
             if log['event'] == 'Withdrawal':
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(valueFromWei(log['args']['wad'], log['address']))
+                rcvdAmount.append(contracts.valueFromWei(log['args']['wad'], log['address']))
             if log['event'] == 'Deposit':
                 sentToken.append(log['address'])
-                sentAmount.append(valueFromWei(log['args']['wad'], log['address']))
+                sentAmount.append(contracts.valueFromWei(log['args']['wad'], log['address']))
 
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
@@ -660,7 +631,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
     jewelAmount = decimal.Decimal(0.0)
     hiringProceeds = decimal.Decimal(0.0)
     hiredFromAccount = ''
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -674,7 +645,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
         else:
             tearsAmount += log['args']['value']
 
-    ABI = getABI('HeroSummoningUpgradeable')
+    ABI = contracts.getABI('HeroSummoningUpgradeable')
     r = None
     rc = None
     rs = None
@@ -724,7 +695,7 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
     # Get the meditation costs data
     shvasAmount = decimal.Decimal(0.0)
     jewelAmount = decimal.Decimal(0.0)
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -733,7 +704,7 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
         else:
             shvasAmount += log['args']['value']
 
-    ABI = getABI('MeditationCircle')
+    ABI = contracts.getABI('MeditationCircle')
     contract = w3.eth.contract(address='0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1', abi=ABI)
     complete_logs = contract.events.MeditationBegun().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -759,7 +730,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     auctionSeller = ""
     auctionToken = ""
     sellerProceeds = decimal.Decimal(0.0)
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -769,7 +740,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
             auctionToken = log['address']
             sellerProceeds = Web3.fromWei(log['args']['value'], 'ether')
 
-    ABI = getABI('SaleAuction')
+    ABI = contracts.getABI('SaleAuction')
     contract = w3.eth.contract(address='0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', abi=ABI)
     decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -789,7 +760,7 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
 
 def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
     # Create record of the airdrop tokens received
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdTokens = {}
@@ -801,15 +772,15 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
             if log['args']['to'] == account:
                 address = log['args']['from']
                 if log['address'] in rcvdTokens:
-                    rcvdTokens[log['address']] += valueFromWei(log['args']['value'], log['address'])
+                    rcvdTokens[log['address']] += contracts.valueFromWei(log['args']['value'], log['address'])
                 else:
-                    rcvdTokens[log['address']] = valueFromWei(log['args']['value'], log['address'])
+                    rcvdTokens[log['address']] = contracts.valueFromWei(log['args']['value'], log['address'])
             elif log['args']['from'] == account:
                 address = log['args']['to']
                 if log['address'] in rcvdTokens:
-                    rcvdTokens[log['address']] += valueFromWei(log['args']['value'], log['address'])
+                    rcvdTokens[log['address']] += contracts.valueFromWei(log['args']['value'], log['address'])
                 else:
-                    rcvdTokens[log['address']] = valueFromWei(log['args']['value'], log['address'])
+                    rcvdTokens[log['address']] = contracts.valueFromWei(log['args']['value'], log['address'])
             else:
                 logging.info('ignored airdrop log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
     # If some address was passed in, override source address with it instead of using from/to
@@ -823,7 +794,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
     return results
 
 def extractQuestResults(w3, txn, timestamp, receipt):
-    ABI = getABI('QuestCoreV2')
+    ABI = contracts.getABI('QuestCoreV2')
     contract = w3.eth.contract(address='0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4', abi=ABI)
     decoded_logs = contract.events.QuestReward().processReceipt(receipt, errors=DISCARD)
     rewardTotals = {}
@@ -831,7 +802,7 @@ def extractQuestResults(w3, txn, timestamp, receipt):
     for log in decoded_logs:
         if 'itemQuantity' in log['args'] and 'rewardItem' in log['args'] and log['args']['rewardItem'] != '0x0000000000000000000000000000000000000000':
             # Keep a running total of each unique reward item in this quest result
-            rewardQuantity = valueFromWei(log['args']['itemQuantity'], log['args']['rewardItem'])
+            rewardQuantity = contracts.valueFromWei(log['args']['itemQuantity'], log['args']['rewardItem'])
             if log['args']['rewardItem'] in contracts.address_map:
                 logging.debug('    Hero {2} on quest {3} got reward of {0} {1}\n'.format(rewardQuantity, contracts.address_map[log['args']['rewardItem']], log['args']['heroId'], log['args']['questId']))
                 if log['args']['rewardItem'] in rewardTotals:
@@ -848,7 +819,7 @@ def extractQuestResults(w3, txn, timestamp, receipt):
 
 def extractAlchemistResults(w3, txn, account, timestamp, receipt):
     # Create record of the alchemist crafting activity with total costs
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     rcvdToken = []
@@ -861,10 +832,10 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt):
         if 'to' in log['args'] and 'from' in log['args']:
             if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
-                rcvdAmount.append(valueFromWei(log['args']['value'], log['address']))
+                rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             elif log['args']['from'] == account:
                 sentToken.append(log['address'])
-                sentAmount.append(valueFromWei(log['args']['value'], log['address']))
+                sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             else:
                 logging.debug('ignored alchemist log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
     # Total up value of all ingredients
@@ -894,7 +865,7 @@ def extractPotionResults(w3, txn, account, timestamp, receipt, inputs):
     logging.info(str(input_data))
     heroId = input_data[1]['heroId']
 
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     consumedItem = ''
@@ -905,12 +876,13 @@ def extractPotionResults(w3, txn, account, timestamp, receipt, inputs):
             consumedCount = log['args']['value']
     if consumedItem != '':
         r = records.TavernTransaction(txn, 'hero', heroId, 'consume', timestamp, consumedItem, consumedCount)
+        r.fiatAmount = prices.priceLookup(timestamp, consumedItem) * consumedCount
 
     return r
 
 def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
     # Perilous Journey - record dead heroes in tavern transactions with rewards
-    ABI = getABI('PerilousJourney')
+    ABI = contracts.getABI('PerilousJourney')
     contract = w3.eth.contract(address='0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7', abi=ABI)
     input_data = contract.decode_function_input(inputs)
     logging.info(str(input_data))
@@ -921,7 +893,7 @@ def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
     for log in decoded_logs:
         logging.info(log)
         if log['args']['player'] == account and log['args']['heroSurvived'] == False:
-            perishedHeroRewards[log['args']['heroId']] = {'0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': valueFromWei(log['args']['jewelAmount'], '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')}
+            perishedHeroRewards[log['args']['heroId']] = {'0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': contracts.valueFromWei(log['args']['jewelAmount'], '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')}
     # JourneyReward event contains other rewards runes/stones/crystals
     decoded_logs = contract.events.JourneyReward().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -939,7 +911,7 @@ def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     r = None
@@ -951,7 +923,7 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
         else:
             logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], txn))
             continue
-        tokenValue = valueFromWei(log['args']['value'], log['address'])
+        tokenValue = contracts.valueFromWei(log['args']['value'], log['address'])
         tokenName = contracts.getAddressName(log['address'])
         if tokenValue > 0:
             logging.info('{3} wallet bridge from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, tokenName))
@@ -960,7 +932,7 @@ def extractBridgeResults(w3, txn, account, timestamp, receipt):
     return r
 
 def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
-    ABI = getABI('JewelToken')
+    ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     transfers = []
@@ -974,7 +946,7 @@ def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
         else:
             logging.info('{3} ignoring token transfer not from/to account from {0} to {1} value {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], txn))
             continue
-        tokenValue = valueFromWei(log['args']['value'], log['address'])
+        tokenValue = contracts.valueFromWei(log['args']['value'], log['address'])
 
         if tokenValue > 0:
             logging.info('{3} wallet transfer from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], tokenValue, contracts.getAddressName(log['address'])))

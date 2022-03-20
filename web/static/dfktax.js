@@ -457,10 +457,11 @@ function loadGardensEvents(gardensEvents) {
     if (gardensEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = gardensEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    var location = 'Gardens'
-    if (address_map[gardensEvents[i].coinType].includes('Jewel')) {
+    var location = 'Farms'
+    if (gardensEvents[i].coinType in address_map && address_map[gardensEvents[i].coinType].includes('Jewel')) {
       location = 'Serendale'
-    } else {
+    }
+    if (gardensEvents[i].coinType in address_map && address_map[gardensEvents[i].coinType].includes('Pangolin')) {
       location = 'Pangolin'
     }
     $('#tx_gardens_data').show();
