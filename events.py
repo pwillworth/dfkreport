@@ -380,11 +380,11 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     depositEvent = 'deposit'
                 if 'Deposit from' in action and value > 0:
-                    r = records.walletActivity(tx, timestamp, depositEvent, result['from'], getNativeToken(network), value)
+                    r = records.walletActivity(tx, timestamp, depositEvent, result['from'], contracts.getNativeToken(network), value)
                     r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                     results.append(r)
                 if 'Withdrawal to' in action and value > 0:
-                    r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], getNativeToken(network), value)
+                    r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], contracts.getNativeToken(network), value)
                     r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                     results.append(r)
                 # also check for any random token trasfers in the wallet
