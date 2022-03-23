@@ -22,7 +22,6 @@ token_map = {
     '0xFbdd194376de19a88118e84E279b977f165d01b8': 'matic-network',
     '0x735aBE48e8782948a37C7765ECb76b98CdE97B0F': 'fantom',
     '0xCf1709Ad76A79d5a60210F23e81cE2460542A836': 'tranquil-finance',
-    '0x2A719aF848bf365489E548BE5edbEC1D65858e59': 'fira',
     '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'tranquil-staked-one',
     '0x892D81221484F690C0a97d3DD18B9144A3ECDFB7': 'cosmic-universe-magic-token',
     '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
@@ -178,9 +177,13 @@ def getCurrentPrice(token, throughToken):
 def getTokenInfo(w3, address):
     ABI = contracts.getABI('ERC20')
     contract = w3.eth.contract(address=address, abi=ABI)
-    symbol = contract.functions.symbol().call()
-    decimals = contract.functions.decimals().call()
-    name = contract.functions.name().call()
+    try:
+        symbol = contract.functions.symbol().call()
+        decimals = contract.functions.decimals().call()
+        name = contract.functions.name().call()
+    except Exception as err:
+        logging.error('Failed to get token info for {0}'.format(address))
+        return ['NA', 18, 'NA']
 
     return [symbol, decimals, name]
 
@@ -189,7 +192,8 @@ def main():
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    sys.stdout.write(str(fetchItemPrice('0x959ba19508827d1ed2333B1b503Bd5ab006C710e', '07-03-2022')))
+    #sys.stdout.write(str(fetchItemPrice('0x959ba19508827d1ed2333B1b503Bd5ab006C710e', '07-03-2022')))
+    sys.stdout.write(str(priceLookup(1647919734, '0x9b68BF4bF89c115c721105eaf6BD5164aFcc51E4')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
     #while startDate <= endDate:
     #    sys.stdout.write(getPrice('harmony', startDate.strftime('%d-%m-%Y'), 'usd'))
