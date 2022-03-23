@@ -24,7 +24,7 @@ def getResponseCSV(records, contentType, format):
     taxRecords = records['taxes']
     eventRecords = records['events']
 
-    if contentType == 'transaction':
+    if contentType == 'transaction' or format == 'koinlyuniversal':
         # translate output based on req format
         if format == 'koinlyuniversal':
             response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
