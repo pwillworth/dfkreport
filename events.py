@@ -817,7 +817,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
     for k, v in rcvdTokens.items():
         logging.info('AirdropClaimed: {0} {1}'.format(v, k))
         r = records.AirdropTransaction(txn, timestamp, address, k, v)
-        #r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
+        r.fiatValue = prices.priceLookup(timestamp, k) * r.tokenAmount
         results.append(r)
     return results
 
