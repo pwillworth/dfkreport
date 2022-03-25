@@ -60,6 +60,9 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         if settings.USE_CACHE:
             checkCache = db.findTransaction(str(tx), account)
             if checkCache != None:
+                # load the gas
+                if checkCache[7] != None:
+                    events_map['gas'] += decimal.Decimal(checkCache[7])
                 # if event data is empty it is just record with no events we care about and in the db so we dont have to parse blockchain again
                 if checkCache[3] != '':
                     events = jsonpickle.decode(checkCache[3])
@@ -99,91 +102,102 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             time.sleep(1)
             continue
         #TODO deduct gas from cost basis
-        gas = Web3.fromWei(receipt['gasUsed'], 'gwei')
+        txFee = Web3.fromWei(result['gasPrice'], 'ether') * receipt['gasUsed']
+        feeValue = prices.priceLookup(timestamp, contracts.getNativeToken(network)) * txFee
+        logging.info('gas data {0} - {1}'.format(txFee, feeValue))
         if blockDate >= startDate and blockDate <= endDate:
-            events_map['gas'] += gas
+            events_map['gas'] += feeValue
         results = None
         if receipt['status'] == 1:
-            logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} gas'.format(gas), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
+            logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} fee'.format(txFee), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
             if 'Quest' in action and result['input'] != '0x':
                 results = extractQuestResults(w3, tx, timestamp, receipt)
                 if len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
                     events_map['quests'] += results
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('{0} quest with no rewards.'.format(tx))
             elif 'AuctionHouse' in action:
                 results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'hero')
                 if results != None and results[0] != None:
+                    results[0].fiatFeeValue = feeValue
                     events_map['tavern'].append(results[0])
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account, network, txFee, feeValue)
                 else:
                     logging.info('Ignored an auction interaction, probably listing.')
                 # Second record is to be saved in db and will be looked up when seller runs thier tax report
                 # All of these get populated by running a report for the Tavern Address though, so we need to
                 # skip if record has already been created.
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
-                    db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
+                    db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
             elif 'LandAuction' in action:
                 results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'land')
                 if results != None and results[0] != None:
+                    results[0].fiatFeeValue = feeValue
                     events_map['tavern'].append(results[0])
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[0]), account, network, txFee, feeValue)
                 else:
                     logging.info('Ignored an auction interaction, probably listing.')
                 # Second record is to be saved in db and will be looked up when seller runs thier tax report
                 # All of these get populated by running a report for the Tavern Address though, so we need to
                 # skip if record has already been created.
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
-                    db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
+                    db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
             elif 'Uniswap' in action:
-                results = extractSwapResults(w3, tx, account, timestamp, receipt, network)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     if type(results) is records.TraderTransaction:
+                        results.fiatFeeValue = feeValue
                         events_map['swaps'].append(results)
                         eventsFound = True
                         if settings.USE_CACHE:
-                            db.saveTransaction(tx, timestamp, 'swaps', jsonpickle.encode(results), account)
+                            db.saveTransaction(tx, timestamp, 'swaps', jsonpickle.encode(results), account, network, txFee, feeValue)
                     elif type(results) is records.LiquidityTransaction:
+                        results.fiatFeeValue = feeValue
                         events_map['liquidity'].append(results)
                         eventsFound = True
                         if settings.USE_CACHE:
-                            db.saveTransaction(tx, timestamp, 'liquidity', jsonpickle.encode(results), account)
+                            db.saveTransaction(tx, timestamp, 'liquidity', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
             elif 'Gardener' in action:
                 results = extractGardenerResults(w3, tx, account, timestamp, receipt)
                 if results != None and len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
                     for item in results:
                         events_map['gardens'].append(item)
                         eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
             elif 'Farms' in action:
                 results = extractFarmResults(w3, tx, account, timestamp, receipt)
                 if results != None and len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
                     for item in results:
                         events_map['gardens'].append(item)
                         eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'gardens', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a Gardener LP Pool result. tx {0}'.format(tx))
             elif 'Airdrop' in action:
                 results = extractAirdropResults(w3, tx, account, timestamp, receipt)
+                if len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
                 for item in results:
                     events_map['airdrops'].append(item)
                     eventsFound = True
                 if settings.USE_CACHE and len(results) > 0:
-                    db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account)
+                    db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), account, network, txFee, feeValue)
             elif 'Payment Service' in action:
                 # Some payment distributions do not get associated to users wallet, so populate record in db for recipient
                 # these transactions are discovered by block crawler
@@ -197,16 +211,17 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         recipientAccount = item.address
                         item.address = result['from']
                     if recipientAccount != '' and db.findTransaction(tx, recipientAccount) == None:
-                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount)
+                        db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount, network, 0, 0)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
             elif result['input'] != '0x' and 'xJewel' in action:
                 results = extractBankResults(w3, tx, account, timestamp, receipt)
                 if results != None:
+                    results.fiatFeeValue = feeValue
                     events_map['bank'].append(results)
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     # if no bank result was parsed, it is just a direct xJewel transfer
                     logging.error('Error: Failed to parse a bank result.')
@@ -217,12 +232,13 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         logging.info('banklog: ' + str(log))
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
-                results = extractSwapResults(w3, tx, account, timestamp, receipt, network)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt)
                 if results != None and type(results) is records.TraderTransaction:
+                    results.fiatFeeValue = feeValue
                     events_map['swaps'].append(results)
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'swaps', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'swaps', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
@@ -238,40 +254,44 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                                 if r != None:
                                     r.itemID = results[1]
                             events = [heroCrystals[results[0]][2][0], heroCrystals[results[0]][2][1]]
+                            events[0].fiatFeeValue = heroCrystals[results[0]][5]
+                            events[1].fiatFeeValue = feeValue
                             if heroCrystals[results[0]][2][3] != None:
                                 events.append(heroCrystals[results[0]][2][3])
                             events_map['tavern'] += events
                             if settings.USE_CACHE and db.findTransaction(heroCrystals[results[0]][0], account) == None:
-                                db.saveTransaction(heroCrystals[results[0]][0], heroCrystals[results[0]][1], 'tavern', jsonpickle.encode(events), account)
+                                db.saveTransaction(heroCrystals[results[0]][0], heroCrystals[results[0]][1], 'tavern', jsonpickle.encode(events), account, network, txFee, feeValue)
                             else:
                                 logging.info('tried to save portal record that already existed {0}'.format(tx))
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                                db.saveTransaction(tx, timestamp, 'nones', '', account)
+                                db.saveTransaction(tx, timestamp, 'nones', '', account, network, heroCrystals[results[0]][4], heroCrystals[results[0]][5])
                             else:
                                 logging.info('tried to save none portal when record already existed {0}'.format(tx))
                         else:
                             # on rare occassion the crystal open even might get parsed before the summon crystal
-                            heroCrystals[results[0]] = [tx, timestamp, [], results[1]]
+                            heroCrystals[results[0]] = [tx, timestamp, [], results[1], txFee, feeValue]
                     elif len(results[1]) > 1 and results[1][1] != None:
                         eventsFound = True
                         if results[0] not in heroCrystals:
                             # store crystal creation events for later so we can tag it with the summoned hero id
-                            heroCrystals[results[0]] = [tx, timestamp, results[1], 0]
+                            heroCrystals[results[0]] = [tx, timestamp, results[1], 0, txFee, feeValue]
                         else:
                             # events came in backwards and now we can save with hero id
                             results[1][1].itemID = heroCrystals[results[0]][3]
                             if results[1][0] != None:
                                 results[1][0].itemID = heroCrystals[results[0]][3]
                             events = [results[1][0], results[1][1]]
+                            events[0].fiatFeeValue = heroCrystals[results[0]][5]
+                            events[1].fiatFeeValue = txFee
                             if results[1][3] != None:
                                 events.append(results[1][3])
                             events_map['tavern'] += events
                             if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(events), account)
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(events), account, network, txFee, feeValue)
                             else:
                                 logging.info('tried to save backwards portal that already existed {0}'.format(tx))
                             if settings.USE_CACHE and db.findTransaction(heroCrystals[results[0]][0], account) == None:
-                                db.saveTransaction(heroCrystals[results[0]][0], timestamp, 'nonec', '', account)
+                                db.saveTransaction(heroCrystals[results[0]][0], timestamp, 'nonec', '', account, network, heroCrystals[results[0]][4], heroCrystals[results[0]][5])
                             else:
                                 logging.info('tried to save a backwards noen that already existed {0}'.format(tx))
                     if type(results[1]) != int and len(results[1]) > 2 and results[1][2] != None:
@@ -279,7 +299,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         # If third event it is hero hire during summon
                         # record is to be saved in db and will be looked up when seller runs thier tax report
                         if db.findTransaction(tx, results[1][2].seller) == None:
-                            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller)
+                            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller, network, 0, 0)
                         else:
                             logging.info('summon hire found but was already in db on {0}.'.format(tx))
                 else:
@@ -288,22 +308,25 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 logging.debug('Meditation activity: {0}'.format(tx))
                 results = extractMeditationResults(w3, tx, account, timestamp, receipt)
                 if results != None:
+                    if results[0] != None:
+                        results[0].fiatFeeValue = feeValue
                     for record in results:
                         if type(record) is records.TavernTransaction:
                             events_map['tavern'].append(record)
                             eventsFound = True
                     if settings.USE_CACHE and eventsFound:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([r for r in results if r]), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([r for r in results if r]), account, network, txFee, feeValue)
                 else:
                     logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
             elif 'Alchemist' in action:
                 logging.debug('Alchemist activity: {0}'.format(tx))
                 results = extractAlchemistResults(w3, tx, account, timestamp, receipt)
                 if results != None:
+                    results.fiatFeeValue = feeValue
                     events_map['alchemist'].append(results)
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'alchemist', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'alchemist', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('Failed to parse alchemist results tx {0}'.format(tx))
             elif 'HeroSale' in action:
@@ -326,7 +349,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 if crystalId != 0:
                     eventsFound = True
                     if log['args']['crystalId'] not in heroCrystals:
-                        heroCrystals[log['args']['crystalId']] = [tx, timestamp, purchasePrice, heroId]
+                        heroCrystals[log['args']['crystalId']] = [tx, timestamp, purchasePrice, heroId, txFee, feeValue]
                     else:
                         heroCrystals[log['args']['crystalId']][2] = max(purchasePrice, heroCrystals[log['args']['crystalId']][2])
                         heroCrystals[log['args']['crystalId']][3] = max(heroId, heroCrystals[log['args']['crystalId']][3])
@@ -334,18 +357,20 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             heroPrice = Web3.fromWei(heroCrystals[log['args']['crystalId']][2], 'ether')
                             r = records.TavernTransaction(tx, 'hero', heroCrystals[log['args']['crystalId']][3], 'purchase', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', heroPrice)
                             r.fiatAmount = prices.priceLookup(timestamp, 'defi-kingdoms') * r.coinCost
+                            r.fiatFeeValue = feeValue
                             events_map['tavern'].append(r)
                             if settings.USE_CACHE:
-                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(r), account)
-                                db.saveTransaction(heroCrystals[log['args']['crystalId']][0], heroCrystals[log['args']['crystalId']][1], 'noneg', '', account)
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(r), account, network, txFee, feeValue)
+                                db.saveTransaction(heroCrystals[log['args']['crystalId']][0], heroCrystals[log['args']['crystalId']][1], 'noneg', '', account, network, heroCrystals[log['args']['crystalId']][4], heroCrystals[log['args']['crystalId']][5])
             elif 'anySwap' in action or 'Bridge' in action:
                 logging.debug('Bridge activity: {0}'.format(tx))
                 results = extractBridgeResults(w3, tx, account, timestamp, receipt)
                 if results != None:
+                    results.fiatFeeValue = feeValue
                     events_map['wallet'].append(results)
                     eventsFound = True
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('Failed to parse bridge results tx {0}'.format(tx))
             elif 'Potion Use' in action:
@@ -353,23 +378,25 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 results = extractPotionResults(w3, tx, account, timestamp, receipt, result['input'])
                 eventsFound = True
                 if results != None:
+                    results.fiatFeeValue = feeValue
                     events_map['tavern'].append(results)
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('Failed to parse potion results {0}'.format(tx))
             elif 'Perilous Journey' in action:
                 logging.debug('Perilous Journey activity: {0}'.format(tx))
                 results = extractJourneyResults(w3, tx, account, timestamp, receipt, result['input'])
-                for item in results:
-                    events_map['tavern'].append(item)
                 eventsFound = True
                 if len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
+                    for item in results:
+                        events_map['tavern'].append(item)
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                        db.saveTransaction(tx, timestamp, 'nonepj', '', account)
+                        db.saveTransaction(tx, timestamp, 'nonepj', '', account, network, txFee, feeValue)
                     logging.info('No events for Perilous Journey tx {0}'.format(tx))
             else:
                 # Native token wallet transfers
@@ -389,21 +416,22 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     results.append(r)
                 # also check for any random token trasfers in the wallet
                 results += extractTokenResults(w3, tx, account, timestamp, receipt, depositEvent)
-                if results != None:
+                if len(results) > 0:
+                    results[0].fiatFeeValue = feeValue
                     for item in results:
                         events_map['wallet'].append(item)
                     eventsFound = True
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
-                        db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account)
+                        db.saveTransaction(tx, timestamp, 'wallet', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('Got no results from anything tx {0}'.format(tx))
         else:
             # transaction failed, mark to ignore later
             eventsFound = True
-            db.saveTransaction(tx, timestamp, 'nonef', '', account)
+            db.saveTransaction(tx, timestamp, 'nonef', '', account, network, txFee, feeValue)
         # transactions with no relevant data get a none record so they are ignored in later reports
         if eventsFound == False and settings.USE_CACHE and db.findTransaction(tx, account) == None:
-            db.saveTransaction(tx, timestamp, 'nonee', '', account)
+            db.saveTransaction(tx, timestamp, 'nonee', '', account, network, txFee, feeValue)
 
         txCount += 1
 
@@ -539,7 +567,7 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
 
     return events
 
-def extractSwapResults(w3, txn, account, timestamp, receipt, network):
+def extractSwapResults(w3, txn, account, timestamp, receipt):
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)

@@ -10,7 +10,7 @@ import events
 import db
 
 
-def handleLogs(w3, event):
+def handleLogs(w3, event, network):
     timestamp = w3.eth.get_block(event['blockNumber'])['timestamp']
     tx = event['transactionHash'].hex()
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
@@ -23,13 +23,13 @@ def handleLogs(w3, event):
             auctionType = 'hero'
         results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
-            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller)
+            db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
     # Three possible addresses for summoning portal
     elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355','0xa2D001C829328aa06a2DB2740c05ceE1bFA3c6bb']:
         results = events.extractSummonResults(w3, tx, None, timestamp, receipt)
         if results != None and type(results[1]) != int and len(results[1]) > 2 and results[1][2] != None:
             if db.findTransaction(tx, results[1][2].seller) == None:
-                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller)
+                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller, network, 0, 0)
     else:
         logging.error('Unknown contract in filter')
 
@@ -75,7 +75,7 @@ def main():
 
     hmyChanges = tavernChanges + portalChanges
     for event in hmyChanges:
-        handleLogs(w3, event)
+        handleLogs(w3, event, 'harmony')
         # keep track of what block we are on
         try:
             with open("last_block_checked.txt", "w") as f:
