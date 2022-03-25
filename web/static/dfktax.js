@@ -392,7 +392,7 @@ function loadSwapEvents(swapEvents) {
     $('#tx_swaps_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin type swapped
-  var swapTable = '<table><tr><th>Coin Type</th><th>Total In</th><th>Total Out</th></tr>';
+  var swapTable = '<table><tr><th>Coin Type</th><th>Total Sent</th><th>Total Rcvd</th></tr>';
   for (let k in swapTotals) {
     swapTable = swapTable + '<tr><td>' + k + '</td><td>' + swapTotals[k][0].toFixed(0) + '</td><td>' + swapTotals[k][1].toFixed(0) + '</td></tr>';
   }
