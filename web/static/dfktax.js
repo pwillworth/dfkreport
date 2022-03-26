@@ -283,9 +283,6 @@ function loadTaxes(results) {
   }
   $("#mappingProgress").progressbar( "option", "value", 200);
   $("#mappingPercent").html("Loading Tax Report...");
-  // Place the total fiat value of all gas fees paid in the period at the top of summary
-  $("#gasTotalValue").html(usdFormat.format(results.gasValue));
-  $("#gasTotal").show();
 
   // Populate the main Tax Report from response
   for (var i = 0; i < taxResult.length; i++) {
