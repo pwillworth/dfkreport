@@ -317,12 +317,12 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
                         ti.term = "long"
                     if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
                         # use up all receive transaction amount and update amount left to match still
-                        ti.costs += searchEvent.fiatReceiveValue * (searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                        ti.costs += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
                         event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
                         searchEvent.receiveAmountNotAccounted = 0
                     else:
                         # use up as much of recieve transaction as swap was for and update amount left to account for on receive
-                        ti.costs += (searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
+                        ti.costs += Decimal(searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
                         searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
                         event.swapAmountNotAccounted = 0
                         break
