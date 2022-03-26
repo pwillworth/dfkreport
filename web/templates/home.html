@@ -281,6 +281,7 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-03-26: Incorporated gas fees into reporting, see <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">help page</a> for how.</li>
         <li>2022-03-19: Correlate Perilous Journey rewards to Heroes to form cost basis and improve price data for items.  Also include summon and levelup enhancements to hero expenses.</li>
         <li>2022-03-17: Add Perilous Journey rewards to airdrop transactions.</li>
         <li>2022-02-22: Add option for specifying purchase addresses to count as gains in tax report.</li>
@@ -323,7 +324,7 @@ function downloadDone() {
           <span id="paymentsTotalValue"></span>
           </h3>
         </div>
-        <div id="gasTotal" class="summaryBox" style="width:95%;height:40px;" title="Totals fiat value total of all network transaction fees you paid.">
+        <div id="gasTotal" class="summaryBox" style="width:95%;height:40px;display:none;" title="Totals fiat value total of all network transaction fees you paid.">
           <h3 style="font-size:28px;">
           <span>Total Transaction Gas Fees Paid: </span>
           <span id="gasTotalValue"></span>
