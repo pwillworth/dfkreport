@@ -196,6 +196,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 results = extractLendingResults(w3, tx, account, timestamp, receipt, network, value)
                 if results != None:
                     if results[0] != None:
+                        results[0].fiatFeeValue = feeValue
                         events_map['lending'].append(results[0])
                     if results[1] != None:
                         events_map['lending'].append(results[1])

@@ -640,6 +640,7 @@ function loadAirdropEvents(airdropEvents) {
 
 function loadLendingEvents(lendingEvents) {
   // Populate the transaction list with lending borrow/repay events
+  var lendingTotals = {};
   $("#tx_lending_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < lendingEvents.length; i++) {
     var eventDate = new Date(lendingEvents[i].timestamp * 1000)
@@ -660,8 +661,46 @@ function loadLendingEvents(lendingEvents) {
       '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
       '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
     );
+    switch (lendingEvents[i].event) {
+      case 'lend':
+        aIndex = 0;
+        break;
+      case 'redeem':
+        aIndex = 1;
+        break;
+      case 'borrow':
+        aIndex = 2;
+        break;
+      case 'repay':
+        aIndex = 3;
+        break;
+      case 'liquidate':
+        aIndex = 4;
+        break;
+      default:
+        aIndex = 5;
+    }
+    if ( address_map[lendingEvents[i].coinType] in lendingTotals ) {
+      lendingTotals[address_map[lendingEvents[i].coinType]][aIndex] += tokenAmount;
+    } else {
+      aArray = [];
+      for (e=0; e<6; e++) {
+        if (e == aIndex) {
+          aArray.push(tokenAmount);
+        } else {
+          aArray.push(0);
+        }
+      }
+      lendingTotals[address_map[lendingEvents[i].coinType]] = aArray;
+    }
     $('#tx_lending_count').html(' (' + (i + 1) + ')');
   }
+  // Add summary data for each coin type
+  var lendingTable = '<table><tr><th>Coin Type</th><th>Lent</th><th>Redeemed</th><th>Borrowed</th><th>Repaid</th><th>Liquidated</th></tr>';
+  for (let k in lendingTotals) {
+    lendingTable = lendingTable + '<tr><td>' + k + '</td><td>' + lendingTotals[k][0].toFixed(2) + '</td><td>' + lendingTotals[k][1].toFixed(2) + '</td><td>' + lendingTotals[k][2].toFixed(2) + '</td><td>' + lendingTotals[k][3].toFixed(2) + '</td><td>' + lendingTotals[k][4].toFixed(2) + '</td></tr>';
+  }
+  $("#smy_lending_data").html(lendingTable + '</table>');
 }
 
 function loadQuestEvents(questEvents) {
