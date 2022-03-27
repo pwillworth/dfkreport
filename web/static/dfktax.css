@@ -157,6 +157,32 @@ ul {
 	border-width: 2px;
 	border-radius: 4px;
 }
+.orphanBox {
+	position: relative;
+	margin: 8px;
+	padding: 4px;
+	text-align: center;
+}
+.orphanBox a, .orphanBox a:visited, .orphanBox a:link, .orphanBox a:active {
+	background: #29af58;
+	color:#feee04;
+}
+.orphanBox a:hover {
+	background: #125a9b;
+	color: #d9f1f7;
+}
+.orphanButton {
+  border: 1px solid black;
+  position:relative;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 4px;
+  margin-left: 8px;
+  margin-right: 8px;
+  top: -8px;
+  font-size: 18px;
+  text-decoration: none;
+}
 
 .boxHeader {
 	font-size: 20px;

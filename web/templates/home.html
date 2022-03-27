@@ -274,13 +274,19 @@ function downloadDone() {
       <div class="searchInput" style="text-align:center">
         <input type="button" value="Reset" class="ui-button" onclick="optionsReset()"/>
       </div></form>
-      <div style="display: flex; align-items: center; justify-content: center;height: 100%;"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 200px;position: relative;bottom: -4px;" /></div>
+      <div style="display: flex; align-items: center; justify-content: center;height: 100%;"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 128px;position: relative;bottom: -4px;" /></div>
     </div>
+    </div>
+    <div id="supportBox" class="orphanBox">
+      <img src="{{ BASE_SCRIPT_URL }}static/images/jewel.png" style="max-width:32px;"/>
+      <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about.py" target="_blank">Support This Tool</a></div>
+      <img src="{{ BASE_SCRIPT_URL }}static/images/crystal.png" style="max-width:32px;"/>
     </div>
     <div id="reportCriteria" class="ghWidgetBox ui-widget-content">
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-03-27: Capture Lending platform activities in new Lending section.</li>
         <li>2022-03-26: Incorporated gas fees into reporting, see <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">help page</a> for how.</li>
         <li>2022-03-19: Correlate Perilous Journey rewards to Heroes to form cost basis and improve price data for items.  Also include summon and levelup enhancements to hero expenses.</li>
         <li>2022-03-17: Add Perilous Journey rewards to airdrop transactions.</li>
@@ -447,7 +453,7 @@ function downloadDone() {
   </div>
 </div>
 <div class="footer">
-	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info">About</a>
+	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
 	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>

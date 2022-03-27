@@ -1006,11 +1006,7 @@ def extractLendingResults(w3, txn, account, timestamp, receipt, network, value):
         r.fiatValue = prices.priceLookup(timestamp, rcvdToken) * contracts.valueFromWei(log['args']['borrowAmount'], rcvdToken)
     # TODO figure out interest, the event seems to show in interest accumulated that is unrelated to the borrow being repaid, maybe global for user or contract
     #decoded_logs = contract.events.AccrueInterest().processReceipt(receipt, errors=DISCARD)
-    #for log in decoded_logs:
-    #    logging.info(log)
-    #    logging.info('Accumulated interest on borrow {0} {1}'.format(valueFromWei(log['args']['interestAccumulated'], lendingToken), contracts.getAddressName(log['address'])))
-    #    ri = records.LendingTransaction(txn, timestamp, 'interest', log['address'], lendingToken, valueFromWei(log['args']['interestAccumulated'], lendingToken))
-    #    ri.fiatValue = prices.priceLookup(timestamp, lendingToken) * valueFromWei(log['args']['interestAccumulated'], lendingToken)
+
     # Redeem is pulling money out of lending, looks like sending tqONE, getting ONE
     decoded_logs = contract.events.Redeem().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
@@ -1028,7 +1024,7 @@ def extractLendingResults(w3, txn, account, timestamp, receipt, network, value):
         logging.info('Liquidate {0} {3} of borrow, seized {1} {2}'.format(contracts.valueFromWei(log['args']['repayAmount'], sentToken), contracts.valueFromWei(log['args']['seizeTokens'], log['args']['tqTokenCollateral']), contracts.getAddressName(log['args']['tqTokenCollateral']), contracts.getAddressName(rcvdToken)))
         r = records.LendingTransaction(txn, timestamp, 'liquidate', log['address'], sentToken, sentValue)
         r.fiatValue = prices.priceLookup(timestamp, sentToken) * sentValue
-        # seize assets are received as actively lended, so cannot determine value until redeem is done
+        # TODO resolve - seize assets are received as actively lended, so cannot determine value until redeem is done
         #ri = records.LendingTransaction(txn, timestamp, 'seize', log['address'], rcvdToken, valueFromWei(log['args']['seizeTokens'], log['args']['tqTokenCollateral']))
         #ri.fiatValue = prices.priceLookup(timestamp, rcvdToken)
 

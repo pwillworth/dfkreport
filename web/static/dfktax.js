@@ -106,6 +106,14 @@ var address_map = {
   '0xf012702a5f0e54015362cBCA26a26fc90AA832a3': 'UniswapV2Router02 VenomSwap',
   '0xcEEB22Faf32FF4EAd24565225503807e41E5FE87': 'Uniswap SonicSwap',
   '0x481721B918c698ff5f253c56684bAC8dCa84346c': '1BTC Bridge',
+  '0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940': 'TranqOneLending',
+  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'TranqStoneLending',
+  '0xd9c0D8Ad06ABE10aB29655ff98DcAAA0E059184A': 'Tranq1WBTCLending',
+  '0x481721B918c698ff5f253c56684bAC8dCa84346c': 'Tranq1BTCLending',
+  '0xc63AB8c72e636C9961c5e9288b697eC5F0B8E1F7': 'Tranq1ETHLending',
+  '0xCa3e902eFdb2a410C952Fd3e4ac38d7DBDCB8E96': 'Tranq1USDCLending',
+  '0x7af2430eFa179dB0e76257E5208bCAf2407B2468': 'Tranq1USDTLending',
+  '0x49d95736FE7f1F32E3ee5deFc26c95bA22834639': 'Tranq1DAILending',
   '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'Jewel',
   '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': 'xJewels',
   '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'USD Coin',
@@ -655,7 +663,7 @@ function loadLendingEvents(lendingEvents) {
     $('#tx_lending_data').show();
     $('#tx_lending_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + lendingEvents[i].address + '</td>' +
+      '<td>' + address_map[lendingEvents[i].address] + '</td>' +
       '<td>' + lendingEvents[i].event + '</td>' +
       '<td>' + address_map[lendingEvents[i].coinType] + '</td>' +
       '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
