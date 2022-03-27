@@ -57,9 +57,9 @@ def addFee(w3, con, tx, eventType, events, account):
         # Update each event object inside
         if events != None and events != '':
             results = jsonpickle.decode(events)
-            if type(results) is list:
+            if type(results) is list and len(results) > 0:
                 results[0].fiatFeeValue = feeValue
-            else:
+            elif type(results) is not list:
                 results.fiatFeeValue = feeValue
             events = jsonpickle.encode(results)
 
