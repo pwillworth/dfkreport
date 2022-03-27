@@ -84,7 +84,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     eventMap['airdrops'] += eventMapAvax['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
-    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], costBasis, moreOptions['purchaseAddresses'])
+    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
     bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
@@ -246,7 +246,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
         results.append(v)
     return results
 
-def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, tavernEvents, costBasis, purchaseAddresses):
+def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, tavernEvents, lendingEvents, costBasis, purchaseAddresses):
     results = []
     # TODO inlcude liquidity withdrawal received tokens for cost basis search
     # Find any wallet transfers to purchase addresses and treat them like a swap for fiat '0x985458E523dB3d53125813eD68c274899e9DfAb4'
@@ -284,6 +284,10 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     for tEvent in tavernEvents:
         if tEvent.event in ['hire','sale','perished']:
             ci = CostBasisItem(tEvent.txHash, tEvent.timestamp, tEvent.coinType, tEvent.coinCost, tEvent.fiatType, tEvent.fiatAmount)
+            cbList.append(ci)
+    for lEvent in lendingEvents:
+        if lEvent.event in ['borrow']:
+            ci = CostBasisItem(lEvent.txHash, lEvent.timestamp, lEvent.coinType, lEvent.coinAmount, lEvent.fiatType, lEvent.fiatValue)
             cbList.append(ci)
     # Also run through direct wallet transactions to try and fill remaining gaps in received value accounting
     # This works assuming the asset was purchased on same day it was transferred in, TODO: maybe add to disclaimer/FAQ
