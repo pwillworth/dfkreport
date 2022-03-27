@@ -193,6 +193,27 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, '', 'wallet transfer', record.txHash, '\n'))
             else:
                 response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        for record in eventRecords['lending']:
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            txFee = ''
+            txFeeCurrency = ''
+            if hasattr(record, 'fiatFeeValue'):
+                txFee = record.fiatFeeValue
+                txFeeCurrency = 'USD'
+            if format == 'koinlyuniversal':
+                if record.event in ['redeem','borrow']:
+                    sentAmount = ''
+                    sentType = ''
+                    rcvdAmount = record.coinAmount
+                    rcvdType = contracts.getAddressName(record.coinType)
+                else:
+                    sentAmount = record.coinAmount
+                    sentType = contracts.getAddressName(record.coinType)
+                    rcvdAmount = ''
+                    rcvdType = ''
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, '', 'lending {0}'.format(record.event), record.txHash, '\n'))
+            else:
+                response += ','.join(('lending', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
     else:
         if format == 'koinlyuniversal':
             response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
