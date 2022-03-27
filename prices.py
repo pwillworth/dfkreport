@@ -2,12 +2,14 @@
 # Price data resources
 import requests
 import sys
+from web3 import Web3
 import json
 import datetime
 import logging
 import decimal
 import db
 import contracts
+import nets
 
 token_map = {
     '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'harmony',
@@ -20,7 +22,6 @@ token_map = {
     '0xFbdd194376de19a88118e84E279b977f165d01b8': 'matic-network',
     '0x735aBE48e8782948a37C7765ECb76b98CdE97B0F': 'fantom',
     '0xCf1709Ad76A79d5a60210F23e81cE2460542A836': 'tranquil-finance',
-    '0x2A719aF848bf365489E548BE5edbEC1D65858e59': 'fira',
     '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'tranquil-staked-one',
     '0x892D81221484F690C0a97d3DD18B9144A3ECDFB7': 'cosmic-universe-magic-token',
     '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
@@ -28,6 +29,21 @@ token_map = {
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms',
     '0x60781C2586D68229fde47564546784ab3fACA982': 'pangolin'
+}
+
+decimal_units = {
+    0: 'noether',
+    1: 'wei',
+    3: 'kwei',
+    6: 'mwei',
+    9: 'gwei',
+    12: 'micro',
+    15: 'milli',
+    18: 'ether',
+    21: 'kether',
+    24: 'mether',
+    27: 'gether',
+    30: 'tether',
 }
 
 today_prices = {}
@@ -39,7 +55,7 @@ def priceLookup(timestamp, token, fiatType='usd'):
         token = token_map[token]
     # Calculate based on gold price if convertible to gold
     if token in contracts.gold_values and contracts.gold_values[token] > 0:
-        return decimal.Decimal(getPrice('0x3a4edcf3312f44ef027acfd8c21382a5259936e7', lookupDate, fiatType) * contracts.gold_values[token])
+        return decimal.Decimal(getPrice('0x3a4EDcf3312f44EF027acfd8c21382a5259936e7', lookupDate, fiatType) * contracts.gold_values[token])
     else:
         return decimal.Decimal(getPrice(token, lookupDate, fiatType))
 
@@ -68,101 +84,55 @@ def fetchPriceData(token, date):
             result = "Error: failed to get prices - {0}".format(r.text)
             logging.error(result + '\n')
     else:
-        # Lookup up price in DFK graph for some stuff
+        # Lookup up price in DFK contract for some stuff
         result = fetchItemPrice(token, date)
     return result
 
-# Get price of stuff from DFK dex graph for stuff that is not listed on CoinGecko or for coins before they were there
+# Get price of stuff from DFK dex contract for stuff that is not listed on CoinGecko or for coins before they were there
 def fetchItemPrice(token, date):
-    # adjust for graphql inputs
-    realDate = int(datetime.datetime.strptime(date, '%d-%m-%Y').timestamp())
-    #### temporarily don't try to lookup from 12/19 forward because it will fail, graph empty
-    #if realDate >= int(datetime.datetime.strptime('19-12-2021', '%d-%m-%Y').timestamp()):
-    #    return json.loads('{ "usd" : 0.0 }')
-    #####
-    spreadDate = realDate + 86401
-    graphToken = token
-    if token == 'defi-kingdoms':
-        graphToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
-    query = """query {
-        tokenDayDatas(
-            where: {date_gt: %d
-                    date_lt: %d
-                    token: "%s" } 
-        ) 
-        {
-            priceUSD
-            totalLiquidityUSD
-            dailyVolumeUSD
-        }
-    }
-    """
-    data = query % (realDate, spreadDate, graphToken.lower())
-    graph_uri = "http://graph3.defikingdoms.com/subgraphs/name/defikingdoms/dex"
-    r = requests.post(graph_uri, json={'query': data})
-    if r.status_code == 200:
-        result = r.json()
-        if len(result['data']['tokenDayDatas']) > 0:
-            price = result['data']['tokenDayDatas'][0]['priceUSD']
-            liquid = result['data']['tokenDayDatas'][0]['totalLiquidityUSD']
-            volume = result['data']['tokenDayDatas'][0]['dailyVolumeUSD']
-            db.savePriceData(date, token, '{ "usd" : %s }' % price, '{ "usd" : %s }' % liquid, '{ "usd" : %s }' % volume)
-            logging.info('Saved a new price for {0} on {1} from DFK Graph'.format(token, date))
-            result = json.loads('{ "usd" : %s }' % price)
-        else:
-            logging.info('Failed to lookup a price for {0} on {1}, trying current price'.format(token, date))
-            # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
-            # use cache for today prices since we dont save in db and we aren't hitting graph so much
-            if token in today_prices:
-                jewelPair = today_prices[token]
-            else:
-                jewelPair = fetchCurrentPrice(token, '0x72cb10c6bfa5624dd07ef608027e366bd690048f')
-            price = 0
-            if len(jewelPair) == 2:
-                today_prices[token] = jewelPair
-                jewelPrice = priceLookup(realDate, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
-                logging.debug('got current price ' + str(jewelPair[1]))
-                price = decimal.Decimal(jewelPair[1]) * jewelPrice
-                result = json.loads('{ "usd" : %s }' % price)
-            else:
-                result = json.loads('{ "usd" : 0.0 }')
-    else:
-        result = "Error: failed to get prices - {0} {1}".format(str(r.status_code), r.text)
-        logging.error(result)
-        result = json.loads('{ "usd" : 0.0 }')
-    return result
+    logging.info('Failed to lookup a price for {0} on {1}, trying current price'.format(token, date))
+    # First check if we can get price history from dexscreener before using today price
+    r = None
+    price = None
+    pairAddress = None
+    jewelPrice = 0
+    if token in contracts.serendale_pairs:
+        pairAddress = contracts.serendale_pairs[token]
+    elif token in contracts.serendale_jewel_pairs:
+        pairAddress = contracts.serendale_jewel_pairs[token]
+        jewelPrice = getPrice('0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', date)
 
-# Just get current prices on a pair
-def fetchCurrentPrice(token0, token1):
-    query = """query {
-        pairs(
-            where: {token0: "%s"
-                    token1: "%s" } 
-        ) 
-        {
-            id
-            token0Price
-            token1Price
-        }
-    }
-    """
-    data = query % (token0.lower(), token1.lower())
-    graph_uri = "http://graph3.defikingdoms.com/subgraphs/name/defikingdoms/dex"
-    r = requests.post(graph_uri, json={'query': data})
-    if r.status_code == 200:
+    if pairAddress != None:
+        dateTimestamp = datetime.datetime.strptime(date, '%d-%m-%Y').timestamp()
+        ds_uri = "https://io5.dexscreener.io/u/chart/bars/harmony/{0}?from={1}&to={2}&res=1440&cb=2".format(pairAddress, int((dateTimestamp-86400) * (10 ** 3)), int(dateTimestamp * (10 ** 3)))
+        r = requests.get(ds_uri)
+
+    if r != None and r.status_code == 200:
         result = r.json()
-        if len(result['data']['pairs']) > 0:
-            price0 = result['data']['pairs'][0]['token0Price']
-            price1 = result['data']['pairs'][0]['token1Price']
-            result = [price0, price1]
-        else:
-            # TODO: Update this to be able to fetch for Gold paired quest rewards
-            logging.error('Failed to lookup a price for {0} / {1}'.format(token0, token1))
-            result = []
+        try:
+            if token in contracts.serendale_pairs:
+                price = result['bars'][0]['closeUsd']
+            elif token in contracts.serendale_jewel_pairs:
+                price = jewelPrice / decimal.Decimal(result['bars'][0]['close'])
+        except Exception as err:
+            result = "Error: failed to get historical price no market data {0} or error {1}".format(r.text, str(err))
+            logging.error(result)
+    if price != None:
+        logging.debug('Found existing price to use in dexscreener')
+        result = json.loads('{ "usd" : %s }' % price)
     else:
-        result = "Error: failed to get prices - {0} {1}".format(str(r.status_code), r.text)
-        logging.error(result)
-        result = []
+        # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
+        if token in today_prices:
+            price = today_prices[token]
+        else:
+            price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+        if price >= 0:
+            today_prices[token] = price
+            result = json.loads('{ "usd" : %s }' % price)
+            db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
+        else:
+            result = json.loads('{ "usd" : 0.0 }')
+
     return result
 
 def getPrice(token, date, fiatType='usd'):
@@ -179,12 +149,52 @@ def getPrice(token, date, fiatType='usd'):
         logging.error('Failed to lookup a price for {0} on {1}: {2}'.format(token, date, prices))
         return -1
 
+# Return USD price of token based on its pair to throughToken to 1USDC
+def getCurrentPrice(token, throughToken):
+    w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+    ABI = contracts.getABI('UniswapV2Router02')
+    contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
+
+    tokenDecimals = getTokenInfo(w3, token)[1]
+    throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
+    # Sometimes 8 decimal tokens will try to get looked up, so skip those
+    if tokenDecimals in decimal_units and throughTokenDecimals in decimal_units:
+        tokenOne = 1 if tokenDecimals == 0 else Web3.toWei(1, decimal_units[tokenDecimals])
+        throughTokenOne = Web3.toWei(1, decimal_units[throughTokenDecimals])
+    else:
+        return -1
+
+    price = -1
+    try:
+        token0Amount = contract.functions.getAmountsOut(tokenOne, [token, throughToken]).call()
+        token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, '0x985458E523dB3d53125813eD68c274899e9DfAb4']).call()
+        price = contracts.valueFromWei(token0Amount[1], throughToken) * contracts.valueFromWei(token1Amount[1], '0x985458E523dB3d53125813eD68c274899e9DfAb4')
+    except Exception as err:
+        logging.error('Price lookup failed {0}'.format(err))
+
+    return price
+
+def getTokenInfo(w3, address):
+    ABI = contracts.getABI('ERC20')
+    contract = w3.eth.contract(address=address, abi=ABI)
+    try:
+        symbol = contract.functions.symbol().call()
+        decimals = contract.functions.decimals().call()
+        name = contract.functions.name().call()
+    except Exception as err:
+        logging.error('Failed to get token info for {0}'.format(address))
+        return ['NA', 18, 'NA']
+
+    return [symbol, decimals, name]
+
+
 def main():
     # Initialize database and ensure price history is pre-populated
-    db.createDatabase()
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    sys.stdout.write(str(getPrice('0x3a4edcf3312f44ef027acfd8c21382a5259936e7', endDate.strftime('%d-%m-%Y'))))
+    #sys.stdout.write(str(fetchItemPrice('0x959ba19508827d1ed2333B1b503Bd5ab006C710e', '07-03-2022')))
+    sys.stdout.write(str(priceLookup(1647919734, '0x9b68BF4bF89c115c721105eaf6BD5164aFcc51E4')))
+    #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
     #while startDate <= endDate:
     #    sys.stdout.write(getPrice('harmony', startDate.strftime('%d-%m-%Y'), 'usd'))
     #    sys.stdout.write(startDate)

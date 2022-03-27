@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <title>Lila's Ledger Help</title>
+<meta property="og:title" content="Lila's Ledger Help">
+<meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
+<meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
 <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
@@ -51,12 +54,13 @@
         <li>The summary tab provides some summarized facts about your transactions.</li>
         <li>These items are just informational curiousities and not necessarily useful for tax accounting.</li>
         <li>If you have gained Jewel through Payments, Airdrops, Staking, or Quests, the total value of this is featured at the top of the Summary to give you an idea of your income for the period.</li>
+        <li>A total value of gas fees you paid is show as well.  Note that gas fees are already deducted from the gains listed on the tax report.  You can see the fee for each transaction in the transactions CSV export.</li>
         <li>Ever wonder how many bloaters you caught last month?</li>
     </ul>
     <h3 class="helpTopic">Transaction Report</h3>
     <ul>
         <li>The transactions tab summarizes all activity for your wallet including things that are not included in the tax report.</li>
-        <li>NFTs: All records related to hero and land NFTs like buy/sell/hire, summon, and level up.</li>
+        <li>NFTs: All records related to hero and land NFTs like buy/sell/hire, perish, summon, enhance, and level up.</li>
         <li>Trader: Records of swaps make with trader or vendor in marketplace, or on Avalanche Pangolin.</li>
         <li>Liquidity: Records of swapping for LP seeds from the druid, and Entering and Withdrawing from liquidity pools in Serendale or on Pangolin.</li>
         <li>Gardens: Events of claiming rewards from your LP seeds in the gardens.</li>
@@ -69,12 +73,12 @@
     <h3 class="helpTopic">Price Data</h3>
     <ul>
         <li>Fiat Values are calculated based on token price at the end of day when the event happened.</li>
-        <li>Prices are sourced from Coin Gecko first if available, otherwise they are looked up from Defi Kingdoms graphql tokenDayData</li>
-        <li>For some non-denomination items like some quest rewards, prices may be based on current price if historical price data is empty on the DFK graph.</li>
+        <li>Prices are sourced from Coin Gecko first if available, otherwise they are looked up from DexScreener and if all else fails, the current price of the item is looked up from the Serendale Dex Contract on chain if available.</li>
+        <li>Take prices of non-denominational items like eggs and stones with a grain of salt as dex prices for them can be weird in low liquidity situations so automated pricing is often not feasible.</li>
     </ul>
 </div>
 <div class="footer">
-	<a href="{{ BASE_SCRIPT_URL }}/home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a>
+	<a href="{{ BASE_SCRIPT_URL }}/home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info">About</a>
 	<p style="padding: 4px;font-weight:normal;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>

@@ -59,7 +59,7 @@ def findTransaction(txHash, account):
 
     return row
 
-def saveTransaction(tx, timestamp, type, events, wallet):
+def saveTransaction(tx, timestamp, type, events, wallet, network, gasUsed, gasValue):
     try:
         con = aConn()
         cur = con.cursor()
@@ -68,7 +68,7 @@ def saveTransaction(tx, timestamp, type, events, wallet):
         con = None
     if con != None and con.open:
         try:
-            cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet))
+            cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet, network, gasUsed, gasValue))
             con.commit()
         except Exception as err:
             logging.error('Unexpected Error {0} caching transaction {1} - '.format(err, tx))
@@ -224,7 +224,7 @@ def createDatabase():
     con = aConn()
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
-    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
+    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), network VARCHAR(31), fee DOUBLE, feeValue DOUBLE, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
     cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
     con.commit()
     con.close()

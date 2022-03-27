@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <title>Lila's Ledger</title>
+<meta property="og:title" content="Lila's Ledger">
+<meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
+<meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
 <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
@@ -278,14 +281,15 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-03-26: Incorporated gas fees into reporting, see <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">help page</a> for how.</li>
+        <li>2022-03-19: Correlate Perilous Journey rewards to Heroes to form cost basis and improve price data for items.  Also include summon and levelup enhancements to hero expenses.</li>
+        <li>2022-03-17: Add Perilous Journey rewards to airdrop transactions.</li>
         <li>2022-02-22: Add option for specifying purchase addresses to count as gains in tax report.</li>
         <li>2022-02-13: Allow for adding/excluding Avalanche chain data</li>
         <li>2022-02-12: Added Income Total to Summary Page and incorporate income for cost basis calc.</li>
         <li>2022-02-07: Added Land Auction purchases/sales</li>
         <li>2022-02-07: Detect Multichain Bridge events in wallet section properly</li>
         <li>2022-02-01: Added Koinly Universal CSV export format and txHash to all exports</li>
-        <li>2022-01-28: Clean Vendor Item dumps from Gains section</li>
-        <li>2022-01-20: Add Gen0 Hero Sale Purchases</li>
       </ul>
     </div>
   </div>
@@ -318,6 +322,12 @@ function downloadDone() {
           <h3 style="font-size:28px;">
           <span>Total Income from Payments: </span>
           <span id="paymentsTotalValue"></span>
+          </h3>
+        </div>
+        <div id="gasTotal" class="summaryBox" style="width:95%;height:40px;display:none;" title="Totals fiat value total of all network transaction fees you paid.">
+          <h3 style="font-size:28px;">
+          <span>Total Transaction Gas Fees Paid: </span>
+          <span id="gasTotalValue"></span>
           </h3>
         </div>
         <div id="quests_summary" class="summaryBox inlineBlock" style="height: 680px;">
@@ -433,7 +443,7 @@ function downloadDone() {
   </div>
 </div>
 <div class="footer">
-	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a>
+	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info">About</a>
 	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>

@@ -10,7 +10,7 @@ from decimal import *
 
 # Record for final tax report data
 class TaxItem:
-    def __init__(self, txHash, sentAmount, sentType, rcvdAmount, rcvdType, description, category, soldDate, fiatType='usd', proceeds=0, acquiredDate=None, costs=0, term="short"):
+    def __init__(self, txHash, sentAmount, sentType, rcvdAmount, rcvdType, description, category, soldDate, fiatType='usd', proceeds=0, acquiredDate=None, costs=0, term="short", txFees=0):
         self.description = description
         # gains, income, or expenses
         self.category = category
@@ -27,10 +27,14 @@ class TaxItem:
         self.sentType = sentType
         self.rcvdAmount = rcvdAmount
         self.rcvdType = rcvdType
+        self.txFees = Decimal(txFees)
     # Only calculate gains assets cost basis was found
     def get_gains(self):
         if self.proceeds > 0:
-            return self.proceeds - self.costs
+            if hasattr(self, 'txFees'):
+                return self.proceeds - self.costs - self.txFees
+            else:
+                return self.proceeds - self.costs
         else:
             return 0
 
@@ -123,10 +127,11 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     heroExpenses = {}
     heroIncome = {}
     landExpenses = {}
+    perishRewards = {}
     # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if event.event in ['purchase','summon','crystal','meditate','levelup'] and eventDate >= startDate and eventDate <= endDate:
+        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance'] and eventDate >= startDate and eventDate <= endDate:
             if event.itemType == 'land':
                 if event.itemID in landExpenses:
                     if event.event in landExpenses[event.itemID].description:
@@ -136,8 +141,12 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     landExpenses[event.itemID].costs += event.fiatAmount
                     if landExpenses[event.itemID].acquiredDate == None or eventDate < landExpenses[event.itemID].acquiredDate:
                         landExpenses[event.itemID].acquiredDate = eventDate
+                    if hasattr(event, 'fiatFeeValue'):
+                        landExpenses[event.itemID].txFees += event.fiatFeeValue
                 else:
                     ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
+                    if hasattr(event, 'fiatFeeValue'):
+                        ti.txFees = event.fiatFeeValue
                     landExpenses[event.itemID] = ti
             else:
                 if event.itemID in heroExpenses:
@@ -148,8 +157,12 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     heroExpenses[event.itemID].costs += event.fiatAmount
                     if heroExpenses[event.itemID].acquiredDate == None or eventDate < heroExpenses[event.itemID].acquiredDate:
                         heroExpenses[event.itemID].acquiredDate = eventDate
+                    if hasattr(event, 'fiatFeeValue'):
+                        heroExpenses[event.itemID].txFees += event.fiatFeeValue
                 else:
                     ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
+                    if hasattr(event, 'fiatFeeValue'):
+                        ti.txFees = event.fiatFeeValue
                     heroExpenses[event.itemID] = ti
 
     # Grab a list of all hero hires to list as income
@@ -173,9 +186,41 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
 
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
+        # summarize rewards for any perished event in the requested range
+        if event.event == 'perished' and eventDate >= startDate and eventDate <= endDate:
+            if event.itemID in perishRewards:
+                perishRewards[event.itemID].proceeds += event.fiatAmount
+                perishRewards[event.itemID].soldDate = eventDate
+                if hasattr(event, 'fiatFeeValue'):
+                    perishRewards[event.itemID].txFees += event.fiatFeeValue
+            else:
+                ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Perished {1} {0}'.format(event.itemID, event.itemType), 'gains', eventDate, event.fiatType, event.fiatAmount)
+                if hasattr(event, 'fiatFeeValue'):
+                    ti.txFees = event.fiatFeeValue
+                ti.amountNotAccounted = 1
+                perishRewards[event.itemID] = ti
+    # Create a tax record for any perished hero in the requested range and add cost basis
+    for kp, vp in perishRewards.items():
+        for k, v in heroExpenses.items():
+            if k == kp:
+                if vp.acquiredDate == None:
+                    vp.acquiredDate = v.acquiredDate
+                vp.costs = v.costs
+                if 'summon' in v.description or 'purchase' in v.description:
+                    vp.amountNotAccounted = 0
+                if vp.soldDate - vp.acquiredDate > datetime.timedelta(days=365):
+                    vp.term = "long"
+                v.proceeds = vp.proceeds
+                vp.txFees += v.txFees
+        results.append(vp)
+
+    for event in tavernEvents:
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create a tax record for any sale event in the requested range
         if event.event == 'sale' and eventDate >= startDate and eventDate <= endDate:
             ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getAddressName(event.coinType), 'Sold {1} {0}'.format(event.itemID, event.itemType), 'gains', eventDate, event.fiatType, event.fiatAmount)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
             ti.amountNotAccounted = 1
             # Check NFT cost data so gains can be calculated
             if event.itemType == 'land':
@@ -191,6 +236,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
                         ti.term = "long"
                     v.proceeds = event.fiatAmount
+                    ti.txFees += v.txFees
             results.append(ti)
     for k, v in landExpenses.items():
         results.append(v)
@@ -202,12 +248,15 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
 
 def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents, gardensEvents, questEvents, tavernEvents, costBasis, purchaseAddresses):
     results = []
+    # TODO inlcude liquidity withdrawal received tokens for cost basis search
     # Find any wallet transfers to purchase addresses and treat them like a swap for fiat '0x985458E523dB3d53125813eD68c274899e9DfAb4'
     for item in walletEvents:
         if item.action == 'withdraw' and item.address in purchaseAddresses:
             si = records.TraderTransaction(item.txHash, item.timestamp, item.coinType, 'fiat value', item.coinAmount, item.fiatValue)
             si.fiatSwapValue = item.fiatValue
             si.fiatReceiveValue = item.fiatValue
+            if hasattr(item, 'fiatFeeValue'):
+                si.fiatFeeValue = item.fiatFeeValue
             swapEvents.append(si)
     swapEvents = sorted(swapEvents, key=lambda x: x.timestamp)
 
@@ -233,7 +282,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
         ci = CostBasisItem(qEvent.txHash, qEvent.timestamp, qEvent.rewardType, qEvent.rewardAmount, qEvent.fiatType, qEvent.fiatValue)
         cbList.append(ci)
     for tEvent in tavernEvents:
-        if tEvent.event in ['hire','sale']:
+        if tEvent.event in ['hire','sale','perished']:
             ci = CostBasisItem(tEvent.txHash, tEvent.timestamp, tEvent.coinType, tEvent.coinCost, tEvent.fiatType, tEvent.fiatAmount)
             cbList.append(ci)
     # Also run through direct wallet transactions to try and fill remaining gaps in received value accounting
@@ -257,6 +306,8 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             else:
                 actionStr = 'Sold'
             ti = TaxItem(event.txHash, event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType), '{4} {0:.5f} {1} for {2:.5f} {3}'.format(event.swapAmount, contracts.getAddressName(event.swapType), event.receiveAmount, contracts.getAddressName(event.receiveType), actionStr), 'gains', eventDate, event.fiatType, event.fiatSwapValue)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
             # Check all transactions for prior time when sold token was received to calc gains
             for searchEvent in cbList:
                 searchEventDate = datetime.date.fromtimestamp(searchEvent.timestamp)
@@ -269,12 +320,12 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
                         ti.term = "long"
                     if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
                         # use up all receive transaction amount and update amount left to match still
-                        ti.costs += searchEvent.fiatReceiveValue * (searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                        ti.costs += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
                         event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
                         searchEvent.receiveAmountNotAccounted = 0
                     else:
                         # use up as much of recieve transaction as swap was for and update amount left to account for on receive
-                        ti.costs += (searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
+                        ti.costs += Decimal(searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
                         searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
                         event.swapAmountNotAccounted = 0
                         break
@@ -294,6 +345,8 @@ def buildLiquidityRecords(liquidityEvents, startDate, endDate):
         # Withdrawal from liquidity pool triggers realized growth or loss, make tax item and find cost basis
         if event.action == 'withdraw' and eventDate >= startDate and eventDate <= endDate:
             ti = TaxItem(event.txHash, event.poolAmount, contracts.getAddressName(event.poolAddress), '{0}/{1}'.format(event.coin1Amount, event.coin2Amount), '{0}/{1}'.format(contracts.getAddressName(event.coin1Type), contracts.getAddressName(event.coin2Type)), 'Liquidity Withdrawal {0}'.format(contracts.getAddressName(event.poolAddress)), 'gains', eventDate, event.fiatType, event.coin1FiatValue + event.coin2FiatValue)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
             # Check history for deposit data so gains/losses can be calculated
             for searchEvent in liquidityEvents:
                 searchEventDate = datetime.date.fromtimestamp(searchEvent.timestamp)
@@ -330,6 +383,8 @@ def buildBankRecords(bankEvents, startDate, endDate):
         # Withdrawal from Bank triggers realized xJewel rewards, make tax item and find cost basis
         if event.action == 'withdraw' and eventDate >= startDate and eventDate <= endDate:
             ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), 'Bank Rewards {0}'.format(contracts.getAddressName(event.coinType)), 'income', eventDate, event.fiatType, event.fiatValue)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
             # Use Jewel cost at withdraw time for all calcs so we are not including Jewel price functuation in Bank Rewards
             jewelPrice = event.fiatValue / event.coinAmount
             # Check history for deposit data so gains can be calculated
@@ -370,6 +425,8 @@ def buildGardensRecords(gardensEvents, startDate, endDate):
                 rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType))].costs += event.coinAmount
             else:
                 ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), '{0} Staking Reward'.format(contracts.getAddressName(event.coinType)), 'income', eventDate, event.fiatType, event.fiatValue)
+                if hasattr(event, 'fiatFeeValue'):
+                    ti.txFees = event.fiatFeeValue
                 # Not really!
                 ti.costs = event.coinAmount
                 ti.amountNotAccounted = 0
@@ -396,6 +453,8 @@ def buildAirdropRecords(airdropEvents, startDate, endDate):
             else:
                 desc = '{2} {0} {1}'.format(int(event.tokenAmount), contracts.getAddressName(event.tokenReceived), eventTitle)
             ti = TaxItem(event.txHash, 0, '', event.tokenAmount, contracts.getAddressName(event.tokenReceived), desc, 'income', eventDate, event.fiatType, event.fiatValue)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
             ti.amountNotAccounted = 0
             results.append(ti)
 
@@ -432,6 +491,8 @@ def buildQuestRecords(questEvents, startDate, endDate):
                 ti = TaxItem(event.txHash, 0, '', event.rewardAmount, contracts.getAddressName(event.rewardType), 'Quest Jewel Rewards', 'income', eventDate, event.fiatType, event.fiatValue)
                 # Not really!
                 ti.costs = event.rewardAmount
+                if hasattr(event, 'fiatFeeValue'):
+                    ti.txFees += event.fiatFeeValue
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))] = ti
     for k, v in itemGroups.items():
         v.description = 'Quest Jewel Rewards {:.3f}'.format(v.costs)
@@ -458,6 +519,8 @@ def buildPaymentRecords(walletEvents, startDate, endDate):
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))].costs += event.coinAmount
             else:
                 ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), 'Payment', 'income', eventDate, event.fiatType, event.fiatValue)
+                if hasattr(event, 'fiatFeeValue'):
+                    ti.txFees += event.fiatFeeValue
                 # Not really!
                 ti.costs = event.coinAmount
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))] = ti

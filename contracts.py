@@ -1,10 +1,42 @@
+#!/usr/bin/env python3
+import os
+from web3 import Web3
+import decimal
+
+def getABI(contractName):
+    location = os.path.abspath(__file__)
+    with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
+        ABI = f.read()
+    return ABI
+
+# Simple way to determine conversion, maybe change to lookup on chain later
+def valueFromWei(amount, token):
+    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
+    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d']:
+        return amount / decimal.Decimal(100000000)
+    else:
+        if token in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7']: # DFKGOLD
+            weiConvert = 'kwei'
+        elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4','0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f','0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664']: # 1USDC/1USDT
+            weiConvert = 'mwei'
+        elif token in gold_values:
+            weiConvert = 'wei'
+        else:
+            weiConvert = 'ether'
+        return Web3.fromWei(amount, weiConvert)
+
+def getNativeToken(network):
+    if network == 'avalanche':
+        return '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
+    else:
+        return '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a'
+
 # just a utility for looking  up a name without bombing if not in list
 def getAddressName(address):
     if address in address_map:
         return address_map[address]
     else:
         return address
-
 
 address_map = {
     '0xf390830DF829cf22c53c8840554B98eafC5dCBc2': 'anyJewel',
@@ -60,7 +92,6 @@ address_map = {
     '0x66C17f5381d7821385974783BE34c9b31f75Eb78': 'Jewel LP Token ONE/1USDC',
     '0x3733062773B24F9bAfa1e8f2e5A352976f008A95': 'Jewel LP Token XYA/Jewel',
     '0xc74eaf04777F784A7854e8950daEb27559111b85': 'Jewel LP Token XYA/ONE',
-    '0xc74eaf04777F784A7854e8950daEb27559111b85': 'Jewel LP Token XYA/Jewel/ONE',
     '0x61356C852632813f3d71D57559B06cdFf70E538B': 'Jewel LP Token ONE/UST',
     '0xb91A0dFA0178500FEDC526f26A89803C387772E8': 'Jewel LP Token Jewel/UST',
     '0xf0504847fDbe0AEFaB006EA002BfC1CFe20d8985': 'Jewel LP Token ONE/1USDT',
@@ -105,6 +136,8 @@ address_map = {
     '0xD74B9b22860b52d8d6bc666Cf8E7274D76Cd596d': 'Jewel LP Token bscTLM/Jewel',
     '0xa8589d575aeD9C6dc12C860867c5348791D2D097': 'Jewel LP Token KURO/Jewel',
     '0x500afc0C82DA45C618fbBfc2F6931Bc415d334ea': 'Jewel LP Token 1MATIC/Jewel',
+    '0x321EafB0aeD358966a90513290De99763946A54b': 'Jewel LP Token DFKGold/Jewel',
+    '0xB270556714136049B27485f1aA8089B10F6F7f57': 'Jewel LP Token Shvas/Jewel',
     '0x3685ec75ea531424bbe67db11e07013abeb95f1e': 'LP withdraw fees?',
     '0x6574026Db45bA8d49529145080489C3da71a82DF': 'Venom LP Token ONE/UST',
     '0xF170016d63fb89e1d559e8F87a17BCC8B7CD9c00': 'Venom LP Token ONE/USDC',
@@ -132,10 +165,11 @@ address_map = {
     '0xE20d839e71aF41492bBB3e52Fb2C2A87A66D076a': 'FiraFarms',
     '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'Jewel',
     '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': 'xJewels',
-    '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'USD Coin',
+    '0x985458E523dB3d53125813eD68c274899e9DfAb4': '1USDC',
     '0x3685Ec75Ea531424Bbe67dB11e07013ABeB95f1e': 'Banker',
     '0xe53BF78F8b99B6d356F93F41aFB9951168cca2c6': 'Vendor',
     '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892': 'AuctionHouse',
+    '0x9e30BA74500a2a66E7884d623D409563A38Ef687': 'AuctionHouse2',
     '0xdF0Bf714e80F5e6C994F16B05b7fFcbCB83b89e9': 'HeroSale',
     '0xa2D001C829328aa06a2DB2740c05ceE1bFA3c6bb': 'SummoningPortalv0',
     '0x65DEA93f7b886c33A78c10343267DD39727778c2': 'SummoningPortal',
@@ -162,9 +196,11 @@ address_map = {
     '0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7': 'Perilous Journey',
     '0x38e76972BD173901B5E5E43BA5cB464293B80C31': 'Potion Use',
     '0x5F753dcDf9b1AD9AabC1346614D1f4746fd6Ce5C': 'Hero',
+    '0x9CC714059943D5A726fAD11087Bb6d9Ab811A2E3': 'Graveyard',
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 'Gaia\'s Tears',
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 'Shvas Rune',
+    '0x8F655142104478724bbC72664042EA09EBbF7B38': 'Moksha Rune',
     '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc': 'Grey Pet Egg',
     '0x6d605303e9Ac53C59A3Da1ecE36C9660c7A71da5': 'Green Pet Egg',
     '0x9678518e04Fe02FB30b55e2D0e554E26306d0892': 'Blue Pet Egg',
@@ -199,6 +235,38 @@ address_map = {
     '0x872dD1595544CE22ad1e0174449C7ECE6F0bb01b': 'Switftness Potion',
     '0x27dC6AaaD95580EdF25F8B9676f1B984e09e413d': 'Atonement Crystal',
     '0x1f3F655079b70190cb79cE5bc5AE5F19dAf2A6Cf': 'Atonement Crystal Lesser',
+    '0xaB464901AFBc61bAC440a97Fa568aC42885Da58B': 'Lesser Might Crystal',
+    '0xb368f69bE6eDa74700763672AEB2Ae63f3d20AE6': 'Might Crystal',
+    '0x39927A2CEE5580d63A163bc402946C7600300373': 'Lesser Finesse Crystal',
+    '0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2': 'Finesse Crystal',
+    '0xf5c26F2F34E9245C3A9ea0B0e7Ea7B33E6404Da0': 'Lesser Swiftness Crystal',
+    '0x5d7f20e3B0f1406Bf038175218eA7e9B4838908c': 'Swiftness Crystal',
+    '0x0d8403E47445DB9E316E36F476dacD5827220Bdd': 'Lesser Vigor Crystal',
+    '0xBbA50bD111DC586Fd1f2B1476B6eC505800A3FD0': 'Vigor Crystal',
+    '0x3017609B9A59B77B708D783835B6fF94a3D9E337': 'Lesser Fortitude Crystal',
+    '0x603919AEB55EB13F9CDE94274fC54ab2Bd2DecE7': 'Fortitude Crystal',
+    '0x17ff2016c9ecCFBF4Fc4DA6EF95Fe646D2c9104F': 'Lesser Wit Crystal',
+    '0x3619fc2386FbBC19DDC39d29A72457e758CFAD69': 'Wit Crystal',
+    '0xc63b76f710e9973b8989678eb16234CfADc8D9DB': 'Lesser Insight Crystal',
+    '0x117E60775584CdfA4f414E22b075F31cC9c3207C': 'Insight Crystal',
+    '0x13AF184aEA970Fe79E3BB7A1B0B156B195fB1f40': 'Lesser Fortune Crystal',
+    '0x6D777C64f0320d8A5b31BE0FdeB694007Fc3ed45': 'Fortune Crystal',
+    '0xe4E7C0c693d8A7FC159776a993495378705464A7': 'Lesser Might Stone',
+    '0x6382781FE94CAadC71027c0457c9CbEff06e204c': 'Might Stone',
+    '0xbb5614D466b77d50DdEd994892DFe6F0ACA4eEbb': 'Lesser Finesse Stone',
+    '0xD0B689Cb5DE0c15792Aa456C89D64038C1F2EedC': 'Finesse Stone',
+    '0xd9A8abC0Ce1ADC23F1c1813986c9a9C21C9e7510': 'Lesser Swiftness Stone',
+    '0x08f362517aD4119d93bBCd20825c2E4119abB495': 'Swiftness Stone',
+    '0xB00CbF5Cd5e7b321436C2D3d8078773522D2F073': 'Lesser Vigor Stone',
+    '0x9df75917aC9747B4A70fa033E4b0182d85B62857': 'Vigor Stone',
+    '0x1f57eb682377f5Ad6276b9315412920BdF9530f6': 'Lesser Fortitude Stone',
+    '0x17Fa96ba9d9C29e4B96d29A7e89a4E7B240E3343': 'Fortitude Stone',
+    '0x4Ff7A020ec1100D36d5C81F3D4815F2e9C704b59': 'Lesser Wit Stone',
+    '0x939Ea05C81aAC48F7C10BdB08615082B82C80c63': 'Wit Stone',
+    '0x762b98B3758d0A5Eb95B3E4A1E2914Ce0A80D99c': 'Lesser Insight Stone',
+    '0x9D71Bb9C781FC2eBdD3d6cb709438e3c71200149': 'Insight Stone',
+    '0x6D6eA1D2Dc1Df6Eaa2153f212d25Cf92d13Be628': 'Lesser Fortune Stone',
+    '0x5da2EffE9857DcEcB786E13566Ff37B92e1E6862': 'Fortune Stone',
     '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 'Lesser Chaos Stone',
     '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  # Start Avalanche list
@@ -217,6 +285,7 @@ gold_values = {
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 0, # DFK gold
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 0, #Gaia's Tears
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 0, #Shvas Rune
+    '0x8F655142104478724bbC72664042EA09EBbF7B38': 0, #Moksha Rune
     '0x9678518e04Fe02FB30b55e2D0e554E26306d0892': 0, #Blue Pet Egg
     '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc': 0, #Grey Pet Egg
     '0x6d605303e9Ac53C59A3Da1ecE36C9660c7A71da5': 0, #Green Pet Egg
@@ -251,6 +320,38 @@ gold_values = {
     '0x872dD1595544CE22ad1e0174449C7ECE6F0bb01b': 0, #Switftness Potion
     '0x27dC6AaaD95580EdF25F8B9676f1B984e09e413d': 0, #Atonement Crystal
     '0x1f3F655079b70190cb79cE5bc5AE5F19dAf2A6Cf': 0, # Atonement Crystal Lesser
+    '0xaB464901AFBc61bAC440a97Fa568aC42885Da58B': 0, #Lesser Might Crystal
+    '0xb368f69bE6eDa74700763672AEB2Ae63f3d20AE6': 0, #Might Crystal
+    '0x39927A2CEE5580d63A163bc402946C7600300373': 0, #Lesser Finesse Crystal
+    '0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2': 0, #Finesse Crystal
+    '0xf5c26F2F34E9245C3A9ea0B0e7Ea7B33E6404Da0': 0, #Lesser Swiftness Crystal
+    '0x5d7f20e3B0f1406Bf038175218eA7e9B4838908c': 0, #Swiftness Crystal
+    '0x0d8403E47445DB9E316E36F476dacD5827220Bdd': 0, #Lesser Vigor Crystal
+    '0xBbA50bD111DC586Fd1f2B1476B6eC505800A3FD0': 0, #Vigor Crystal
+    '0x3017609B9A59B77B708D783835B6fF94a3D9E337': 0, #Lesser Fortitude Crystal
+    '0x603919AEB55EB13F9CDE94274fC54ab2Bd2DecE7': 0, #Fortitude Crystal
+    '0x17ff2016c9ecCFBF4Fc4DA6EF95Fe646D2c9104F': 0, #Lesser Wit Crystal
+    '0x3619fc2386FbBC19DDC39d29A72457e758CFAD69': 0, #Wit Crystal
+    '0xc63b76f710e9973b8989678eb16234CfADc8D9DB': 0, #Lesser Insight Crystal
+    '0x117E60775584CdfA4f414E22b075F31cC9c3207C': 0, #Insight Crystal
+    '0x13AF184aEA970Fe79E3BB7A1B0B156B195fB1f40': 0, #Lesser Fortune Crystal
+    '0x6D777C64f0320d8A5b31BE0FdeB694007Fc3ed45': 0, #Fortune Crystal
+    '0xe4E7C0c693d8A7FC159776a993495378705464A7': 0, #Lesser Might Stone
+    '0x6382781FE94CAadC71027c0457c9CbEff06e204c': 0, #Might Stone
+    '0xbb5614D466b77d50DdEd994892DFe6F0ACA4eEbb': 0, #Lesser Finesse Stone
+    '0xD0B689Cb5DE0c15792Aa456C89D64038C1F2EedC': 0, #Finesse Stone
+    '0xd9A8abC0Ce1ADC23F1c1813986c9a9C21C9e7510': 0, #Lesser Swiftness Stone
+    '0x08f362517aD4119d93bBCd20825c2E4119abB495': 0, #Swiftness Stone
+    '0xB00CbF5Cd5e7b321436C2D3d8078773522D2F073': 0, #Lesser Vigor Stone
+    '0x9df75917aC9747B4A70fa033E4b0182d85B62857': 0, #Vigor Stone
+    '0x1f57eb682377f5Ad6276b9315412920BdF9530f6': 0, #Lesser Fortitude Stone
+    '0x17Fa96ba9d9C29e4B96d29A7e89a4E7B240E3343': 0, #Fortitude Stone
+    '0x4Ff7A020ec1100D36d5C81F3D4815F2e9C704b59': 0, #Lesser Wit Stone
+    '0x939Ea05C81aAC48F7C10BdB08615082B82C80c63': 0, #Wit Stone
+    '0x762b98B3758d0A5Eb95B3E4A1E2914Ce0A80D99c': 0, #Lesser Insight Stone
+    '0x9D71Bb9C781FC2eBdD3d6cb709438e3c71200149': 0, #Insight Stone
+    '0x6D6eA1D2Dc1Df6Eaa2153f212d25Cf92d13Be628': 0, #Lesser Fortune Stone
+    '0x5da2EffE9857DcEcB786E13566Ff37B92e1E6862': 0, #Fortune Stone
     '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 0, # Lesser Chaos Stone
     '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 0 # Bounty Hero Achievement
 }
@@ -277,3 +378,29 @@ payment_wallets = [
     '0x3875e5398766a29c1B28cC2068A0396cba36eF99',
     '0x2b12D9A2480D6Dd9F71DabAa366C87134195b679'
 ]
+
+serendale_pairs = {
+    '0x9b68BF4bF89c115c721105eaf6BD5164aFcc51E4': '0xc74eaf04777F784A7854e8950daEb27559111b85', # XYA via XYA/ONE
+    '0x3095c7557bCb296ccc6e363DE01b760bA031F2d9': '0x0AcCE15D05B4BA4dBEdFD7AFD51EA4FA1592f75E', # wBTC via wBTC/Jewel
+    '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': '0xC79245BA0248Abe8a385d588C0a9D3DB261B453c', # Gaias Tears via tears/Jewel
+    '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': '0x321EafB0aeD358966a90513290De99763946A54b', # DFK Gold via gold/jewel
+    '0xD74433B187Cf0ba998Ad9Be3486B929c76815215': '0x60e0d939D4b0C71918088278bCf600470A6c8f26', # Artemis vis MIS/ONE
+    '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': '0xEb579ddcD49A7beb3f205c9fF6006Bb6390F138f', # Jewel via Jewel/ONE
+    '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': '0xB270556714136049B27485f1aA8089B10F6F7f57', # Shvas rune via shvas/jewel
+    '0x6983D1E6DEf3690C4d616b13597A09e6193EA013': '0x864fcd9a42a5f6e0f76BC309Ee26c8fab473FC3e', # 1ETH via ETH/one
+    '0xCf1709Ad76A79d5a60210F23e81cE2460542A836': '0xbBAE29799602437364d183fBD9272968cF5F6361', # Tranquil via TRANQ/ONE
+    '0x6d605303e9Ac53C59A3Da1ecE36C9660c7A71da5': '0x9f1285ffA22e03ca1eaf24d1019d470f66E8a58D', # Green Egg via GREGG/USDC
+    '0x9678518e04Fe02FB30b55e2D0e554E26306d0892': '0xC33e997777F978B6037b1078cEE41A1a7B102939', # Blue Egg via BLEGG/BUSD
+    '0x39927A2CEE5580d63A163bc402946C7600300373': '0xeB770a4B1FdA422d872fC7e393079Bb6fCaC2F6A', # Lesser Finesse Crystal via LFINCR/Jewel
+    '0x95CE547D730519A90dEF30d647F37D9E5359B6Ae': '0x430D746F4bBeCA5399c3DEcB0BCD83bc0a5615f2', # Luna via wLUNA/UST
+    '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': '0x73BcEBA4922135196da953931E75184d070E3642', # AVAX via AVAX/ONE
+    '0x0d8403E47445DB9E316E36F476dacD5827220Bdd': '0x8c5CB29234a1982E17148Ad50F0e8c0C76D2D8d1', # Lesser Vigor Crystal via LVGRCR/Jewel
+    '0x13AF184aEA970Fe79E3BB7A1B0B156B195fB1f40': '0x7F88beC9A794b9F1DFC80dd2D3BDDDF40B767C0E', # Lesser Fortune Crystal via LFRTUCR/Jewel
+    '0x17ff2016c9ecCFBF4Fc4DA6EF95Fe646D2c9104F': '0xF3de8C6Fe6FC899f246BFF5781DB016550295c98', # Lesser Wit Crystal via LWITCR/Jewel
+    '0xFbdd194376de19a88118e84E279b977f165d01b8': '0x434Ed26C03aBf9eEd0F35826A4e6F1FF8937DAe7' # Matic via matic/ONE
+}
+serendale_jewel_pairs = {
+    '0x959ba19508827d1ed2333B1b503Bd5ab006C710e': '0x7198d017D1728EE976439E1bF3611363065a29eE', # Stamina Vail via Jewel/StaminapTN
+    '0x8F655142104478724bbC72664042EA09EBbF7B38': '0xfdE2a6d2be10E72bD0a628703A0C155aE35a4Ec4', # Moksha rune via Jewel/Moksha
+    '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc': '0x4758f4D2097aa2Bd8F575C345D64AbEcfD552E4B' # Grey Egg iva Jewel/GREGG
+}
