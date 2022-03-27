@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import nets
 import db
+import contracts
 from web3 import Web3
 import prices
 import logging
@@ -33,7 +34,7 @@ def refreshAccount(w3, con, account):
     cur.execute("SELECT * FROM transactions WHERE account=%s", (account))
     row = cur.fetchone()
     while row != None:
-        if row[7] == None:
+        if row[7] == None and account not in contracts.address_map:
             addFee(w3, con, row[0], row[2], row[3], account)
         row = cur.fetchone()
 
