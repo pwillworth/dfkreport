@@ -115,7 +115,7 @@ def fetchItemPrice(token, date):
             elif token in contracts.serendale_jewel_pairs:
                 price = jewelPrice / decimal.Decimal(result['bars'][0]['close'])
         except Exception as err:
-            result = "Error: failed to get historical price no market data {0}".format(r.text)
+            result = "Error: failed to get historical price no market data {0} or error {1}".format(r.text, str(err))
             logging.error(result)
     if price != None:
         logging.debug('Found existing price to use in dexscreener')
