@@ -77,16 +77,11 @@ def getResponseCSV(records, contentType, format):
                 txFeeCurrency = 'USD'
             if format == 'koinlyuniversal':
                 if record.action == 'withdraw':
-                    sentAmount = record.poolAmount
-                    sentType = contracts.getAddressName(contracts.getAddressName(record.poolAddress))
-                    rcvdAmount = '{0}/{1}'.format(record.coin1Amount, record.coin2Amount)
-                    rcvdType = '{0}/{1}'.format(contracts.getAddressName(record.coin1Type), contracts.getAddressName(record.coin2Type))
+                    response += ','.join((blockDateStr, '', '', str(record.coin1Amount), contracts.getAddressName(record.coin1Type), str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                    response += ','.join((blockDateStr, '', '', str(record.coin2Amount), contracts.getAddressName(record.coin2Type), str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
                 else:
-                    sentAmount = '{0}/{1}'.format(record.coin1Amount, record.coin2Amount)
-                    sentType = '{0}/{1}'.format(contracts.getAddressName(record.coin1Type), contracts.getAddressName(record.coin2Type))
-                    rcvdAmount = record.poolAmount
-                    rcvdType = contracts.getAddressName(record.poolAddress)
-                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.coin1FiatValue + record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                    response += ','.join((blockDateStr, str(record.coin1Amount), contracts.getAddressName(record.coin1Type), '', '', str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                    response += ','.join((blockDateStr, str(record.coin2Amount), contracts.getAddressName(record.coin2Type), '', '', str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
             else:
                 response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['gardens']:
