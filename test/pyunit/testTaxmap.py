@@ -43,7 +43,7 @@ class testTaxmap(unittest.TestCase):
 
 	def test_buildSwapRecords(self):
 		# act
-		taxRecords = taxmap.buildSwapRecords(self.em['swaps'], self.yearStart, self.yearEnd, self.em['wallet'], self.em['airdrops'], self.em['gardens'], self.em['quests'], self.em['tavern'], 'fifo', ['0xPURCHASE'])
+		taxRecords = taxmap.buildSwapRecords(self.em['swaps'], self.yearStart, self.yearEnd, self.em['wallet'], self.em['airdrops'], self.em['gardens'], self.em['quests'], self.em['tavern'], self.em['lending'], 'fifo', ['0xPURCHASE'])
 
 		#assert
 		self.assertTrue(len(taxRecords)==3, "Incorrect number of tax records generated")
