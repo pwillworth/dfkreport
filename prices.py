@@ -106,7 +106,10 @@ def fetchItemPrice(token, date):
     if pairAddress != None:
         dateTimestamp = datetime.datetime.strptime(date, '%d-%m-%Y').timestamp()
         ds_uri = "https://io5.dexscreener.io/u/chart/bars/harmony/{0}?from={1}&to={2}&res=1440&cb=2".format(pairAddress, int((dateTimestamp-86400) * (10 ** 3)), int(dateTimestamp * (10 ** 3)))
-        r = requests.get(ds_uri)
+        try:
+            r = requests.get(ds_uri)
+        except Exception as err:
+            logging.error('Dexscreener price fetch failure: {0}'.format(str(err)))
 
     if r != None and r.status_code == 200:
         result = r.json()
