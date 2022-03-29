@@ -37,6 +37,7 @@ def main():
     # list of transactions if loaded from file if available, otherwise fetched
     reportInfo = db.findReport(args.wallet, args.startDate, args.endDate)
     if reportInfo != None and reportInfo[5] > 0 and len(reportInfo[8]) > 0:
+        includedChains = reportInfo[12]
         with open('../transactions/{0}'.format(reportInfo[8]), 'rb') as file:
             txData = pickle.load(file)
     else:
