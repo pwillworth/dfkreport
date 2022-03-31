@@ -336,6 +336,7 @@ wallet = form.getfirst('walletAddress', '')
 startDate = form.getfirst('startDate', '')
 endDate = form.getfirst('endDate', '')
 includeHarmony = form.getfirst('includeHarmony', 'on')
+includeDFKChain = form.getfirst('includeDFKChain', 'on')
 includeAvalanche = form.getfirst('includeAvalanche', 'false')
 costBasis = form.getfirst('costBasis', 'fifo')
 # can be set to csv, otherwise json response is returned
@@ -390,6 +391,8 @@ if includeHarmony == 'on':
     includedChains += 1
 if includeAvalanche == 'on':
     includedChains += 2
+if includeDFKChain == 'on':
+    includedChains += 4
 if includedChains < 1:
     response = '{ "response" : "Error: You have to select at least 1 blockchain to include." }'
     failure = True

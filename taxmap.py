@@ -63,8 +63,14 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
             raise ConnectionError('Service Unavailable')
     else:
         eventMap = events.EventsMap()
+    if includedChains & constants.DFKCHAIN > 0:
+        eventMapDFK = events.checkTransactions(txns[2], account, startDate, endDate, 'dfkchain', len(txns[0]))
+        if eventMapDFK == 'Error: Blockchain connection failure.':
+            raise ConnectionError('Service Unavailable')
+    else:
+        eventMapDFK = events.EventsMap()
     if includedChains & constants.AVALANCHE > 0:
-        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0]))
+        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0])+len(txns[1]))
         if eventMapAvax == 'Error: Blockchain connection failure.':
             raise ConnectionError('Service Unavailable')
     else:
@@ -74,15 +80,20 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     # Have to look up Tavern sale/hire events because they are not associated direct to wallet
     eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
     eventMap['swaps'] += eventMapAvax['swaps']
+    eventMap['swaps'] += eventMapDFK['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
+    eventMap['liquidity'] += eventMapDFK['liquidity']
     eventMap['wallet'] += eventMapAvax['wallet']
+    eventMap['wallet'] += eventMapDFK['wallet']
     eventMap['bank'] += eventMapAvax['bank']
+    eventMap['bank'] += eventMapDFK['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
+    eventMap['gardens'] += eventMapDFK['gardens']
     eventMap['quests'] += eventMapAvax['quests']
     eventMap['alchemist'] += eventMapAvax['alchemist']
     # Look up wallet payments distributed by interacting with Jewel contract also
-    eventMap['airdrops'] += eventMapAvax['airdrops'] + db.getWalletPayments(account)
-    eventMap['gas'] += eventMapAvax['gas']
+    eventMap['airdrops'] += eventMapAvax['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
+    eventMap['gas'] += eventMapAvax['gas'] + eventMapDFK['gas']
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
@@ -131,7 +142,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance'] and eventDate >= startDate and eventDate <= endDate:
+        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance']:
             if event.itemType == 'land':
                 if event.itemID in landExpenses:
                     if event.event in landExpenses[event.itemID].description:

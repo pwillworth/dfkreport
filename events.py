@@ -34,6 +34,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     # Connect to right network that txs are for
     if network == 'avalanche':
         w3 = Web3(Web3.HTTPProvider(nets.avax_web3))
+    elif network == 'dfkchain':
+        w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
     else:
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
 
@@ -48,6 +50,9 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         if network == 'avalanche':
             tx = txn['hash']
             timestamp = int(txn['timeStamp'])
+        elif network == 'dfkchain':
+            tx = txn['hash']
+            timestamp = int(txn['timestamp'])
         else:
             tx = txn
         eventsFound = False
@@ -87,7 +92,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         action = lookupEvent(result['from'], result['to'], account)
         value = Web3.fromWei(result['value'], 'ether')
         block = result['blockNumber']
-        if network != 'avalanche':
+        if network == 'harmony':
             try:
                 timestamp = w3.eth.get_block(block)['timestamp']
             except Exception as err:
@@ -169,7 +174,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
             elif 'Gardener' in action:
-                results = extractGardenerResults(w3, tx, account, timestamp, receipt)
+                results = extractGardenerResults(w3, tx, account, timestamp, receipt, network)
                 if results != None and len(results) > 0:
                     results[0].fiatFeeValue = feeValue
                     for item in results:
@@ -225,7 +230,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount, network, 0, 0)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
-            elif result['input'] != '0x' and 'xJewel' in action:
+            elif result['input'] != '0x' and ('xJewel' in action or 'xCrystal' in action):
                 results = extractBankResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     results.fiatFeeValue = feeValue
@@ -488,7 +493,7 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
                 sentToken = log['address']
                 sentAmount = Web3.fromWei(log['args']['value'], 'ether')
         if sentAmount > 0 and rcvdAmount > 0:
-            if sentToken == '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': # TODO: make this an array including crystal when crystalvale launches
+            if sentToken in ['0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd']:
                 # Dumping xJewel and getting Jewel from bank
                 r = records.BankTransaction(txn, timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
@@ -499,8 +504,12 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
             return r
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
 
-def extractGardenerResults(w3, txn, account, timestamp, receipt):
-    # events record amount of jewel received when claiming at the gardens
+def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
+    # events record amount of jewel/crystal received when claiming at the gardens
+    if network == 'dfkchain':
+        powerToken = '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'
+    else:
+        powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
     ABI = contracts.getABI('MasterGardener')
     contract = w3.eth.contract(address='0xDB30643c71aC9e2122cA0341ED77d09D5f99F924', abi=ABI)
     events = []
@@ -508,11 +517,11 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
     for log in decoded_logs:
         receivedAmount = Web3.fromWei(log['args']['amount'], 'ether')
         lockedAmount = Web3.fromWei(log['args']['lockAmount'], 'ether')
-        r = records.GardenerTransaction(txn, timestamp, 'staking-reward', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', receivedAmount - lockedAmount)
-        rl = records.GardenerTransaction(txn, timestamp, 'staking-reward-locked', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', lockedAmount)
-        jewelPrice = prices.priceLookup(timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
-        r.fiatValue = jewelPrice * r.coinAmount
-        rl.fiatValue = jewelPrice * rl.coinAmount
+        r = records.GardenerTransaction(txn, timestamp, 'staking-reward', powerToken, receivedAmount - lockedAmount)
+        rl = records.GardenerTransaction(txn, timestamp, 'staking-reward-locked', powerToken, lockedAmount)
+        tokenPrice = prices.priceLookup(timestamp, powerToken)
+        r.fiatValue = tokenPrice * r.coinAmount
+        rl.fiatValue = tokenPrice * rl.coinAmount
         events.append(r)
         events.append(rl)
 
@@ -525,7 +534,7 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt):
     gardenAmount = 0
     for log in decoded_logs:
         # Token Transfers
-        if 'to' in log['args'] and 'from' in log['args'] and log['address'] in contracts.address_map and 'Jewel LP' in contracts.address_map[log['address']]:
+        if 'to' in log['args'] and 'from' in log['args'] and log['address'] in contracts.address_map and 'LP Token' in contracts.address_map[log['address']]:
             if log['args']['to'] == account:
                 gardenEvent = 'withdraw'
                 gardenToken = log['address']
@@ -593,10 +602,11 @@ def extractSwapResults(w3, txn, account, timestamp, receipt):
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
-            if log['args']['to'] == account:
+            # TODO - figure out what event is happening and decode it for what sends normal jewel to account after wrapped is burned
+            if log['args']['to'] == account or (log['address'] == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and log['args']['from'] == '0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa' and log['args']['to'] == '0x0000000000000000000000000000000000000000'):
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
-            elif log['args']['from'] == account:
+            elif log['args']['from'] == account or (log['address'] == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and log['args']['to'] == '0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa' and log['args']['from'] == '0x0000000000000000000000000000000000000000'):
                 sentToken.append(log['address'])
                 sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             else:

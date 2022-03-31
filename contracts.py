@@ -268,6 +268,7 @@ address_map = {
     '0x6D6eA1D2Dc1Df6Eaa2153f212d25Cf92d13Be628': 'Lesser Fortune Stone',
     '0x5da2EffE9857DcEcB786E13566Ff37B92e1E6862': 'Fortune Stone',
     '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 'Lesser Chaos Stone',
+    '0x3633F956410163A98D58D2D928B38C64A488654e': 'Chaos Stone',
     '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  # Start Avalanche list
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
@@ -278,7 +279,20 @@ address_map = {
     '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106': 'Uniswap AVAX',
     '0x1f806f7C8dED893fd3caE279191ad7Aa3798E928': 'Pangolin Farms V2',
     '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
-    '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX'
+    '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX',
+    '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
+    '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystal',
+    '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'wJewel',
+    '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'wxJewel',
+    '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'dfkAVAX',
+    '0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa': 'UniswapV2Router02 Crystalvale',
+    '0x4F4f66964335D7bef23C16a62Fcd3d1E89f02959': 'Bridge to Crystalvale',
+    '0xA7F9B7B0f729Dc98ae748f5505497909aFfdfa8A': 'Bridge to Serendale',
+    '0x57Dec9cC7f492d6583c773e2E7ad66dcDc6940Fb': 'CrystalvaleGardener',
+    '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
+    '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
+    '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
+    '0x9f378F48d0c1328fd0C80d7Ae544C6CadB5Ba99E': 'Crystal LP Token Crystal/AVAX'
 }
 
 gold_values = {

@@ -22,7 +22,7 @@ def main():
     parser.add_argument("startDate", help="The starting date for the report")
     parser.add_argument("endDate", help="The ending date for the report")
     parser.add_argument("--costbasis", choices=['fifo','lifo','hifo'], help="Method for mapping cost basis to gains")
-    parser.add_argument("--chains", choices=['1','2','3'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax")
+    parser.add_argument("--chains", choices=['1','2','3','4','5','6','7'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax,4=DFKChain")
     args = parser.parse_args()
     if args.costbasis == None:
         costBasis = 'fifo'

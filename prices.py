@@ -26,6 +26,8 @@ token_map = {
     '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'tranquil-staked-one',
     '0x892D81221484F690C0a97d3DD18B9144A3ECDFB7': 'cosmic-universe-magic-token',
     '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
+    '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'defi-kingdoms',
+    '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'avalanche-2',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms',
@@ -101,7 +103,7 @@ def fetchItemPrice(token, date):
         pairAddress = contracts.serendale_pairs[token]
     elif token in contracts.serendale_jewel_pairs:
         pairAddress = contracts.serendale_jewel_pairs[token]
-        jewelPrice = getPrice('0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', date)
+        jewelPrice = getPrice('defi-kingdoms', date)
 
     if pairAddress != None:
         dateTimestamp = datetime.datetime.strptime(date, '%d-%m-%Y').timestamp()
@@ -129,7 +131,11 @@ def fetchItemPrice(token, date):
         if token in today_prices:
             price = today_prices[token]
         else:
-            price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+            # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
+            if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
+                price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260')
+            else:
+                price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
         if price >= 0:
             today_prices[token] = price
             result = json.loads('{ "usd" : %s }' % price)
@@ -155,9 +161,14 @@ def getPrice(token, date, fiatType='usd'):
 
 # Return USD price of token based on its pair to throughToken to 1USDC
 def getCurrentPrice(token, throughToken):
-    w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
-    ABI = contracts.getABI('UniswapV2Router02')
-    contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
+    if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
+        w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
+        ABI = contracts.getABI('UniswapV2Router02')
+        contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
+    else:
+        w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+        ABI = contracts.getABI('UniswapV2Router02')
+        contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
 
     tokenDecimals = getTokenInfo(w3, token)[1]
     throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
@@ -171,7 +182,11 @@ def getCurrentPrice(token, throughToken):
     price = -1
     try:
         token0Amount = contract.functions.getAmountsOut(tokenOne, [token, throughToken]).call()
-        token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, '0x985458E523dB3d53125813eD68c274899e9DfAb4']).call()
+        if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
+            # Just use daily jewel price for crystalvale for now until stable pair shows up
+            token1Amount = [1, Web3.toWei(getPrice('defi-kingdoms', datetime.datetime.now().strftime('%d-%m-%Y')), 'mwei')]
+        else:
+            token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, '0x985458E523dB3d53125813eD68c274899e9DfAb4']).call()
         price = contracts.valueFromWei(token0Amount[1], throughToken) * contracts.valueFromWei(token1Amount[1], '0x985458E523dB3d53125813eD68c274899e9DfAb4')
     except Exception as err:
         logging.error('Price lookup failed {0}'.format(err))
@@ -197,7 +212,7 @@ def main():
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
     #sys.stdout.write(str(fetchItemPrice('0x959ba19508827d1ed2333B1b503Bd5ab006C710e', '07-03-2022')))
-    sys.stdout.write(str(priceLookup(1647919734, '0x9b68BF4bF89c115c721105eaf6BD5164aFcc51E4')))
+    sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
     #while startDate <= endDate:
     #    sys.stdout.write(getPrice('harmony', startDate.strftime('%d-%m-%Y'), 'usd'))
