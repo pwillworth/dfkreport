@@ -108,10 +108,12 @@ def getResponseCSV(records, contentType, format):
                     rcvdType = contracts.getAddressName(record.coinType)
                 response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, label, record.event, record.txHash, '\n'))
             else:
-                if 'Jewel' in contracts.getAddressName(record.coinType):
-                    location = 'Serendale'
-                else:
+                if 'Pangolin LP' in contracts.getAddressName(record.coinType):
                     location = 'Pangolin'
+                elif 'Crystal LP' in contracts.getAddressName(record.coinType):
+                    location = 'Crystalvale'
+                else:
+                    location = 'Serendale'
                 response += ','.join((location, blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         for record in eventRecords['bank']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
