@@ -230,7 +230,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount, network, 0, 0)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
-            elif result['input'] != '0x' and ('xJewel' in action or 'xCrystal' in action):
+            elif result['input'] != '0x' and ('xJewels' in action or 'xCrystal' in action):
                 results = extractBankResults(w3, tx, account, timestamp, receipt)
                 if results != None:
                     results.fiatFeeValue = feeValue
@@ -498,7 +498,7 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
                 r = records.BankTransaction(txn, timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
             else:
-                # Depositing Jewel in the Bank for xJewel
+                # Depositing Jewel in the Bank for xJewel or xCrystal
                 r = records.BankTransaction(txn, timestamp, 'deposit', sentAmount / rcvdAmount, sentToken, sentAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
             return r

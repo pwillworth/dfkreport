@@ -533,7 +533,7 @@ function loadBankEvents(bankEvents) {
   for (var i = 0; i < bankEvents.length; i++) {
     var eventDate = new Date(bankEvents[i].timestamp * 1000)
     var bankLocation = 'Serendale';
-    if (bankEvents[i].coinType in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2']) {
+    if (bankEvents[i].coinType == '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb') {
       bankLocation = 'Crystalvale';
     }
     $('#tx_bank_data').show();
