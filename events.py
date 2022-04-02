@@ -493,7 +493,7 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
                 sentToken = log['address']
                 sentAmount = Web3.fromWei(log['args']['value'], 'ether')
         if sentAmount > 0 and rcvdAmount > 0:
-            if sentToken in ['0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd']:
+            if sentToken in ['0xA9cE83507D872C5e1273E745aBcfDa849DAA654F', '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2']:
                 # Dumping xJewel and getting Jewel from bank
                 r = records.BankTransaction(txn, timestamp, 'withdraw', rcvdAmount / sentAmount, rcvdToken, rcvdAmount)
                 r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
@@ -564,7 +564,7 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
-            if 'Pangolin LP' in contracts.getAddressName(log['address']) and log['args']['to'] == account:
+            if ('Tranq' in contracts.getAddressName(log['address']) or 'Pangolin LP' in contracts.getAddressName(log['address'])) and log['args']['to'] == account:
                 farmEvent = 'withdraw'
                 farmToken = log['address']
                 farmAmount = Web3.fromWei(log['args']['value'], 'ether')
@@ -572,7 +572,7 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
                 rewardEvent = 'staking-reward'
                 rewardToken = log['address']
                 rewardAmount = Web3.fromWei(log['args']['value'], 'ether')
-            elif 'Pangolin LP' in contracts.getAddressName(log['address']) and log['args']['from'] == account:
+            elif ('Tranq' in contracts.getAddressName(log['address']) or 'Pangolin LP' in contracts.getAddressName(log['address'])) and log['args']['from'] == account:
                 farmEvent = 'deposit'
                 farmToken = log['address']
                 farmAmount = Web3.fromWei(log['args']['value'], 'ether')

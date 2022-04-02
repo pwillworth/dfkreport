@@ -228,9 +228,11 @@ var address_map = {
   '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX',
   '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
   '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystal',
+  '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2': 'xCrystal',
   '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'wJewel',
   '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'xJewel',
   '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'AVAX',
+  '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'USDC',
   '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
   '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
   '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
@@ -531,7 +533,7 @@ function loadBankEvents(bankEvents) {
   for (var i = 0; i < bankEvents.length; i++) {
     var eventDate = new Date(bankEvents[i].timestamp * 1000)
     var bankLocation = 'Serendale';
-    if (bankEvents[i].coinType == '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb') {
+    if (bankEvents[i].coinType in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2']) {
       bankLocation = 'Crystalvale';
     }
     $('#tx_bank_data').show();

@@ -28,6 +28,7 @@ token_map = {
     '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'binancecoin',
     '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'defi-kingdoms',
     '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'avalanche-2',
+    '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'usd-coin',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms',
@@ -119,7 +120,7 @@ def fetchItemPrice(token, date):
             if token in contracts.serendale_pairs:
                 price = result['bars'][0]['closeUsd']
             elif token in contracts.serendale_jewel_pairs:
-                price = jewelPrice / decimal.Decimal(result['bars'][0]['close'])
+                price = decimal.Decimal(jewelPrice) / decimal.Decimal(result['bars'][0]['close'])
         except Exception as err:
             result = "Error: failed to get historical price no market data {0} or error {1}".format(r.text, str(err))
             logging.error(result)

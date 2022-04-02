@@ -28,6 +28,8 @@ def valueFromWei(amount, token):
 def getNativeToken(network):
     if network == 'avalanche':
         return '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
+    elif network == 'dfkchain':
+        return '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260'
     else:
         return '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a'
 
@@ -282,13 +284,16 @@ address_map = {
     '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX',
     '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
     '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystal',
+    '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2': 'xCrystal',
     '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'wJewel',
     '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'wxJewel',
     '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'dfkAVAX',
+    '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'USDC',
     '0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa': 'UniswapV2Router02 Crystalvale',
     '0x4F4f66964335D7bef23C16a62Fcd3d1E89f02959': 'Bridge to Crystalvale',
     '0xA7F9B7B0f729Dc98ae748f5505497909aFfdfa8A': 'Bridge to Serendale',
     '0x57Dec9cC7f492d6583c773e2E7ad66dcDc6940Fb': 'CrystalvaleGardener',
+    '0x123165B3a30fdA3655B30cfC10135C1CA3C21bFC': 'Airdrop Crystalvale',
     '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
     '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
     '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
