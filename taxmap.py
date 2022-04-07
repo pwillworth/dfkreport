@@ -94,15 +94,15 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     # Look up wallet payments distributed by interacting with Jewel contract also
     eventMap['airdrops'] += eventMapAvax['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas'] + eventMapDFK['gas']
-    tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
+    walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
     bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
+    tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
     questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
     airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
     lendingData = buildLendingRecords(eventMap['lending'], startDate, endDate)
-    walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
     # pop out all events not in date range
     eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
     eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
@@ -117,7 +117,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     eventMap['lending'] = costBasisSort(eventMap['lending'], 'fifo')
     # Return all tax records combined and events
     return {
-        'taxes': tavernData + swapData + liquidityData + bankData + gardensData + questData + airdropData + lendingData + walletData,
+        'taxes': swapData + liquidityData + walletData + bankData + gardensData + tavernData + questData + airdropData + lendingData,
         'events': eventMap
     }
 
@@ -261,8 +261,9 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     results = []
     # TODO inlcude liquidity withdrawal received tokens for cost basis search
     # Find any wallet transfers to purchase addresses and treat them like a swap for fiat '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+    # same with any wallet donations
     for item in walletEvents:
-        if item.action == 'withdraw' and item.address in purchaseAddresses:
+        if (item.action == 'withdraw' and item.address in purchaseAddresses) or item.action == 'donation':
             si = records.TraderTransaction(item.txHash, item.timestamp, item.coinType, 'fiat value', item.coinAmount, item.fiatValue)
             si.fiatSwapValue = item.fiatValue
             si.fiatReceiveValue = item.fiatValue
@@ -519,11 +520,12 @@ def buildQuestRecords(questEvents, startDate, endDate):
 
     return results
 
-# Generate Payment income Tax events
+# Generate Payment income Tax events and Donation events
 def buildPaymentRecords(walletEvents, startDate, endDate):
     results = []
     # use dict to summarize payments by type/day
     itemGroups = {}
+    donationGroups = {}
     for event in walletEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create basic income tax record for any wallet deposit from a payment address
@@ -539,10 +541,28 @@ def buildPaymentRecords(walletEvents, startDate, endDate):
                 # Not really!
                 ti.costs = event.coinAmount
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))] = ti
+        elif event.action == 'donation' and eventDate >= startDate and eventDate <= endDate:
+            if ''.join((eventDate.strftime('%d-%m-%Y'), event.coinType)) in donationGroups:
+                donationGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))].costs += event.fiatValue
+                # this is hacky, but I'm just gonna use it to keep track of total jewel since it is not needed
+                donationGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))].proceeds += event.coinAmount
+            else:
+                ti = TaxItem(event.txHash, event.coinAmount, contracts.getAddressName(event.coinType), 0, '', 'Charitable Donation', 'expenses', eventDate, event.fiatType, 0, None, event.fiatValue)
+                if hasattr(event, 'fiatFeeValue'):
+                    ti.txFees += event.fiatFeeValue
+                # Not really!
+                ti.proceeds = event.coinAmount
+                donationGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.coinType))] = ti
     for k, v in itemGroups.items():
         v.description += ' {0:.3f} {1}'.format(v.costs, v.rcvdType)
         # zero out costs because we were just using it to trace the sum of coin amount
         v.costs = 0
+        v.amountNotAccounted = 0
+        results.append(v)
+    for k, v in donationGroups.items():
+        v.description += ' {0:.3f} {1}'.format(v.proceeds, v.sentType)
+        # zero out proceeds because we were just using it to trace the sum of coin amount
+        v.proceeds = 0
         v.amountNotAccounted = 0
         results.append(v)
 

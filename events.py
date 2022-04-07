@@ -422,16 +422,20 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     depositEvent = 'payment'
                 else:
                     depositEvent = 'deposit'
-                if 'Deposit from' in action and value > 0:
+                if 'Donation' in contracts.getAddressName(result['to']):
+                    withdrawalEvent = 'donation'
+                else:
+                    withdrawalEvent = 'withdraw'
+                if result['to'] == account and value > 0:
                     r = records.walletActivity(tx, timestamp, depositEvent, result['from'], contracts.getNativeToken(network), value)
                     r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                     results.append(r)
-                if 'Withdrawal to' in action and value > 0:
-                    r = records.walletActivity(tx, timestamp, 'withdraw', result['to'], contracts.getNativeToken(network), value)
+                if result['from'] == account and value > 0:
+                    r = records.walletActivity(tx, timestamp, withdrawalEvent, result['to'], contracts.getNativeToken(network), value)
                     r.fiatValue = prices.priceLookup(timestamp, r.coinType) * value
                     results.append(r)
                 # also check for any random token trasfers in the wallet
-                results += extractTokenResults(w3, tx, account, timestamp, receipt, depositEvent)
+                results += extractTokenResults(w3, tx, account, timestamp, receipt, depositEvent, withdrawalEvent)
                 if len(results) > 0:
                     results[0].fiatFeeValue = feeValue
                     for item in results:
@@ -1041,14 +1045,14 @@ def extractLendingResults(w3, txn, account, timestamp, receipt, network, value):
     return [r, ri]
 
 
-def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent):
+def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent, withdrawalEvent):
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     transfers = []
     for log in decoded_logs:
         if log['args']['from'] == account:
-            event = 'withdraw'
+            event = withdrawalEvent
             otherAddress = log['args']['to']
         elif log['args']['to'] == account:
             event = depositEvent

@@ -120,7 +120,7 @@ class walletActivity:
     def __init__(self, txHash, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
         self.timestamp = timestamp
-        # deposit/payment/withdraw/bridge
+        # deposit/payment/withdraw/bridge/donation
         self.action = action
         self.address = address
         self.coinType = coinType
