@@ -11,42 +11,63 @@ import events
 
 class testTaxmap(unittest.TestCase):
 	def setUp(self):
+		self.aTimestamp = datetime.now().timestamp()
+		self.yearStart = datetime(datetime.now().year, 1, 1).date()
+		self.yearEnd = datetime(datetime.now().year, 12, 31).date()
 		# Build an events map to use for testing tax mapping methods
-		self.em = events.EventsMap()
+		self.fifoMap = self.getEventMap()
+		# make another copy of the event map for acb since build tax map manipulates the accounting
+		self.acbMap = self.getEventMap()
+
+	def getEventMap(self):
+		# Build an events map to use for testing tax mapping methods
+		em = events.EventsMap()
 		self.aTimestamp = datetime.now().timestamp()
 		self.yearStart = datetime(datetime.now().year, 1, 1).date()
 		self.yearEnd = datetime(datetime.now().year, 12, 31).date()
 
+		rw0 = records.walletActivity('0xITEST0', self.aTimestamp - 100, 'deposit', '0xCEXWALLET', 'one', 18020)
+		rw0.fiatValue = decimal.Decimal(180)
+		em['wallet'].append(rw0)
+
+		rt0 = records.TraderTransaction('0xTEST0', self.aTimestamp - 50, 'one', 'jewel', decimal.Decimal(9000), decimal.Decimal(98.66))
+		rt0.fiatSwapValue = decimal.Decimal(701.10)
+		rt0.fiatReceiveValue = decimal.Decimal(701.10)
+		em['swaps'].append(rt0)
+
 		rt1 = records.TraderTransaction('0xTEST1', self.aTimestamp, 'one', 'jewel', decimal.Decimal(9003), decimal.Decimal(50.9233))
 		rt1.fiatSwapValue = decimal.Decimal(406.67)
 		rt1.fiatReceiveValue = decimal.Decimal(406.67)
-		self.em['swaps'].append(rt1)
+		em['swaps'].append(rt1)
 
-		rt2 = records.TraderTransaction('0xTEST2', self.aTimestamp + 87000, 'jewel', 'USDC', decimal.Decimal(32), decimal.Decimal(210.37345634))
-		rt2.fiatSwapValue = decimal.Decimal(210.37345634)
-		rt2.fiatReceiveValue = decimal.Decimal(210.37345634)
-		self.em['swaps'].append(rt2)
+		rt2 = records.TraderTransaction('0xTEST2', self.aTimestamp + 87000, 'jewel', 'USDC', decimal.Decimal(140.2), decimal.Decimal(1210.37345634))
+		rt2.fiatSwapValue = decimal.Decimal(1210.37345634)
+		rt2.fiatReceiveValue = decimal.Decimal(1210.37345634)
+		em['swaps'].append(rt2)
 
 		rw1 = records.walletActivity('0xTEST3', self.aTimestamp + 88000, 'withdraw', '0xPURCHASE', 'jewel', 18)
 		rw1.fiatValue = decimal.Decimal(180)
-		self.em['wallet'].append(rw1)
+		em['wallet'].append(rw1)
 
-		rt1 = records.TavernTransaction('0xTEST1', 'hero', 1, 'purchase', self.aTimestamp, 'jewel', decimal.Decimal(50.5))
+		rt1 = records.TavernTransaction('0xHTEST1', 'hero', 1, 'purchase', self.aTimestamp, 'jewel', decimal.Decimal(50.5))
 		rt1.fiatAmount = decimal.Decimal(487.3456)
 		rt1.seller = '0xSOMEONE'
-		self.em['tavern'].append(rt1)
+		em['tavern'].append(rt1)
 
-		rt2 = records.TavernTransaction('0xTEST2', 'hero', 1, 'sale', self.aTimestamp, 'jewel', decimal.Decimal(44))
+		rt2 = records.TavernTransaction('0xHTEST2', 'hero', 1, 'sale', self.aTimestamp, 'jewel', decimal.Decimal(44))
 		rt2.fiatAmount = decimal.Decimal(403.12)
 		rt2.seller = '0xME'
-		self.em['tavern'].append(rt2)
+		em['tavern'].append(rt2)
+
+		return em
 
 	def test_buildSwapRecords(self):
 		# act
-		taxRecords = taxmap.buildSwapRecords(self.em['swaps'], self.yearStart, self.yearEnd, self.em['wallet'], self.em['airdrops'], self.em['gardens'], self.em['quests'], self.em['tavern'], self.em['lending'], 'fifo', ['0xPURCHASE'])
+		taxRecords = taxmap.buildSwapRecords(self.fifoMap['swaps'], self.yearStart, self.yearEnd, self.fifoMap['wallet'], self.fifoMap['airdrops'], self.fifoMap['gardens'], self.fifoMap['quests'], self.fifoMap['tavern'], self.fifoMap['lending'], 'fifo', ['0xPURCHASE'])
+		acbTaxRecords = taxmap.buildSwapRecords(self.acbMap['swaps'], self.yearStart, self.yearEnd, self.acbMap['wallet'], self.acbMap['airdrops'], self.acbMap['gardens'], self.acbMap['quests'], self.acbMap['tavern'], self.acbMap['lending'], 'acb', ['0xPURCHASE'])
 
 		#assert
-		self.assertTrue(len(taxRecords)==3, "Incorrect number of tax records generated")
+		self.assertTrue(len(taxRecords)==4, "Incorrect number of tax records generated")
 		oneSwap = taxmap.TaxItem('',0,'',0,'','','',None)
 		jewelSwap = taxmap.TaxItem('',0,'',0,'','','',None)
 		jewelPurchase = taxmap.TaxItem('',0,'',0,'','','',None)
@@ -66,20 +87,26 @@ class testTaxmap(unittest.TestCase):
 		self.assertEqual(jewelPurchase.category, "gains", "Incorrect tax category")
 		self.assertEqual(jewelPurchase.acquiredDate, datetime.fromtimestamp(self.aTimestamp).date(), "Acquired date not correctly set")
 		self.assertIn("Paid for", jewelPurchase.description, "Incorrect description for purchase record.")
+		# validate adjusted cost basis
+		for tr in acbTaxRecords:
+			if tr.txHash == '0xTEST2':
+				jewelSwap = tr
+
+		self.assertEqual('{0:.2f}'.format(jewelSwap.costs), '1038.28', "Incorrect Adjust Cost Basis detected.")
 
 
 	def test_buildTavernRecords(self):
 		# act
-		taxRecords = taxmap.buildTavernRecords(self.em['tavern'], self.yearStart, self.yearEnd)
+		taxRecords = taxmap.buildTavernRecords(self.fifoMap['tavern'], self.yearStart, self.yearEnd)
 
 		# assert
 		self.assertEqual(len(taxRecords), 2, "Incorrect number of tax records generated")
 		heroPurchase = taxmap.TaxItem('',0,'',0,'','','',None)
 		heroSale = taxmap.TaxItem('',0,'',0,'','','',None)
 		for tr in taxRecords:
-			if tr.txHash == '0xTEST1':
+			if tr.txHash == '0xHTEST1':
 				heroPurchase = tr
-			elif tr.txHash == '0xTEST2':
+			elif tr.txHash == '0xHTEST2':
 				heroSale = tr
 		self.assertIn("Sold hero 1", heroSale.description, "Incorrect description for hero sale")
 		self.assertEqual(heroSale.amountNotAccounted, 0, "Cost basis not fully accounted")

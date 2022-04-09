@@ -123,7 +123,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
 
 # For preparing a list with correct sorting before searching through it to apply cost basis
 def costBasisSort(eventList, costBasis):
-    if costBasis == 'fifo':
+    if costBasis in ['fifo', 'acb']:
         return sorted(eventList, key=lambda x: x.timestamp)
     elif costBasis == 'lifo':
         return sorted(eventList, key=lambda x: x.timestamp, reverse=True)
@@ -325,6 +325,8 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             if hasattr(event, 'fiatFeeValue'):
                 ti.txFees = event.fiatFeeValue
             # Check all transactions for prior time when sold token was received to calc gains
+            acbUnits = 0
+            acbValue = 0
             for searchEvent in cbList:
                 searchEventDate = datetime.date.fromtimestamp(searchEvent.timestamp)
                 if searchEvent.receiveType == event.swapType and searchEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0 and searchEvent.receiveAmountNotAccounted > 0:
@@ -334,23 +336,39 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
                         ti.acquiredDate = searchEventDate
                     if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
                         ti.term = "long"
-                    if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
-                        # use up all receive transaction amount and update amount left to match still
-                        ti.costs += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
-                        event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
-                        searchEvent.receiveAmountNotAccounted = 0
+                    if costBasis == 'acb':
+                        if searchEvent.receiveAmountNotAccounted > 0:
+                            acbUnits += searchEvent.receiveAmountNotAccounted
+                            if hasattr(searchEvent, 'fiatFeeValue'):
+                                acbValue += (searchEvent.fiatReceiveValue + searchEvent.fiatFeeValue) * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                            else:
+                                acbValue += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                        if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
+                            event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
+                            searchEvent.receiveAmountNotAccounted = 0
+                        else:
+                            event.swapAmountNotAccounted = 0
+                            searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
                     else:
-                        # use up as much of recieve transaction as swap was for and update amount left to account for on receive
-                        ti.costs += Decimal(searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
-                        searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
-                        event.swapAmountNotAccounted = 0
-                        break
+                        if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
+                            # use up all receive transaction amount and update amount left to match still
+                            ti.costs += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                            event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
+                            searchEvent.receiveAmountNotAccounted = 0
+                        else:
+                            # use up as much of recieve transaction as swap was for and update amount left to account for on receive
+                            ti.costs += Decimal(searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
+                            searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
+                            event.swapAmountNotAccounted = 0
+                            break
+            # For Adjusted cost basis, we use the average cost paid for all purchases prior to sale
+            if costBasis == 'acb':
+                if acbUnits > 0:
+                    ti.costs = Decimal(acbValue / acbUnits) * event.swapAmount
             # Note any amount of cost basis not found for later red flag
             ti.amountNotAccounted = event.swapAmountNotAccounted
 
             results.append(ti)
-
-    # TODO Also list unmatched received tokens in current assets
 
     return results
 

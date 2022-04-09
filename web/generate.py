@@ -384,7 +384,7 @@ else:
         response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
         failure = True
 
-if costBasis not in ['fifo', 'lifo', 'hifo']:
+if costBasis not in ['fifo', 'lifo', 'hifo', 'acb']:
     response = '{ "response" : "Error: Invalid option specified for cost basis." }'
     failure = True
 

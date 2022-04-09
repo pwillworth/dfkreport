@@ -255,6 +255,8 @@ function downloadDone() {
         <label for="lifo">Last in - First Out</label>
         <input type="radio" name="cbs" id="hifo" value="hifo">
         <label for="hifo">Highest in - First Out</label>
+        <input type="radio" name="cbs" id="acb" value="acb">
+        <label for="acb">Adjusted (CAN)</label>
       </fieldset>
       </div>
       <div class="sectionHead"></div>
@@ -291,6 +293,7 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-04-09: Added Canadian Adjusted Cost Basis option. (Note: no superficial loss detection)</li>
         <li>2022-04-06: Detect charitable donations and list under expenses section in Tax Report.</li>
         <li>2022-03-31: Now including activity from Crystalvale/DFK Chain.  Toggleable by address box.</li>
         <li>2022-03-27: Capture Lending platform activities in new Lending section.</li>
