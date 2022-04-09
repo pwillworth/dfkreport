@@ -422,7 +422,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     depositEvent = 'payment'
                 else:
                     depositEvent = 'deposit'
-                if 'Donation' in contracts.getAddressName(result['to']):
+                if result['to'] != None and 'Donation' in contracts.getAddressName(result['to']):
                     withdrawalEvent = 'donation'
                 else:
                     withdrawalEvent = 'withdraw'
