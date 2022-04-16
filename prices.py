@@ -142,10 +142,11 @@ def fetchItemPrice(token, date):
                 price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260')
             else:
                 price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+            if price >= 0:
+                db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
         if price >= 0:
             today_prices[token] = price
             result = json.loads('{ "usd" : %s }' % price)
-            db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
         else:
             result = json.loads('{ "usd" : 0.0 }')
 
