@@ -203,8 +203,12 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     if results[0] != None:
                         results[0].fiatFeeValue = feeValue
                         events_map['lending'].append(results[0])
+                        if settings.USE_CACHE:
+                            db.saveTransaction(tx, timestamp, 'lending', jsonpickle.encode(results[0]), account, network, txFee, feeValue)
                     if results[1] != None:
                         events_map['lending'].append(results[1])
+                        if settings.USE_CACHE:
+                            db.saveTransaction(tx, timestamp, 'lending', jsonpickle.encode(results[1]), account, network, 0, 0)
             elif 'Airdrop' in action:
                 results = extractAirdropResults(w3, tx, account, timestamp, receipt)
                 if len(results) > 0:
