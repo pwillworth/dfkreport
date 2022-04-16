@@ -94,7 +94,7 @@ def fetchPriceData(token, date):
 
 # Get price of stuff from DFK dex contract for stuff that is not listed on CoinGecko or for coins before they were there
 def fetchItemPrice(token, date):
-    logging.info('Failed to lookup a price for {0} on {1}, trying current price'.format(token, date))
+    logging.info('Failed to lookup a price for {0} on {1}, trying dexscreener price'.format(token, date))
     # First check if we can get price history from dexscreener before using today price
     r = None
     price = None
@@ -124,11 +124,16 @@ def fetchItemPrice(token, date):
         except Exception as err:
             result = "Error: failed to get historical price no market data {0} or error {1}".format(r.text, str(err))
             logging.error(result)
+    else:
+        if r != None:
+            logging.warning('Dexscreener fetch failure {0} - {1}'.format(str(r.status_code), r.text))
+
     if price != None:
-        logging.debug('Found existing price to use in dexscreener')
+        logging.info('Found existing price to use in dexscreener')
         result = json.loads('{ "usd" : %s }' % price)
     else:
         # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
+        logging.info('getting current price from dex.')
         if token in today_prices:
             price = today_prices[token]
         else:
@@ -209,11 +214,13 @@ def getTokenInfo(w3, address):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    #sys.stdout.write(str(fetchItemPrice('0x959ba19508827d1ed2333B1b503Bd5ab006C710e', '07-03-2022')))
-    sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
+    result = fetchItemPrice('0x9678518e04Fe02FB30b55e2D0e554E26306d0892', '15-04-2022')
+    sys.stdout.write(str(result))
+    #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
     #while startDate <= endDate:
     #    sys.stdout.write(getPrice('harmony', startDate.strftime('%d-%m-%Y'), 'usd'))
