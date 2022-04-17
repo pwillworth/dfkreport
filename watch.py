@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import subprocess
 import shlex
 import time
@@ -8,6 +8,9 @@ import settings
 import logging
 
 def main():
+    # get in the right spot when running this so file paths can be managed relatively
+    location = os.path.abspath(__file__)
+    os.chdir('/'.join(location.split('/')[0:-1]))
     logging.basicConfig(filename='../watch.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     con = db.aConn()
     logging.info('Started report watcher.')
