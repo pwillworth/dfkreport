@@ -191,6 +191,7 @@ address_map = {
     '0x3875e5398766a29c1B28cC2068A0396cba36eF99': 'Marketing Fund',
     '0xBd1f65e7f350C614d364AEFeB2d87F829b0E465d': 'Gen0Drop',
     '0xabD4741948374b1f5DD5Dd7599AC1f85A34cAcDD': 'Profiles',
+    '0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6': 'SerendaleQuest',
     '0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4': 'Serendale Quest',
     '0x3132c76acF2217646fB8391918D28a16bD8A8Ef4': 'Foraging Quest',
     '0xE259e8386d38467f0E7fFEdB69c3c9C935dfaeFc': 'Fishing Quest',

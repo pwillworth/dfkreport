@@ -117,7 +117,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         if receipt['status'] == 1:
             logging.info("{5}:{4} | {3}: {0} - {1} - {2}".format(action, '{:f} value'.format(value), '{:f} fee'.format(txFee), tx, datetime.datetime.fromtimestamp(timestamp).isoformat(), network))
             if 'Quest' in action and result['input'] != '0x':
-                results = extractQuestResults(w3, tx, timestamp, receipt)
+                results = extractQuestResults(w3, tx, timestamp, receipt, result['to'])
                 if len(results) > 0:
                     results[0].fiatFeeValue = feeValue
                     events_map['quests'] += results
@@ -850,24 +850,42 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
         results.append(r)
     return results
 
-def extractQuestResults(w3, txn, timestamp, receipt):
-    ABI = contracts.getABI('QuestCoreV2')
-    contract = w3.eth.contract(address='0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4', abi=ABI)
-    decoded_logs = contract.events.QuestReward().processReceipt(receipt, errors=DISCARD)
+def extractQuestResults(w3, txn, timestamp, receipt, address):
+    v3_logs = []
+    v2_logs = []
+    if address == '0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6':
+        ABI = contracts.getABI('QuestCoreV3')
+        contract = w3.eth.contract(address='0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6', abi=ABI)
+        v3_logs = contract.events.RewardMinted().processReceipt(receipt, errors=DISCARD)
+    else:
+        ABI = contracts.getABI('QuestCoreV2')
+        contract = w3.eth.contract(address='0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4', abi=ABI)
+        v2_logs = contract.events.QuestReward().processReceipt(receipt, errors=DISCARD)
     rewardTotals = {}
     txns = []
-    for log in decoded_logs:
+    for log in v3_logs:
+        logging.info(str(log))
+        if 'amount' in log['args'] and 'reward' in log['args'] and log['args']['reward'] != '0x0000000000000000000000000000000000000000':
+            # Keep a running total of each unique reward item in this quest result
+            rewardQuantity = contracts.valueFromWei(log['args']['amount'], log['args']['reward'])
+            logging.info('    Hero {2} on quest {3} got reward of {0} {1}'.format(rewardQuantity, contracts.address_map[log['args']['reward']], log['args']['heroId'], log['args']['questId']))
+            if log['args']['reward'] in rewardTotals:
+                rewardTotals[log['args']['reward']] += rewardQuantity
+            else:
+                rewardTotals[log['args']['reward']] = rewardQuantity
+    for log in v2_logs:
+        logging.info(str(log))
         if 'itemQuantity' in log['args'] and 'rewardItem' in log['args'] and log['args']['rewardItem'] != '0x0000000000000000000000000000000000000000':
             # Keep a running total of each unique reward item in this quest result
             rewardQuantity = contracts.valueFromWei(log['args']['itemQuantity'], log['args']['rewardItem'])
             if log['args']['rewardItem'] in contracts.address_map:
-                logging.debug('    Hero {2} on quest {3} got reward of {0} {1}\n'.format(rewardQuantity, contracts.address_map[log['args']['rewardItem']], log['args']['heroId'], log['args']['questId']))
+                logging.info('    Hero {2} on quest {3} got reward of {0} {1}'.format(rewardQuantity, contracts.address_map[log['args']['rewardItem']], log['args']['heroId'], log['args']['questId']))
                 if log['args']['rewardItem'] in rewardTotals:
                     rewardTotals[log['args']['rewardItem']] += rewardQuantity
                 else:
                     rewardTotals[log['args']['rewardItem']] = rewardQuantity
             else:
-                logging.info('    Hero {2} on quest {3} got reward of {0} unknown({1})\n'.format(rewardQuantity, log['args']['rewardItem'], log['args']['heroId'], log['args']['questId']))
+                logging.info('    Hero {2} on quest {3} got reward of {0} unknown({1})'.format(rewardQuantity, log['args']['rewardItem'], log['args']['heroId'], log['args']['questId']))
     for k, v in rewardTotals.items():
         r = records.QuestTransaction(txn, timestamp, k, v)
         r.fiatValue = prices.priceLookup(timestamp, k) * v
