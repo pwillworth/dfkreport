@@ -201,6 +201,7 @@ address_map = {
     '0x38e76972BD173901B5E5E43BA5cB464293B80C31': 'Potion Use',
     '0x5F753dcDf9b1AD9AabC1346614D1f4746fd6Ce5C': 'Hero',
     '0x9CC714059943D5A726fAD11087Bb6d9Ab811A2E3': 'Graveyard',
+    '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 'Gaia\'s Tears',
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 'Shvas Rune',
@@ -306,6 +307,7 @@ address_map = {
 }
 
 gold_values = {
+    '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 0, # Eternal story page
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 0, # DFK gold
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 0, #Gaia's Tears
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 0, #Shvas Rune
