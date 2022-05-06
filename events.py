@@ -263,7 +263,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
                 logging.debug('Summoning activity: {0}'.format(tx))
-                results = extractSummonResults(w3, tx, account, timestamp, receipt)
+                results = extractSummonResults(w3, tx, account, timestamp, receipt, network)
                 if results != None:
                     if type(results[1]) == int:
                         eventsFound = True
@@ -682,18 +682,24 @@ def getSwapFiatValues(timestamp, sentToken, sentAmount, rcvdToken, rcvdAmount):
 
     return [fiatSwapValue, fiatReceiveValue]
 
-def extractSummonResults(w3, txn, account, timestamp, receipt):
+def extractSummonResults(w3, txn, account, timestamp, receipt, network):
     # Get the summon costs data
     tearsAmount = decimal.Decimal(0.0)
     jewelAmount = decimal.Decimal(0.0)
     hiringProceeds = decimal.Decimal(0.0)
     hiredFromAccount = ''
+    if network == 'dfkchain':
+        powerToken = '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'
+        tearsToken = '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278'
+    else:
+        powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
+        tearsToken = '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04'
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         logging.debug('{3} transfer for summon from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.getAddressName(log['address'])))
-        if log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
+        if log['address'] == powerToken:
             jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
             # capture transfer amount to other player so we can create a record for thier gains
             if log['args']['to'] not in contracts.tx_fee_targets:
@@ -719,9 +725,9 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
             assistant = log['args']['assistantId']
             crystalId = log['args']['crystalId']
             bonusItem = log['args']['bonusItem']
-            rc = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
+            rc = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, powerToken, jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
-            r = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04', int(tearsAmount))
+            r = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, tearsToken, int(tearsAmount))
             r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
             if bonusItem != '0x0000000000000000000000000000000000000000':
                 rt = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'enhance', timestamp, bonusItem, 1)
@@ -736,7 +742,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt):
             hiredHero = log['args']['tokenId']
             if assistant != 'unk':
                 hiredHero = assistant
-            rs = records.TavernTransaction(txn, 'hero', hiredHero, 'hire', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', hiringProceeds)
+            rs = records.TavernTransaction(txn, 'hero', hiredHero, 'hire', timestamp, powerToken, hiringProceeds)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
             rs.seller = hiredFromAccount
             logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))

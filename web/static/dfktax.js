@@ -234,11 +234,14 @@ var address_map = {
   '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'xJewel',
   '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'AVAX',
   '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'USDC',
+  '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278': 'Gaia\'s Tears',
   '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
   '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
   '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
+  '0xCF329b34049033dE26e4449aeBCb41f1992724D3': 'Crystal LP Token Jewel/USDC',
   '0x9f378F48d0c1328fd0C80d7Ae544C6CadB5Ba99E': 'Crystal LP Token Crystal/AVAX',
-  '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC'
+  '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC',
+  '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
 };
 event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
