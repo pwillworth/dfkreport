@@ -293,6 +293,7 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-05-11: Add detection for Stone Carver crafting.</li>
         <li>2022-05-05: Include Crystalvale Tavern and Summoning events.</li>
         <li>2022-04-21: Include rewards from Training quests.</li>
         <li>2022-04-09: Added Canadian Adjusted Cost Basis option. (Note: no superficial loss detection)</li>
@@ -303,11 +304,6 @@ function downloadDone() {
         <li>2022-03-19: Correlate Perilous Journey rewards to Heroes to form cost basis and improve price data for items.  Also include summon and levelup enhancements to hero expenses.</li>
         <li>2022-03-17: Add Perilous Journey rewards to airdrop transactions.</li>
         <li>2022-02-22: Add option for specifying purchase addresses to count as gains in tax report.</li>
-        <li>2022-02-13: Allow for adding/excluding Avalanche chain data</li>
-        <li>2022-02-12: Added Income Total to Summary Page and incorporate income for cost basis calc.</li>
-        <li>2022-02-07: Added Land Auction purchases/sales</li>
-        <li>2022-02-07: Detect Multichain Bridge events in wallet section properly</li>
-        <li>2022-02-01: Added Koinly Universal CSV export format and txHash to all exports</li>
       </ul>
     </div>
   </div>
@@ -373,7 +369,7 @@ function downloadDone() {
           <div id="smy_bank_data"></div>
         </div>
         <div id="alchemist_summary" class="summaryBox inlineBlock">
-          <div id="smy_alchemist_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="smyIcon" /><span>Alchemist</span></div>
+          <div id="smy_alchemist_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="smyIcon" /><span>Crafting</span></div>
           <div id="smy_alchemist_data"></div>
         </div>
         <div id="airdrops_summary" class="summaryBox inlineBlock">
@@ -434,7 +430,7 @@ function downloadDone() {
         <table id="tx_bank_data" class="transactionTable" style="display: none;">
         </table>
         </div>
-        <h2 id="tx_alchemist_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Alchemist</span><span id="tx_alchemist_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="txIcon" /></h2>
+        <h2 id="tx_alchemist_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Crafting</span><span id="tx_alchemist_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="txIcon" /></h2>
         <div style="display: none;">
         <table id="tx_alchemist_data" class="transactionTable" style="display: none;">
         </table>

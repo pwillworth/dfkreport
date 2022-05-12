@@ -338,7 +338,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode([r for r in results if r]), account, network, txFee, feeValue)
                 else:
                     logging.info('Error: Failed to parse a meditation result. {0}'.format(tx))
-            elif 'Alchemist' in action:
+            elif 'Alchemist' in action or 'Stone Carver' in action:
                 logging.debug('Alchemist activity: {0}'.format(tx))
                 results = extractAlchemistResults(w3, tx, account, timestamp, receipt)
                 if results != None:

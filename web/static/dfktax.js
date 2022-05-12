@@ -577,7 +577,7 @@ function loadBankEvents(bankEvents) {
 function loadAlchemistEvents(alchemistEvents) {
   // Populate the Transaction list with Alchemist Data
   var craftingTotals = {}
-  $("#tx_alchemist_data").html('<tr><th>Block Date</th><th>Potion Type</th><th>Crafting Costs</th><th>Potion Fiat Value</th><th>Ingredients Fiat Value</th></tr>');
+  $("#tx_alchemist_data").html('<tr><th>Block Date</th><th>Item Type</th><th>Crafting Costs</th><th>Item Fiat Value</th><th>Ingredients Fiat Value</th></tr>');
   for (var i = 0; i < alchemistEvents.length; i++) {
     var eventDate = new Date(alchemistEvents[i].timestamp * 1000);
     var craftedAmount = alchemistEvents[i].craftingAmount;
@@ -611,8 +611,8 @@ function loadAlchemistEvents(alchemistEvents) {
     }
     $('#tx_alchemist_count').html(' (' + (i + 1) + ')');
   }
-  // Add summary data for each coin type swapped
-  var craftingTable = '<table><tr><th>Potion</th><th>Total Crafted</th><th>Total Value</th><th>Total Ingredient Value</th></tr>';
+  // Add summary data for each craft type
+  var craftingTable = '<table><tr><th>Item</th><th>Total Crafted</th><th>Total Value</th><th>Total Ingredient Value</th></tr>';
   for (let k in craftingTotals) {
     craftingTable = craftingTable + '<tr><td>' + k + '</td><td>' + craftingTotals[k][0].toFixed(0) + '</td><td>' + usdFormat.format(craftingTotals[k][1]) + '</td><td>' + usdFormat.format(craftingTotals[k][2]) + '</td></tr>';
   }
