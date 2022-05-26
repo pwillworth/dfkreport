@@ -16,10 +16,12 @@ def handleLogs(w3, event, network):
     timestamp = w3.eth.get_block(event['blockNumber'])['timestamp']
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
     receipt = w3.eth.get_transaction_receipt(tx)
-    # Heroes or Lands
-    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0']:
+    # Heroes or Lands or Pets
+    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0', '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3']:
         if event['address'] == '0x77D991987ca85214f9686131C58c1ABE4C93E547':
             auctionType = 'land'
+        elif event['address'] == '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3':
+            auctionType = 'pet'
         else:
             auctionType = 'hero'
         results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)

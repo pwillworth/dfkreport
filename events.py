@@ -127,7 +127,10 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.info('{0} quest with no rewards.'.format(tx))
             elif 'AuctionHouse' in action:
-                results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'hero')
+                if 'Pet' in action:
+                    results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'pet')
+                else:
+                    results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'hero')
                 if results != None and results[0] != None:
                     results[0].fiatFeeValue = feeValue
                     events_map['tavern'].append(results[0])
@@ -324,6 +327,11 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                             logging.info('summon hire found but was already in db on {0}.'.format(tx))
                 else:
                     logging.info('Error: Failed to parse a summon result. {0}'.format(tx))
+            elif 'PetIncubator' in action:
+                logging.debug('Pet hatching activity: {0}'.format(tx))
+                # pet hatching fill in later
+                eventsFound = True
+                db.saveTransaction(tx, timestamp, 'nonep', '', account, network, txFee, feeValue)
             elif 'Meditation' in action:
                 logging.debug('Meditation activity: {0}'.format(tx))
                 results = extractMeditationResults(w3, tx, account, timestamp, receipt)
