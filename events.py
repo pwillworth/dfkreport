@@ -3,6 +3,7 @@ from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import nets
 import contracts
+import constants
 import records
 import prices
 import db
@@ -45,6 +46,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
 
     txCount = 0
     heroCrystals = {}
+    petEggs = {}
     for txn in txs:
         # The AVAX list data includes the whole transaction, but harmony is just the hash
         if network == 'avalanche':
@@ -328,10 +330,74 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.info('Error: Failed to parse a summon result. {0}'.format(tx))
             elif 'PetIncubator' in action:
-                logging.debug('Pet hatching activity: {0}'.format(tx))
-                # pet hatching fill in later
-                eventsFound = True
-                db.saveTransaction(tx, timestamp, 'nonep', '', account, network, txFee, feeValue)
+                logging.info('Pet hatching activity: {0}'.format(tx))
+                # pet hatching
+                results = extractHatchingResults(w3, tx, account, timestamp, receipt)
+                if results != None:
+                    if results[1] != None and results[1].event == 'crack':
+                        eventsFound = True
+                        if results[0] in petEggs:
+                            logging.info('complete incubate with crack')
+                            # pet crack event includes the pet ID summoned so we can now add the full data
+                            eggToken = constants.EGG_TYPES[petEggs[results[0]][2].itemID]
+                            petEggs[results[0]][2].itemID = results[1].itemID
+                            hatchCosts = 0
+                            costList = 'costs'
+                            for k, v in petEggs[results[0]][6].items():
+                                costList = '{0},{1} {2}'.format(costList, v, contracts.getAddressName(k))
+                                priceEach = prices.priceLookup(timestamp, k)
+                                hatchCosts += priceEach * v
+                                logging.info('Adding cost {0} {1} for {2}'.format(v, contracts.getAddressName(k), priceEach))
+                            results[1].coinType = eggToken
+                            results[1].coinCost = 1
+                            results[1].fiatAmount = hatchCosts
+                            results[1].seller = costList
+                            events = [petEggs[results[0]][2], results[1]]
+                            events_map['tavern'] += events
+                            if settings.USE_CACHE and db.findTransaction(petEggs[results[0]][0], account) == None:
+                                db.saveTransaction(petEggs[results[0]][0], petEggs[results[0]][1], 'tavern', jsonpickle.encode(events), account, network, txFee, feeValue)
+                            else:
+                                logging.info('tried to save egg record that already existed {0}'.format(tx))
+                            if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                                db.saveTransaction(tx, timestamp, 'nonep', '', account, network, petEggs[results[0]][4], petEggs[results[0]][5])
+                            else:
+                                logging.info('tried to save none egg when record already existed {0}'.format(tx))
+                        else:
+                            # on rare occassion the crystal open even might get parsed before the summon crystal
+                            logging.info('store crack')
+                            petEggs[results[0]] = [tx, timestamp, None, results[1], txFee, feeValue, None]
+                    elif results[1] != None and results[1].event == 'incubate':
+                        eventsFound = True
+                        if results[0] not in petEggs:
+                            # store incubate events for later so we can tag it with the pet id
+                            logging.info('store incubate')
+                            petEggs[results[0]] = [tx, timestamp, results[1], None, txFee, feeValue, results[2]]
+                        else:
+                            # events came in backwards and now we can save with pet id
+                            logging.info('complete crack with incubate')
+                            eggToken = constants.EGG_TYPES[results[1].itemID]
+                            results[1].itemID = petEggs[results[0]][3].itemID
+                            hatchCosts = 0
+                            costList = 'costs'
+                            for k, v in results[2].items():
+                                costList = '{0},{1} {2}'.format(costList, v, contracts.getAddressName(k))
+                                hatchCosts += prices.priceLookup(timestamp, k) * v
+                            petEggs[results[0]][3].coinType = eggToken
+                            petEggs[results[0]][3].coinCost = 1
+                            petEggs[results[0]][3].fiatAmount = hatchCosts
+                            petEggs[results[0]][3].seller = costList
+                            events = [results[1], petEggs[results[0]][3]]
+                            events_map['tavern'] += events
+                            if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(events), account, network, txFee, feeValue)
+                            else:
+                                logging.info('tried to save backwards hatching that already existed {0}'.format(tx))
+                            if settings.USE_CACHE and db.findTransaction(petEggs[results[0]][0], account) == None:
+                                db.saveTransaction(petEggs[results[0]][0], timestamp, 'nonep', '', account, network, petEggs[results[0]][4], petEggs[results[0]][5])
+                            else:
+                                logging.info('tried to save a backwards none hatch that already existed {0}'.format(tx))
+                else:
+                    logging.info('Error: Failed to parse a hatching result. {0}'.format(tx))
             elif 'Meditation' in action:
                 logging.debug('Meditation activity: {0}'.format(tx))
                 results = extractMeditationResults(w3, tx, account, timestamp, receipt)
@@ -996,6 +1062,45 @@ def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
             rewards.append(r)
 
     return rewards
+
+def extractHatchingResults(w3, txn, account, timestamp, receipt):
+    # Record egg hatching costs and pet nft gains
+    jewelAmount = decimal.Decimal(0.0)
+    otherCosts = {}
+
+    powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
+    ABI = contracts.getABI('JewelToken')
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        logging.debug('{3} transfer for incubate from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.getAddressName(log['address'])))
+        if log['address'] == powerToken:
+            jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
+        else:
+            otherCosts[log['address']] = contracts.valueFromWei(log['args']['value'], log['address'])
+
+    r = None
+    eggId = 0
+    ABI = contracts.getABI('PetHatching')
+    contract = w3.eth.contract(address='0x576C260513204392F0eC0bc865450872025CB1cA', abi=ABI)
+    incubate_logs = contract.events.EggIncubated().processReceipt(receipt, errors=DISCARD)
+    
+    for log in incubate_logs:
+        logging.info('Incubate Egg log: {0}'.format(log))
+        if type(log['args']['eggId']) is int:
+            eggId = log['args']['eggId']
+            r = records.TavernTransaction(txn, 'pet', log['args']['eggType'], 'incubate', timestamp, powerToken, int(jewelAmount))
+            r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
+            logging.info('{2} Incubate Egg event {0} jewel {1} type {3} tier'.format(jewelAmount, log['args']['eggType'], txn, log['args']['tier']))
+
+    crack_logs = contract.events.EggCracked().processReceipt(receipt, errors=DISCARD)
+    for log in crack_logs:
+        if type(log['args']['eggId']) is int:
+            eggId = log['args']['eggId']
+            r = records.TavernTransaction(txn, 'pet', log['args']['petId'], 'crack', timestamp, '', 0)
+            logging.info('{3} egg crack {0} pet {1} for {2}'.format(log['args']['eggId'], log['args']['petId'], log['args']['owner'], txn))
+
+    return [eggId, r, otherCosts]
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event

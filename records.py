@@ -7,7 +7,7 @@ class TavernTransaction:
         # hero or pet or land
         self.itemType = itemType
         self.itemID = itemID
-        # purchase/sale/hire/summon/crystal/perished
+        # purchase/sale/hire/summon/crystal/perished/incubate/crack
         self.event = event
         self.timestamp = timestamp
         self.coinType = coinType
@@ -15,7 +15,7 @@ class TavernTransaction:
         self.fiatType = fiatType
         self.fiatAmount = fiatAmount
         self.fiatFeeValue = fiatFeeValue
-        # Wallet address of seller in transaction
+        # Wallet address of seller in transaction or other metadata for non sale records
         self.seller = seller
 
 class TraderTransaction:
