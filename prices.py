@@ -94,61 +94,26 @@ def fetchPriceData(token, date):
 
 # Get price of stuff from DFK dex contract for stuff that is not listed on CoinGecko or for coins before they were there
 def fetchItemPrice(token, date):
-    logging.info('Failed to lookup a price for {0} on {1}, trying dexscreener price'.format(token, date))
-    # First check if we can get price history from dexscreener before using today price
-    r = None
     price = None
-    pairAddress = None
-    jewelPrice = 0
-    if token in contracts.serendale_pairs:
-        pairAddress = contracts.serendale_pairs[token]
-    elif token in contracts.serendale_jewel_pairs:
-        pairAddress = contracts.serendale_jewel_pairs[token]
-        jewelPrice = getPrice('defi-kingdoms', date)
 
-    if pairAddress != None:
-        dateTimestamp = datetime.datetime.strptime(date, '%d-%m-%Y').timestamp()
-        ds_uri = "https://io5.dexscreener.io/u/chart/bars/harmony/{0}?from={1}&to={2}&res=1440&cb=2".format(pairAddress, int((dateTimestamp-86400) * (10 ** 3)), int(dateTimestamp * (10 ** 3)))
-        try:
-            r = requests.get(ds_uri)
-        except Exception as err:
-            logging.error('Dexscreener price fetch failure: {0}'.format(str(err)))
-
-    if r != None and r.status_code == 200:
-        result = r.json()
-        try:
-            if token in contracts.serendale_pairs:
-                price = result['bars'][0]['closeUsd']
-            elif token in contracts.serendale_jewel_pairs:
-                price = decimal.Decimal(jewelPrice) / decimal.Decimal(result['bars'][0]['close'])
-        except Exception as err:
-            result = "Error: failed to get historical price no market data {0} or error {1}".format(r.text, str(err))
-            logging.error(result)
+    # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
+    logging.info('getting current price from dex.')
+    if token in today_prices:
+        price = today_prices[token]
     else:
-        if r != None:
-            logging.warning('Dexscreener fetch failure {0} - {1}'.format(str(r.status_code), r.text))
+        # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
+        if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
+            price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260')
+        else:
+            price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+        if price >= 0:
+            db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
 
-    if price != None:
-        logging.info('Found existing price to use in dexscreener')
+    if price >= 0:
+        today_prices[token] = price
         result = json.loads('{ "usd" : %s }' % price)
     else:
-        # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
-        logging.info('getting current price from dex.')
-        if token in today_prices:
-            price = today_prices[token]
-        else:
-            # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
-            if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
-                price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260')
-            else:
-                price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
-            if price >= 0:
-                db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
-        if price >= 0:
-            today_prices[token] = price
-            result = json.loads('{ "usd" : %s }' % price)
-        else:
-            result = json.loads('{ "usd" : 0.0 }')
+        result = json.loads('{ "usd" : 0.0 }')
 
     return result
 
@@ -172,10 +137,14 @@ def getCurrentPrice(token, throughToken):
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         ABI = contracts.getABI('UniswapV2Router02')
         contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
+        addrUSDC = '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a'
     else:
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
         ABI = contracts.getABI('UniswapV2Router02')
         contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
+        addrUSDC = '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+    if token in contracts.alternate_pair_through_tokens:
+        throughToken = contracts.alternate_pair_through_tokens[token]
 
     tokenDecimals = getTokenInfo(w3, token)[1]
     throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
@@ -189,14 +158,14 @@ def getCurrentPrice(token, throughToken):
     price = -1
     try:
         token0Amount = contract.functions.getAmountsOut(tokenOne, [token, throughToken]).call()
-        if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
-            # Just use daily jewel price for crystalvale for now until stable pair shows up
-            token1Amount = [1, Web3.toWei(getPrice('defi-kingdoms', datetime.datetime.now().strftime('%d-%m-%Y')), 'mwei')]
+        if throughToken == addrUSDC:
+            # If through token is USD, we don't need to get through token to USDC
+            price = contracts.valueFromWei(token0Amount[1], throughToken)
         else:
-            token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, '0x985458E523dB3d53125813eD68c274899e9DfAb4']).call()
-        price = contracts.valueFromWei(token0Amount[1], throughToken) * contracts.valueFromWei(token1Amount[1], '0x985458E523dB3d53125813eD68c274899e9DfAb4')
+            token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
+            price = contracts.valueFromWei(token0Amount[1], throughToken) * contracts.valueFromWei(token1Amount[1], addrUSDC)
     except Exception as err:
-        logging.error('Price lookup failed {0}'.format(err))
+        logging.error('Price lookup failed for {1}: {0}'.format(err, token))
 
     return price
 
@@ -219,7 +188,7 @@ def main():
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    result = fetchItemPrice('0x9678518e04Fe02FB30b55e2D0e554E26306d0892', '15-04-2022')
+    result = fetchItemPrice('0x9678518e04Fe02FB30b55e2D0e554E26306d0892', '15-05-2022')
     sys.stdout.write(str(result))
     #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
