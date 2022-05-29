@@ -138,11 +138,12 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     heroExpenses = {}
     heroIncome = {}
     landExpenses = {}
+    petExpenses = {}
     perishRewards = {}
     # Grab a list of all purchases, summons, and levelups to list as expenses
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance']:
+        if event.event in ['purchase','summon','crystal','meditate','levelup','enhance','incubate','crack']:
             if event.itemType == 'land':
                 if event.itemID in landExpenses:
                     if event.event in landExpenses[event.itemID].description:
@@ -159,6 +160,22 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     if hasattr(event, 'fiatFeeValue'):
                         ti.txFees = event.fiatFeeValue
                     landExpenses[event.itemID] = ti
+            elif event.itemType == 'pet':
+                if event.itemID in petExpenses:
+                    if event.event in petExpenses[event.itemID].description:
+                        petExpenses[event.itemID].description = petExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
+                    else:
+                        petExpenses[event.itemID].description += ''.join((' ', event.event))
+                    petExpenses[event.itemID].costs += event.fiatAmount
+                    if petExpenses[event.itemID].acquiredDate == None or eventDate < petExpenses[event.itemID].acquiredDate:
+                        petExpenses[event.itemID].acquiredDate = eventDate
+                    if hasattr(event, 'fiatFeeValue'):
+                        petExpenses[event.itemID].txFees += event.fiatFeeValue
+                else:
+                    ti = TaxItem(event.txHash, event.coinCost, contracts.getAddressName(event.coinType), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
+                    if hasattr(event, 'fiatFeeValue'):
+                        ti.txFees = event.fiatFeeValue
+                    petExpenses[event.itemID] = ti
             else:
                 if event.itemID in heroExpenses:
                     if event.event in heroExpenses[event.itemID].description:
@@ -236,6 +253,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             # Check NFT cost data so gains can be calculated
             if event.itemType == 'land':
                 expenseList = landExpenses
+            elif event.itemType == 'pet':
+                expenseList = petExpenses
             else:
                 expenseList = heroExpenses
             for k, v in expenseList.items():
@@ -249,6 +268,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     v.proceeds = event.fiatAmount
                     ti.txFees += v.txFees
             results.append(ti)
+    for k, v in petExpenses.items():
+        results.append(v)
     for k, v in landExpenses.items():
         results.append(v)
     for k, v in heroExpenses.items():
