@@ -66,12 +66,12 @@ def parseEvents(network):
     toBlock = w3.eth.block_number
     logging.warning('Getting {2} events from block {0} through {1}'.format(str(blockNumber), str(toBlock), network))
     # create a filter for unsearched blocks of auction house and summoning portal contracts
-    with open('abi/SaleAuction.json', 'r') as f:
-        ABI = f.read()
-    tavernContract = w3.eth.contract(address=tavernContract, abi=ABI)
     with open('abi/HeroSummoningUpgradeable.json', 'r') as f:
         ABI = f.read()
     portalContract = w3.eth.contract(address=portalContract, abi=ABI)
+    with open('abi/SaleAuction.json', 'r') as f:
+        ABI = f.read()
+    tavernContract = w3.eth.contract(address=tavernContract, abi=ABI)
 
     endBlock = blockNumber
     while endBlock < toBlock:
@@ -88,6 +88,13 @@ def parseEvents(network):
         w3.eth.uninstall_filter(portalFilter.filter_id)
 
         allChanges = tavernChanges + portalChanges
+        if network == 'harmony':
+            petCatalogContract = w3.eth.contract(address='0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3', abi=ABI)
+            petSalesFilter = petCatalogContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
+            petSaleChanges = petSalesFilter.get_all_entries()
+            w3.eth.uninstall_filter(petSalesFilter.filter_id)
+            allChanges = allChanges + petSaleChanges
+
         for event in allChanges:
             handleLogs(w3, event, network)
             # keep track of what block we are on
