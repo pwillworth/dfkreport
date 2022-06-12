@@ -263,6 +263,8 @@ function downloadDone() {
       <div style="padding: 4px;">
       <fieldset id="csvFormatSet" class="multiToggle">
         <legend style="font-weight: bold;">CSV Format:</legend>
+        <input type="radio" name="csvf" id="coinledgeruniversal" value="coinledgeruniversal">
+        <label for="coinledgeruniversal">CoinLedger Universal</label>
         <input type="radio" name="csvf" id="koinlyuniversal" value="koinlyuniversal">
         <label for="koinlyuniversal">Koinly Universal</label>
         <input type="radio" name="csvf" id="manual" value="manual">
@@ -293,6 +295,7 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
+        <li>2022-06-11: Add CoinLedger CSV export format option.</li>
         <li>2022-05-29: Add Pet Hatching expenses and correlate to sales for cost basis.</li>
         <li>2022-05-25: Add Pet Buy/Sell activity.</li>
         <li>2022-05-11: Add detection for Stone Carver crafting.</li>

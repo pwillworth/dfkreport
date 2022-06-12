@@ -14,6 +14,7 @@ sys.path.append("../")
 import transactions
 import contracts
 import db
+import csvFormats
 import pymysql
 import pickle
 import jsonpickle
@@ -24,41 +25,37 @@ def getResponseCSV(records, contentType, format):
     taxRecords = records['taxes']
     eventRecords = records['events']
 
-    if contentType == 'transaction' or format == 'koinlyuniversal':
+    if contentType == 'transaction' or format in ['koinlyuniversal','coinledgeruniversal']:
         # translate output based on req format
-        if format == 'koinlyuniversal':
-            response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
-        else:
-            # using 9 kind of genericized column headings and fit each records fields in where it makes most sense
-            response = 'category,block date,event,type 1,type 1 amount,type 2,type 2 amount,type 1 fiat value,type 2 fiat value,txHash,tx fee fiat value\n'
+        response = csvFormats.getHeaderRow(format)
         for record in eventRecords['tavern']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
                 txFee = record.fiatFeeValue
                 txFeeCurrency = 'USD'
-            if format == 'koinlyuniversal':
+            if format in ['koinlyuniversal','coinledgeruniversal']:
                 if record.event == 'sale' or record.event == 'hire':
                     sentAmount = ''
                     sentType = ''
                     rcvdAmount = record.coinCost
                     rcvdType = contracts.getAddressName(record.coinType)
-                    if record.event == 'sale':
-                        label = 'realized gain'
-                    else:
-                        label = 'income'
                 else:
                     sentAmount = record.coinCost
                     sentType = contracts.getAddressName(record.coinType)
                     rcvdAmount = ''
                     rcvdType = ''
-                    label = 'cost'
-                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatAmount), record.fiatType, label, 'Hero {0} {1}'.format(record.itemID, record.event), record.txHash, '\n'))
+
+            label = csvFormats.getRecordLabel(format, 'tavern', record.event)
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatAmount), record.fiatType, label, 'NFT {0} {1}'.format(record.itemID, record.event), record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), label, 'NFT {0} {1}'.format(record.itemID, record.event), record.txHash, '\n'))
             else:
                 response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount), record.txHash, str(txFee), '\n'))
         for record in eventRecords['swaps']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
@@ -66,10 +63,12 @@ def getResponseCSV(records, contentType, format):
                 txFeeCurrency = 'USD'
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(record.swapAmount), contracts.getAddressName(record.swapType), str(record.receiveAmount), contracts.getAddressName(record.receiveType), str(txFee), txFeeCurrency, str(record.fiatSwapValue), record.fiatType, '', 'swap', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), txFeeCurrency, str(txFee), '', 'swap', record.txHash, '\n'))
             else:
                 response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['liquidity']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
@@ -82,20 +81,23 @@ def getResponseCSV(records, contentType, format):
                 else:
                     response += ','.join((blockDateStr, str(record.coin1Amount), contracts.getAddressName(record.coin1Type), '', '', str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
                     response += ','.join((blockDateStr, str(record.coin2Amount), contracts.getAddressName(record.coin2Type), '', '', str(txFee), txFeeCurrency, str(record.coin1FiatValue), record.fiatType, '', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                if record.action == 'withdraw':
+                    response += ','.join((blockDateStr, 'Defi Kingdoms', '', '', contracts.getAddressName(record.coin1Type), str(record.coin1Amount), txFeeCurrency, str(txFee), 'Deposit', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                    response += ','.join((blockDateStr, 'Defi Kingdoms', '', '', contracts.getAddressName(record.coin2Type), str(record.coin2Amount), txFeeCurrency, str(txFee), 'Deposit', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                else:
+                    response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.coin1Type), str(record.coin1Amount), '', '', txFeeCurrency, str(txFee), 'Withdrawal', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
+                    response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.coin2Type), str(record.coin2Amount), '', '', txFeeCurrency, str(txFee), 'Withdrawal', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
             else:
                 response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['gardens']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
                 txFee = record.fiatFeeValue
                 txFeeCurrency = 'USD'
-            if format == 'koinlyuniversal':
-                if record.event == 'staking-reward':
-                    label = 'reward'
-                else:
-                    label = 'ignored'
+            if format in ['koinlyuniversal','coinledgeruniversal']:
                 if record.event == 'deposit':
                     sentAmount = record.coinAmount
                     sentType = contracts.getAddressName(record.coinType)
@@ -106,7 +108,11 @@ def getResponseCSV(records, contentType, format):
                     sentType = ''
                     rcvdAmount = record.coinAmount
                     rcvdType = contracts.getAddressName(record.coinType)
+            label = csvFormats.getRecordLabel(format, 'tavern', record.event)
+            if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, label, record.event, record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), label, record.event, record.txHash, '\n'))
             else:
                 if 'Pangolin LP' in contracts.getAddressName(record.coinType):
                     location = 'Pangolin'
@@ -116,13 +122,13 @@ def getResponseCSV(records, contentType, format):
                     location = 'Serendale'
                 response += ','.join((location, blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         for record in eventRecords['bank']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
                 txFee = record.fiatFeeValue
                 txFeeCurrency = 'USD'
-            if format == 'koinlyuniversal':
+            if format in ['koinlyuniversal','coinledgeruniversal']:
                 if record.action == 'deposit':
                     sentAmount = record.coinAmount
                     sentType = contracts.getAddressName(record.coinType)
@@ -133,11 +139,14 @@ def getResponseCSV(records, contentType, format):
                     sentType = 'xJewel'
                     rcvdAmount = record.coinAmount
                     rcvdType = contracts.getAddressName(record.coinType)
+            if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, '', 'bank {0}'.format(record.action), record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), '', 'bank {0}'.format(record.action), record.txHash, '\n'))
             else:
                 response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['alchemist']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
@@ -145,10 +154,12 @@ def getResponseCSV(records, contentType, format):
                 txFeeCurrency = 'USD'
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '"' + record.craftingCosts + '"', str(record.craftingAmount), contracts.getAddressName(record.craftingType), str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, 'ignored', 'potion crafting', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', '"' + record.craftingCosts + '"', '', contracts.getAddressName(record.craftingType), str(record.craftingAmount), txFeeCurrency, str(txFee), 'Deposit', 'potion crafting', record.txHash, '\n'))
             else:
                 response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), '"' + record.craftingCosts + '"', '', str(record.fiatValue), str(record.costsFiatValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['airdrops']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
@@ -156,10 +167,12 @@ def getResponseCSV(records, contentType, format):
                 txFeeCurrency = 'USD'
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '', str(record.tokenAmount), contracts.getAddressName(record.tokenReceived), str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, 'airdrop', '', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', '', '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), txFeeCurrency, str(txFee), 'Airdrop', '', record.txHash, '\n'))
             else:
                 response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         for record in eventRecords['quests']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
@@ -167,16 +180,18 @@ def getResponseCSV(records, contentType, format):
                 txFeeCurrency = 'USD'
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '', str(record.rewardAmount), contracts.getAddressName(record.rewardType), str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, 'reward', 'quest', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, '', '', contracts.getAddressName(record.rewardType), str(record.rewardAmount), txFeeCurrency, str(txFee), 'staking', 'quest', record.txHash, '\n'))
             else:
                 response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         for record in eventRecords['wallet']:
-            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
             txFeeCurrency = ''
             if hasattr(record, 'fiatFeeValue'):
                 txFee = record.fiatFeeValue
                 txFeeCurrency = 'USD'
-            if format == 'koinlyuniversal':
+            if format in ['koinlyuniversal','coinledgeruniversal']:
                 if record.action == 'deposit':
                     sentAmount = ''
                     sentType = ''
@@ -187,18 +202,21 @@ def getResponseCSV(records, contentType, format):
                     sentType = contracts.getAddressName(record.coinType)
                     rcvdAmount = ''
                     rcvdType = ''
+            if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, '', 'wallet transfer', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), record.action, 'wallet transfer', record.txHash, '\n'))
             else:
                 response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         if 'lending' in eventRecords:
             for record in eventRecords['lending']:
-                blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+                blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
                 txFee = ''
                 txFeeCurrency = ''
                 if hasattr(record, 'fiatFeeValue'):
                     txFee = record.fiatFeeValue
                     txFeeCurrency = 'USD'
-                if format == 'koinlyuniversal':
+                if format in ['koinlyuniversal','coinledgeruniversal']:
                     if record.event in ['redeem','borrow']:
                         sentAmount = ''
                         sentType = ''
@@ -209,14 +227,14 @@ def getResponseCSV(records, contentType, format):
                         sentType = contracts.getAddressName(record.coinType)
                         rcvdAmount = ''
                         rcvdType = ''
+                if format == 'koinlyuniversal':
                     response += ','.join((blockDateStr, str(sentAmount), sentType, str(rcvdAmount), rcvdType, str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, '', 'lending {0}'.format(record.event), record.txHash, '\n'))
+                elif format == 'coinledgeruniversal':
+                    response += ','.join((blockDateStr, sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), '', 'lending {0}'.format(record.event), record.txHash, '\n'))
                 else:
                     response += ','.join(('lending', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
     else:
-        if format == 'koinlyuniversal':
-            response = 'Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,Net Worth Amount,Net Worth Currency,Label,Description,TxHash\n'
-        else:
-            response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted,txHash\n'
+        response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted,txHash\n'
 
         for record in taxRecords:
             acquiredDateStr = ''
@@ -225,31 +243,7 @@ def getResponseCSV(records, contentType, format):
                 acquiredDateStr = record.acquiredDate.strftime('%Y-%m-%d')
             if record.soldDate != None:
                 soldDateStr = record.soldDate.strftime('%Y-%m-%d')
-            if format == 'koinlyuniversal':
-                # translate for koinly labels https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
-                label = ''
-                if record.description.startswith('Sold Hero '):
-                    label = 'realized gain'
-                elif record.description.startswith('Hero '):
-                    # skip stuff with proceeds in the expenses because it is already listed in gains
-                    if record.category == 'expenses' and record.proceeds > 0:
-                        continue
-                    else:
-                        label = 'cost'
-                elif record.category == 'income':
-                    label = 'reward'
-
-                if record.soldDate != None:
-                    eventDateStr = record.soldDate.strftime('%Y-%m-%d %H:%M:%S %Z')
-                else:
-                    eventDateStr = record.acquiredDate.strftime('%Y-%m-%d %H:%M:%S %Z')
-                # Record the bank multiplier gains as income properly for koinly format
-                if record.description.startswith('Bank Reward'):
-                    response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.get_gains() / (record.proceeds / record.rcvdAmount)), contracts.getAddressName(record.rcvdType), '0', '', str(record.get_gains()), record.fiatType, label, record.description, record.txHash, '\n'))
-                else:
-                    response += ','.join((eventDateStr, str(record.sentAmount), contracts.getAddressName(record.sentType), str(record.rcvdAmount), contracts.getAddressName(record.rcvdType), '0', '', str(record.proceeds), record.fiatType, label, record.description, record.txHash, '\n'))
-            else:
-                response += ','.join((record.category,record.description,acquiredDateStr,soldDateStr,str(record.proceeds),str(record.costs),str(record.get_gains()),record.term,str(record.amountNotAccounted), record.txHash, '\n'))
+            response += ','.join((record.category,record.description,acquiredDateStr,soldDateStr,str(record.proceeds),str(record.costs),str(record.get_gains()),record.term,str(record.amountNotAccounted), record.txHash, '\n'))
 
     return response
 
