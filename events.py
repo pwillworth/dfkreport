@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from pickletools import read_uint2
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import nets
@@ -492,6 +493,33 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                         db.saveTransaction(tx, timestamp, 'nonepj', '', account, network, txFee, feeValue)
                     logging.info('No events for Perilous Journey tx {0}'.format(tx))
+            elif 'PetTradeIn' in action:
+                logging.debug('Pet Trade In activity: {0}'.format(tx))
+                results = extractPetBurnResults(w3, tx, account, timestamp, receipt)
+                eventsFound = True
+                if len(results) > 0 and results[0] != None:
+                    results[0].fiatFeeValue = feeValue
+                    for item in results:
+                        events_map['tavern'].append(item)
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account, network, txFee, feeValue)
+                else:
+                    if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                        db.saveTransaction(tx, timestamp, 'nonept', '', account, network, txFee, feeValue)
+                    logging.info('No events for Pet Trade In tx {0}'.format(tx))
+            elif 'DFKDuel' in action:
+                logging.debug('DFK Duel activity: {0}'.format(tx))
+                results = extractDFKDuelResults(w3, tx, account, timestamp, receipt, result['input'])
+                eventsFound = True
+                if results != None:
+                    results.fiatFeeValue = feeValue
+                    events_map['tavern'].append(results)
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), account, network, txFee, feeValue)
+                else:
+                    if settings.USE_CACHE and db.findTransaction(tx, account) == None:
+                        db.saveTransaction(tx, timestamp, 'nonedd', '', account, network, txFee, feeValue)
+                    logging.info('No events for DFK Duel tx {0}'.format(tx))
             else:
                 # Native token wallet transfers
                 results = []
@@ -1101,6 +1129,61 @@ def extractHatchingResults(w3, txn, account, timestamp, receipt):
             logging.info('{3} egg crack {0} pet {1} for {2}'.format(log['args']['eggId'], log['args']['petId'], log['args']['owner'], txn))
 
     return [eggId, r, otherCosts]
+
+def extractPetBurnResults(w3, txn, account, timestamp, receipt):
+    # Pet trade in - record pastured pets in tavern transactions with rewards
+    ABI = contracts.getABI('PetExchange')
+    contract = w3.eth.contract(address='0xeaF833A0Ae97897f6F69a728C9c17916296cecCA', abi=ABI)
+    r1 = None
+    r2 = None
+    # create one record for each pet burned with egg reward on first one
+    decoded_logs = contract.events.PetExchangeCompleted().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        r1 = records.TavernTransaction(txn, 'pet', log['args']['eggId1'], 'perished', timestamp, constants.EGG_TYPES[log['args']['eggTypeRecieved']], 1)
+        r1.fiatAmount = prices.priceLookup(timestamp, constants.EGG_TYPES[log['args']['eggTypeRecieved']])
+        r2 = records.TavernTransaction(txn, 'pet', log['args']['eggId2'], 'perished', timestamp, '', 0)
+
+    return [r1, r2]
+
+def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs):
+    # Create record of the alchemist crafting activity with total costs
+    ABI = contracts.getABI('JewelToken')
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    rcvdToken = []
+    rcvdAmount = []
+    sentToken = []
+    sentAmount = []
+    r = None
+    for log in decoded_logs:
+        # Token Transfers
+        logging.info(str(log))
+        if 'to' in log['args'] and 'from' in log['args']:
+            if log['args']['to'] == account and log['address'] == '0x0405f1b828C7C9462877cC70A9f266887FF55adA':
+                rcvdToken.append(log['address'])
+                rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
+            elif log['args']['from'] == account and log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
+                sentToken.append(log['address'])
+                sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
+            else:
+                logging.debug('ignored duel log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+
+    ABI = contracts.getABI('DFKDuel')
+    contract = w3.eth.contract(address='0xE97196f4011dc9DA0829dd8E151EcFc0f37EE3c7', abi=ABI)
+    input_data = contract.decode_function_input(inputs)
+    logging.info(str(input_data))
+    # TODO maybe account for the gold too, seems minimal as winner gets it back anyway
+    # if received items, it was pvp complete rewards, otherwise initiation costs/fees
+    if len(rcvdToken) > 0:
+        r = records.TavernTransaction(txn, 'hero', input_data[1]['_duelId'], 'pvpreward', timestamp, rcvdToken[0], rcvdAmount[0])
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0])
+    else:
+        decoded_logs = contract.events.DuelEntryCreated().processReceipt(receipt, errors=DISCARD)
+        for log in decoded_logs:
+            entryId = log['args']['id']
+        r = records.TavernTransaction(txn, 'hero', entryId, 'pvpfee', timestamp, sentToken[0], sentAmount[0])
+        r.fiatValue = prices.priceLookup(timestamp, sentToken[0])
+    return r
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt):
     # Record token bridging as a wallet event

@@ -143,6 +143,7 @@ var address_map = {
   '0xe4154B6E5D240507F9699C730a496790A722DF19': 'Gardening Quest',
   '0x38e76972BD173901B5E5E43BA5cB464293B80C31': 'Potion Use',
   '0x5F753dcDf9b1AD9AabC1346614D1f4746fd6Ce5C': 'Hero',
+  '0x0405f1b828C7C9462877cC70A9f266887FF55adA': 'DFK Raffle Tix',
   '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
   '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
   '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 'Gaia\'s Tears',
@@ -354,7 +355,7 @@ function loadTavernEvents(tavernEvents) {
     }
     $('#tx_tavern_data').show();
     $('#tx_tavern_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
+      '<tr title="' + tavernEvents[i].seller + '"><td>' + eventDate.toUTCString() + '</td>' +
       '<td>' + tavernEvents[i].itemType + '</td>' +
       '<td>' + tavernEvents[i].itemID + '</td>' +
       '<td>' + tavernEvents[i].event + '</td>' +
