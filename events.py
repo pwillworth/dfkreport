@@ -961,7 +961,7 @@ def extractAirdropResults(w3, txn, account, timestamp, receipt, source='from'):
 def extractQuestResults(w3, txn, timestamp, receipt, address):
     v3_logs = []
     v2_logs = []
-    if address == '0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6':
+    if address in ['0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6','0xE9AbfBC143d7cef74b5b793ec5907fa62ca53154']:
         ABI = contracts.getABI('QuestCoreV3')
         contract = w3.eth.contract(address='0xAa9a289ce0565E4D6548e63a441e7C084E6B52F6', abi=ABI)
         v3_logs = contract.events.RewardMinted().processReceipt(receipt, errors=DISCARD)

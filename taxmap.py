@@ -89,8 +89,8 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     eventMap['bank'] += eventMapDFK['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
     eventMap['gardens'] += eventMapDFK['gardens']
-    eventMap['quests'] += eventMapAvax['quests']
-    eventMap['alchemist'] += eventMapAvax['alchemist']
+    eventMap['quests'] += eventMapDFK['quests']
+    eventMap['alchemist'] += eventMapDFK['alchemist']
     # Look up wallet payments distributed by interacting with Jewel contract also
     eventMap['airdrops'] += eventMapAvax['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas'] + eventMapDFK['gas']
@@ -334,7 +334,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
         # questionable where to draw the line between game and currency trades
-        if event.swapType in contracts.gold_values and event.receiveType == '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7':
+        if event.swapType in contracts.gold_values and event.receiveType in ['0x3a4EDcf3312f44EF027acfd8c21382a5259936e7','0x576C260513204392F0eC0bc865450872025CB1cA']:
             continue
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         if eventDate >= startDate and eventDate <= endDate:
