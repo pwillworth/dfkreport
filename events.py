@@ -1177,7 +1177,7 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs):
     if len(rcvdToken) > 0:
         r = records.TavernTransaction(txn, 'hero', input_data[1]['_duelId'], 'pvpreward', timestamp, rcvdToken[0], rcvdAmount[0])
         r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0])
-    else:
+    elif len(sentToken) > 0:
         decoded_logs = contract.events.DuelEntryCreated().processReceipt(receipt, errors=DISCARD)
         for log in decoded_logs:
             entryId = log['args']['id']
