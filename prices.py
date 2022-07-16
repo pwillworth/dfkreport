@@ -102,10 +102,10 @@ def fetchItemPrice(token, date):
         price = today_prices[token]
     else:
         # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
-        if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
-            price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260')
+        if token in contracts.CV_TOKENS:
+            price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', 'dfkchain')
         else:
-            price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')
+            price = getCurrentPrice(token, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
         if price >= 0:
             db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
 
@@ -132,8 +132,8 @@ def getPrice(token, date, fiatType='usd'):
         return -1
 
 # Return USD price of token based on its pair to throughToken to 1USDC
-def getCurrentPrice(token, throughToken):
-    if token in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb', '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff']:
+def getCurrentPrice(token, throughToken, network):
+    if network == 'dfkchain':
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         ABI = contracts.getABI('UniswapV2Router02')
         contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
@@ -188,7 +188,7 @@ def main():
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    result = fetchItemPrice('0x9678518e04Fe02FB30b55e2D0e554E26306d0892', '15-05-2022')
+    result = fetchItemPrice('0x75E8D8676d774C9429FbB148b30E304b5542aC3d', '15-07-2022')
     sys.stdout.write(str(result))
     #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))

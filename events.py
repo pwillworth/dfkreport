@@ -858,16 +858,22 @@ def extractSummonResults(w3, txn, account, timestamp, receipt, network):
 
 def extractMeditationResults(w3, txn, account, timestamp, receipt):
     # Get the meditation costs data
-    shvasAmount = decimal.Decimal(0.0)
-    jewelAmount = decimal.Decimal(0.0)
+    runeAmount = decimal.Decimal(0.0)
+    runeCost = decimal.Decimal(0.0)
+    ptAmount = decimal.Decimal(0.0)
+    ptAddress = ''
+    runeAddress = ''
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        if log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
-            jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
-        else:
-            shvasAmount += log['args']['value']
+        if log['address'] in ['0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb']:
+            ptAmount += Web3.fromWei(log['args']['value'], 'ether')
+            ptAddress = log['address']
+        elif log['address'] in contracts.RUNE_TOKENS:
+            runeAmount += log['args']['value']
+            runeAddress = log['address']
+            runeCost += prices.priceLookup(timestamp, log['address']) * log['args']['value']
 
     ABI = contracts.getABI('MeditationCircle')
     contract = w3.eth.contract(address='0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1', abi=ABI)
@@ -880,14 +886,14 @@ def extractMeditationResults(w3, txn, account, timestamp, receipt):
         heroID = log['args']['heroId']
         crystal = log['args']['attunementCrystal']
         if type(heroID) is int:
-            rs = records.TavernTransaction(txn, 'hero', heroID, 'levelup', timestamp, '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', jewelAmount)
+            rs = records.TavernTransaction(txn, 'hero', heroID, 'levelup', timestamp, ptAddress, ptAmount)
             rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
-            r = records.TavernTransaction(txn, 'hero', heroID, 'meditate', timestamp, '0x66F5BfD910cd83d3766c4B39d13730C911b2D286', int(shvasAmount))
-            r.fiatAmount = prices.priceLookup(timestamp, r.coinType) * r.coinCost
+            r = records.TavernTransaction(txn, 'hero', heroID, 'meditate', timestamp, runeAddress, int(runeAmount))
+            r.fiatAmount = runeCost
             if crystal != '0x0000000000000000000000000000000000000000':
                 rt = records.TavernTransaction(txn, 'hero', heroID, 'enhance', timestamp, crystal, 1)
                 rt.fiatAmount = prices.priceLookup(timestamp, crystal)
-            logging.info('{3} Meditation event {0} jewel/{1} shvas {2} heroid'.format(jewelAmount, shvasAmount, heroID, txn))
+            logging.info('{3} Meditation event {0} power token/{1} runes {2} heroid'.format(ptAmount, runeAmount, heroID, txn))
     return [r, rs, rt]
 
 def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):

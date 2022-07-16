@@ -78,7 +78,7 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
     # Have to look up Tavern sale/hire events because they are not associated direct to wallet
-    eventMap['tavern'] = eventMap['tavern'] + eventMapAvax['tavern'] + db.getTavernSales(account, startDate, endDate)
+    eventMap['tavern'] = eventMap['tavern'] + eventMapDFK['tavern'] + db.getTavernSales(account, startDate, endDate)
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['swaps'] += eventMapDFK['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
