@@ -271,6 +271,16 @@ var address_map = {
   '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 'Lesser Chaos Stone',
   '0x3633F956410163A98D58D2D928B38C64A488654e': 'Chaos Stone',
   '0x2fB31FF9E9945c5c1911386865cD666b2C5dfeB6': 'Greater Chaos Stone',
+  '0x591853e01EcFDcF1Bdc9f093423C197BfBBd1A4f': 'Health Vial', // Crystalvale crafted items
+  '0x5948dd8Df6afEFE05B033AD8f3ae513a9Cd4F1Dc': 'Full Health Potion',
+  '0x240da5314B05E84392e868aC8f2b80ad6becadd4': 'Mana Vial',
+  '0xf17FD21bDF6713a1Dfed668b97835b21e32651e8': 'Full Mana Potion',
+  '0x242078edFDca25ef2A497C8D9f256Fd641472E5F': 'Stamina Vial',
+  '0x449eB718e351a86718A090A1a8Db3FD561306d9b': 'Anti-Poison Potion',
+  '0x5986045e7c221c8AD40A736B6434D82E29687aeB': 'Anti-Blind Potion',
+  '0xFADCb72aAE2713975a890b59FF47231D1A552De3': 'Magic Resistance Potion',
+  '0x2dfFf745d2c7ddCAD4E97b80DF33705B1a95A172': 'Toughness Potion',
+  '0x84246Ce3988742D46fC00d9b8b2AFb5CDBDaE660': 'Swiftness Potion',
   '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
   '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  // Start Avalanche list
   '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
@@ -300,6 +310,7 @@ var address_map = {
   '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC',
   '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
 };
+cystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C'];
 event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
 paymentsTotalValue = 0;
@@ -806,10 +817,14 @@ function loadQuestEvents(questEvents) {
     if (questEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = questEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
+    var questLocation = 'Serendale';
+    if (cystalvale_rewards.includes(questEvents[i].rewardType)) {
+      questLocation = 'Crystalvale';
+    }
     $('#tx_quests_data').show();
     $('#tx_quests_data').append(
       '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + 'Serendale' + '</td>' +
+      '<td>' + questLocation + '</td>' +
       '<td>' + address_map[questEvents[i].rewardType] + '</td>' +
       '<td>' + rewardAmount + '</td>' +
       '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
