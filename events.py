@@ -133,7 +133,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'quests', jsonpickle.encode(results), account, network, txFee, feeValue)
                 else:
                     logging.info('{0} quest with no rewards.'.format(tx))
-            elif 'AuctionHouse' in action:
+            elif 'AuctionHouse' in action or 'Pet Egg' in action: # Temp fix for Pet auction and Yellow Pet egg CV having same address
                 if 'Pet' in action:
                     results = extractAuctionResults(w3, tx, account, timestamp, receipt, 'pet')
                 else:
