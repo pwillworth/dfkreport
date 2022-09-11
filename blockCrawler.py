@@ -64,7 +64,7 @@ def parseEvents(network):
         blockNumber = 22036051
 
     toBlock = w3.eth.block_number
-    logging.warning('Getting {2} events from block {0} through {1}'.format(str(blockNumber), str(toBlock), network))
+
     # create a filter for unsearched blocks of auction house and summoning portal contracts
     with open('abi/HeroSummoningUpgradeable.json', 'r') as f:
         ABI = f.read()
@@ -75,8 +75,8 @@ def parseEvents(network):
 
     endBlock = blockNumber
     while endBlock < toBlock:
-        # DFKChain max blocks to read at a time is 2048
-        endBlock += 2047
+        # DFKChain max blocks to read at a time is 2048 and harmony 1023
+        endBlock += 1023
         if endBlock > toBlock:
             endBlock = toBlock
         tavernFilter = tavernContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
@@ -99,8 +99,9 @@ def parseEvents(network):
             handleLogs(w3, event, network)
             # keep track of what block we are on
             try:
-                with open("last_block_checked_{0}.txt".format(network), "w") as f:
-                    f.write(str(event['blockNumber']))
+                if event['blockNumber'] > 0:
+                    with open("last_block_checked_{0}.txt".format(network), "w") as f:
+                        f.write(str(event['blockNumber']))
             except IOError as e:
                 logging.critical('failed to write last block checked {0}'.format(e))
         blockNumber = endBlock
