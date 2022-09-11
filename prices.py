@@ -5,6 +5,7 @@ import sys
 from web3 import Web3
 import json
 import datetime
+from datetime import timezone
 import logging
 import decimal
 import db
@@ -162,7 +163,15 @@ def getCurrentPrice(token, throughToken, network):
             # If through token is USD, we don't need to get through token to USDC
             price = contracts.valueFromWei(token0Amount[1], throughToken)
         else:
-            token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
+            # Use coin gecko price of through token if available
+            throughPrice = -1
+            if throughToken in token_map:
+                throughPrice = priceLookup(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc)), throughToken)
+            if throughPrice > -1:
+                token1Amount = [1, Web3.toWei(throughPrice, decimal_units[6])]
+            else:
+                token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
+            # USD price by multiplying value in through token by through token value in USDC
             price = contracts.valueFromWei(token0Amount[1], throughToken) * contracts.valueFromWei(token1Amount[1], addrUSDC)
     except Exception as err:
         logging.error('Price lookup failed for {1}: {0}'.format(err, token))
@@ -188,7 +197,8 @@ def main():
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    result = fetchItemPrice('0x75E8D8676d774C9429FbB148b30E304b5542aC3d', '15-07-2022')
+    #result = fetchItemPrice('0x75E8D8676d774C9429FbB148b30E304b5542aC3d', '15-07-2022')
+    result = getCurrentPrice('0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
     sys.stdout.write(str(result))
     #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
