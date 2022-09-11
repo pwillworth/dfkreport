@@ -45,6 +45,20 @@ def savePriceData(date, token, price, liquid, volume):
         # incase DB is down, it's ok we just wont cache
         logging.error('db error saving price data {0}'.format(str(err)))
 
+def getTransactions(account, network):
+    try:
+        con = aConn()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM transactions WHERE account=%s AND network=%s", (account, network))
+        rows = cur.fetchall()
+        con.close()
+    except Exception as err:
+        # if db is unavailable we can just continue
+        logging.error('Error getting txs {0}'.format(str(err)))
+        rows = []
+
+    return dict([[row[0], row] for row in rows])
+
 def findTransaction(txHash, account):
     try:
         con = aConn()

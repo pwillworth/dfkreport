@@ -48,6 +48,10 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     txCount = 0
     heroCrystals = {}
     petEggs = {}
+    savedTx = []
+    if settings.USE_CACHE:
+        savedTx = db.getTransactions(account, network)
+
     for txn in txs:
         # The AVAX list data includes the whole transaction, but harmony is just the hash
         if network == 'avalanche':
@@ -67,7 +71,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 logging.error('Failed to update tx count {0}'.format(str(err)))
 
         if settings.USE_CACHE:
-            checkCache = db.findTransaction(str(tx), account)
+            checkCache = savedTx.get(tx, None)
             if checkCache != None:
                 # load the gas
                 if checkCache[7] != None:
@@ -561,7 +565,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
 
         txCount += 1
 
-    db.updateReport(account, startDate, endDate, 'complete', alreadyComplete + len(txs))
+    db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + len(txs))
     return events_map
 
 def lookupEvent(fm, to, account):
