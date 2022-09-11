@@ -217,6 +217,7 @@ address_map = {
     '0xEb9B61B145D6489Be575D3603F4a704810e143dF': 'Hero CV',
     '0x9CC714059943D5A726fAD11087Bb6d9Ab811A2E3': 'Graveyard',
     '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
+    '0xA37851cCE4B2b65c0b290AA4cC2DFF00314ec85a': 'Eternal Story Page', #CV
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 'Gaia\'s Tears',
     '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 'Shvas Rune',
@@ -380,6 +381,33 @@ address_map = {
     '0xeEe5b16Cc49e7cef65391Fe7325cea17f787e245': 'Lesser Chaos Crystal',
     '0xC6b00B4005883C1Ff09fa1351B0f49027bCAB71a': 'Chaos Crystal',
     '0xb0155Fdb7B6972717C4774Fa2AEAEe9D6c0040b9': 'Greater Chaos Crystal',
+    '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 'Lesser Might Stone', # Crystalvale stones
+    '0x37bAa710391c1D6e22396E4B7F78477F0fF2fFA7': 'Might Stone',
+    '0xA0851F6368AfA693a6654e9fdaf76CB6F160B837': 'Greater Might Stone',
+    '0xF1D53fa23C562246B9d8EC591eEa12Ec0288a888': 'Lesser Finesse Stone',
+    '0xe2C357ECB698C5ee97c49CCCfA8117c4b943C7B9': 'Finesse Stone',
+    '0xF35D4f749C6ADCd4AEfE1720C5890cD38129d128': 'Greater Finesse Stone',
+    '0xd37aCbAC3C25a543B30aa16208637cfa6EB97eDd': 'Lesser Swiftness Stone',
+    '0x4F95D51fB8eF93704aF8C39A080c794cdA08f853': 'Swiftness Stone',
+    '0x40D2c135a3E5a6f6546626795DEc67f818f0352a': 'Greater Swiftness Stone',
+    '0x63891e0fcfEe0cEB12dE5fb96F43ADf9DbEC20a3': 'Lesser Vigor Stone',
+    '0xA71a120931526fC98f1AcC9f769b6b0d690fB8f0': 'Vigor Stone',
+    '0x0A5985574369EDE9Bd871fbdad61613D4C11Dac4': 'Greater Vigor Stone',
+    '0xf599Ae2c925D3287a7fF64DC1b55C7Ea6EE3AA8f': 'Lesser Fortitude Stone',
+    '0x05305c97e9A2FDC0F5Ea23824c1348DEeD9Aff04': 'Fortitude Stone',
+    '0xc2eF7E4f659272ca2DaE9d3df05680783b299Cd0': 'Greater Fortitude Stone',
+    '0xFC943eBd19112D6c6098412238E4E8319641B3d8': 'Lesser Wit Stone',
+    '0x3971212Ec22147EE8808cB84F743DD852Be92f9C': 'Wit Stone',
+    '0xa1BD7683fA348e256a2de8a9dDB55E5ea01eB048': 'Greater Wit Stone',
+    '0x3D112747ff2463802Afa240B62ade8F1cc4a5c7d': 'Lesser Insight Stone',
+    '0x74CFf096C9B027104fb1a0C2E0e265D123eA47De': 'Insight Stone',
+    '0x3198f51A1c8cFC5f1FeaD58feaa19E6dFc8e9737': 'Greater Insight Stone',
+    '0x934e3e2a433F37cC2D02855A43fD7Ed475EA7451': 'Lesser Fortune Stone',
+    '0xd647D8b52981eDE13ac6a5B7Ad04e212Ac38fdFb': 'Fortune Stone',
+    '0x8FfF0f5A660b4D38441DDF6127bca42D7a2755a9': 'Greater Fortune Stone',
+    '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 'Lesser Chaos Stone',
+    '0x1ED1a6Ed588945C59227f7a0c622Ad564229d3d6': 'Chaos Stone',
+    '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 'Greater Chaos Stone',
     '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  # Start Avalanche list
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
@@ -424,6 +452,7 @@ address_map = {
 gold_values = {
     '0x0405f1b828C7C9462877cC70A9f266887FF55adA': 0, # Raffle tix
     '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 0, # Eternal story page
+    '0xA37851cCE4B2b65c0b290AA4cC2DFF00314ec85a': 0, # Eternal Story Page CV
     '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 0, # DFK gold
     '0x576C260513204392F0eC0bc865450872025CB1cA': 0, # DFK gold CV
     '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 0, #Gaia's Tears
@@ -591,7 +620,34 @@ gold_values = {
     '0x64C7D12D85050F5F0DcD075f038E5D616f30a404': 0, #Greater Fortune Crystal
     '0xeEe5b16Cc49e7cef65391Fe7325cea17f787e245': 0, #Lesser Chaos Crystal
     '0xC6b00B4005883C1Ff09fa1351B0f49027bCAB71a': 0, #Chaos Crystal
-    '0xb0155Fdb7B6972717C4774Fa2AEAEe9D6c0040b9': 0 #Greater Chaos Crystal
+    '0xb0155Fdb7B6972717C4774Fa2AEAEe9D6c0040b9': 0, #Greater Chaos Crystal
+    '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 0, #Lesser Might Stone # Crystalvale stones
+    '0x37bAa710391c1D6e22396E4B7F78477F0fF2fFA7': 0, #Might Stone
+    '0xA0851F6368AfA693a6654e9fdaf76CB6F160B837': 0, #Greater Might Stone
+    '0xF1D53fa23C562246B9d8EC591eEa12Ec0288a888': 0, #Lesser Finesse Stone
+    '0xe2C357ECB698C5ee97c49CCCfA8117c4b943C7B9': 0, #Finesse Stone
+    '0xF35D4f749C6ADCd4AEfE1720C5890cD38129d128': 0, #Greater Finesse Stone
+    '0xd37aCbAC3C25a543B30aa16208637cfa6EB97eDd': 0, #Lesser Swiftness Stone
+    '0x4F95D51fB8eF93704aF8C39A080c794cdA08f853': 0, #Swiftness Stone
+    '0x40D2c135a3E5a6f6546626795DEc67f818f0352a': 0, #Greater Swiftness Stone
+    '0x63891e0fcfEe0cEB12dE5fb96F43ADf9DbEC20a3': 0, #Lesser Vigor Stone
+    '0xA71a120931526fC98f1AcC9f769b6b0d690fB8f0': 0, #Vigor Stone
+    '0x0A5985574369EDE9Bd871fbdad61613D4C11Dac4': 0, #Greater Vigor Stone
+    '0xf599Ae2c925D3287a7fF64DC1b55C7Ea6EE3AA8f': 0, #Lesser Fortitude Stone
+    '0x05305c97e9A2FDC0F5Ea23824c1348DEeD9Aff04': 0, #Fortitude Stone
+    '0xc2eF7E4f659272ca2DaE9d3df05680783b299Cd0': 0, #Greater Fortitude Stone
+    '0xFC943eBd19112D6c6098412238E4E8319641B3d8': 0, #Lesser Wit Stone
+    '0x3971212Ec22147EE8808cB84F743DD852Be92f9C': 0, #Wit Stone
+    '0xa1BD7683fA348e256a2de8a9dDB55E5ea01eB048': 0, #Greater Wit Stone
+    '0x3D112747ff2463802Afa240B62ade8F1cc4a5c7d': 0, #Lesser Insight Stone
+    '0x74CFf096C9B027104fb1a0C2E0e265D123eA47De': 0, #Insight Stone
+    '0x3198f51A1c8cFC5f1FeaD58feaa19E6dFc8e9737': 0, #Greater Insight Stone
+    '0x934e3e2a433F37cC2D02855A43fD7Ed475EA7451': 0, #Lesser Fortune Stone
+    '0xd647D8b52981eDE13ac6a5B7Ad04e212Ac38fdFb': 0, #Fortune Stone
+    '0x8FfF0f5A660b4D38441DDF6127bca42D7a2755a9': 0, #Greater Fortune Stone
+    '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 0, #Lesser Chaos Stone
+    '0x1ED1a6Ed588945C59227f7a0c622Ad564229d3d6': 0, #Chaos Stone
+    '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 0 #Greater Chaos Stone
 }
 
 CV_TOKENS = {
@@ -654,7 +710,61 @@ CV_TOKENS = {
     '0x5986045e7c221c8AD40A736B6434D82E29687aeB': 'Anti-Blind Potion',
     '0xFADCb72aAE2713975a890b59FF47231D1A552De3': 'Magic Resistance Potion',
     '0x2dfFf745d2c7ddCAD4E97b80DF33705B1a95A172': 'Toughness Potion',
-    '0x84246Ce3988742D46fC00d9b8b2AFb5CDBDaE660': 'Swiftness Potion'
+    '0x84246Ce3988742D46fC00d9b8b2AFb5CDBDaE660': 'Swiftness Potion',
+    '0x5bAC3cAd961B01Ef9510C8e6c5402A2bB1542831': 'Lesser Might Crystal', # Crystalvale crystals
+    '0x234dCf10Db6817185F5A3b430a8CAF2B4a35e9E9': 'Might Crystal',
+    '0x438A4e0673b7084D6b2379a362627789D845399c': 'Greater Might Crystal',
+    '0x9d9ef1Bf6A46b8413bf6b1b54F6A7aAb53c6b1b6': 'Lesser Finesse Crystal',
+    '0xA9A8cc1AC7e7505a69cAca2E068716395CebE562': 'Finesse Crystal',
+    '0xdA16b191D1431746b6661D428A223b72c178765A': 'Greater Finesse Crystal',
+    '0x6BCA53314dADdA7f4De30A95413f75a93bfAfecF': 'Lesser Swiftness Crystal',
+    '0x3e664eB15b35783B9D3EF06702044820F08bB45B': 'Swiftness Crystal',
+    '0x1459c662F516D63216491DC34F7d9d35b00dF25A': 'Greater Swiftness Crystal',
+    '0x5e4Cf6907CB5fBe2F642E399F6d07E567155d1F8': 'Lesser Vigor Crystal',
+    '0xcD9201F50e5Be84ECE3D8F603dcd3e9DD5e88ea2': 'Vigor Crystal',
+    '0x8780c4aa8bd0D15493D63C884bd9D427199Cf2cf': 'Greater Vigor Crystal',
+    '0xbd2677c06C9448534A851bdD25dF045872b87cb1': 'Lesser Fortitude Crystal',
+    '0xe9BfCc80800EB77a1eAF6881825936770aF83Eb6': 'Fortitude Crystal',
+    '0x3e1c80c3B916C93748Ae642c885d4BFb5D6a6BFe': 'Greater Fortitude Crystal',
+    '0xC989c916F189D2A2BE0322c020942d7c43aEa830': 'Lesser Wit Crystal',
+    '0xAeb5b59c8B90D4F078046550Cc8F9f08dC127253': 'Wit Crystal',
+    '0x9d1f44b0EC7BB80656FC8Fcd65152513f29a606D': 'Greater Wit Crystal',
+    '0xbb5F97358F60cCBa262883A3Ff0C637393FE3aB8': 'Lesser Insight Crystal',
+    '0x03e56Ded72C3a974295773355EadB38c0A85cF9D': 'Insight Crystal',
+    '0xB3F5867E277798b50ba7A71C0b24FDcA03045eDF': 'Greater Insight Crystal',
+    '0xE410b2BE2Ce1508E15009118567d02C6d7A7038e': 'Lesser Fortune Crystal',
+    '0xe9BfCc80800EB77a1eAF6881825936770aF83Eb6': 'Fortune Crystal',
+    '0x64C7D12D85050F5F0DcD075f038E5D616f30a404': 'Greater Fortune Crystal',
+    '0xeEe5b16Cc49e7cef65391Fe7325cea17f787e245': 'Lesser Chaos Crystal',
+    '0xC6b00B4005883C1Ff09fa1351B0f49027bCAB71a': 'Chaos Crystal',
+    '0xb0155Fdb7B6972717C4774Fa2AEAEe9D6c0040b9': 'Greater Chaos Crystal',
+    '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 'Lesser Might Stone', # Crystalvale stones
+    '0x37bAa710391c1D6e22396E4B7F78477F0fF2fFA7': 'Might Stone',
+    '0xA0851F6368AfA693a6654e9fdaf76CB6F160B837': 'Greater Might Stone',
+    '0xF1D53fa23C562246B9d8EC591eEa12Ec0288a888': 'Lesser Finesse Stone',
+    '0xe2C357ECB698C5ee97c49CCCfA8117c4b943C7B9': 'Finesse Stone',
+    '0xF35D4f749C6ADCd4AEfE1720C5890cD38129d128': 'Greater Finesse Stone',
+    '0xd37aCbAC3C25a543B30aa16208637cfa6EB97eDd': 'Lesser Swiftness Stone',
+    '0x4F95D51fB8eF93704aF8C39A080c794cdA08f853': 'Swiftness Stone',
+    '0x40D2c135a3E5a6f6546626795DEc67f818f0352a': 'Greater Swiftness Stone',
+    '0x63891e0fcfEe0cEB12dE5fb96F43ADf9DbEC20a3': 'Lesser Vigor Stone',
+    '0xA71a120931526fC98f1AcC9f769b6b0d690fB8f0': 'Vigor Stone',
+    '0x0A5985574369EDE9Bd871fbdad61613D4C11Dac4': 'Greater Vigor Stone',
+    '0xf599Ae2c925D3287a7fF64DC1b55C7Ea6EE3AA8f': 'Lesser Fortitude Stone',
+    '0x05305c97e9A2FDC0F5Ea23824c1348DEeD9Aff04': 'Fortitude Stone',
+    '0xc2eF7E4f659272ca2DaE9d3df05680783b299Cd0': 'Greater Fortitude Stone',
+    '0xFC943eBd19112D6c6098412238E4E8319641B3d8': 'Lesser Wit Stone',
+    '0x3971212Ec22147EE8808cB84F743DD852Be92f9C': 'Wit Stone',
+    '0xa1BD7683fA348e256a2de8a9dDB55E5ea01eB048': 'Greater Wit Stone',
+    '0x3D112747ff2463802Afa240B62ade8F1cc4a5c7d': 'Lesser Insight Stone',
+    '0x74CFf096C9B027104fb1a0C2E0e265D123eA47De': 'Insight Stone',
+    '0x3198f51A1c8cFC5f1FeaD58feaa19E6dFc8e9737': 'Greater Insight Stone',
+    '0x934e3e2a433F37cC2D02855A43fD7Ed475EA7451': 'Lesser Fortune Stone',
+    '0xd647D8b52981eDE13ac6a5B7Ad04e212Ac38fdFb': 'Fortune Stone',
+    '0x8FfF0f5A660b4D38441DDF6127bca42D7a2755a9': 'Greater Fortune Stone',
+    '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 'Lesser Chaos Stone',
+    '0x1ED1a6Ed588945C59227f7a0c622Ad564229d3d6': 'Chaos Stone',
+    '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 'Greater Chaos Stone'
 }
 
 RUNE_TOKENS = {
