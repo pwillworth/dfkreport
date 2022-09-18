@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from web3 import Web3
 from pyhmy import account
 import nets
 import db
@@ -133,37 +133,12 @@ def getTransactionCount(address, includedChains=constants.HARMONY):
             logging.error("connection to harmony api failed")
 
     if includedChains & constants.DFKCHAIN > 0:
-        initiated = False
-        startKey = None
-        txCount = 0
-
-        while initiated == False or startKey != None:
-            initiated = True
-            if startKey == None:
-                rURL = "{1}/transactions?address={0}&sort=asc".format(address, nets.dfk_main)
-            else:
-                rURL = "{1}/transactions?address={0}&startKey={2}&sort=asc".format(address, nets.dfk_main, startKey)
-            try:
-                r = requests.get(rURL)
-            except ConnectionError:
-                logging.error("connection to DFK Chain api failed")
-
-            if r.status_code == 200:
-                results = r.json()
-                if 'nextPageStartKey' in results:
-                    startKey = results['nextPageStartKey']
-                else:
-                    startKey = None
-                try:
-                    txCount = len(results['transactions'])
-                    dfk_result += txCount
-                    logging.info("got {0} transactions".format(dfk_result))
-                except Exception as err:
-                    result = 'Error: invalid response from DFK Chain Explorer API - {0}'.format(str(err))
-                    logging.error(result)
-            else:
-                result = 'Error: Failed to connect to DFK Chain Explorer API'
-                logging.error(result)
+        w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
+        if not w3.isConnected():
+            logging.error('Error: Critical w3 connection failure for dfk chain')
+            result = 'Error: Blockchain connection failure.'
+        else:
+            dfk_result = w3.eth.get_transaction_count(address)
 
     if includedChains & constants.AVALANCHE > 0:
         try:

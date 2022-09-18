@@ -64,6 +64,7 @@ def parseEvents(network):
         blockNumber = 22036051
 
     toBlock = w3.eth.block_number
+    logging.warning('Getting {2} events from block {0} through {1}'.format(str(blockNumber), str(toBlock), network))
 
     # create a filter for unsearched blocks of auction house and summoning portal contracts
     with open('abi/HeroSummoningUpgradeable.json', 'r') as f:

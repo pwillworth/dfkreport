@@ -537,20 +537,20 @@ def buildQuestRecords(questEvents, startDate, endDate):
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create basic income tax record for any jewel reward from quests
         # TODO decide if we maybe want to include other items as income, but I don't think so
-        if event.rewardType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F' and eventDate >= startDate and eventDate <= endDate:
+        if event.rewardType in ['0x72Cb10C6bfA5624dD07Ef608027E366bd690048F','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'] and eventDate >= startDate and eventDate <= endDate:
             if ''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType)) in itemGroups:
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))].proceeds += event.fiatValue
                 # this is hacky, but I'm just gonna use it to keep track of total jewel since it is not needed
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))].costs += event.rewardAmount
             else:
-                ti = TaxItem(event.txHash, 0, '', event.rewardAmount, contracts.getAddressName(event.rewardType), 'Quest Jewel Rewards', 'income', eventDate, event.fiatType, event.fiatValue)
+                ti = TaxItem(event.txHash, 0, '', event.rewardAmount, contracts.getAddressName(event.rewardType), 'Quest {0} Rewards'.format(contracts.getAddressName(event.rewardType)), 'income', eventDate, event.fiatType, event.fiatValue)
                 # Not really!
                 ti.costs = event.rewardAmount
                 if hasattr(event, 'fiatFeeValue'):
                     ti.txFees += event.fiatFeeValue
                 itemGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.rewardType))] = ti
     for k, v in itemGroups.items():
-        v.description = 'Quest Jewel Rewards {:.3f}'.format(v.costs)
+        v.description = 'Quest {0} Rewards {1:.3f}'.format(v.rcvdType, v.costs)
         v.rcvdAmount = v.costs
         # zero out costs because we were just using it to trace the sum of coin amount
         v.costs = 0

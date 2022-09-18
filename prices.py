@@ -33,7 +33,12 @@ token_map = {
     '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'avalanche-2',
     '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'avalanche-2',
     '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'defi-kingdoms',
-    '0x60781C2586D68229fde47564546784ab3fACA982': 'pangolin'
+    '0x60781C2586D68229fde47564546784ab3fACA982': 'pangolin',
+    '0xfBDF0E31808d0aa7b9509AA6aBC9754E48C58852': 'ethereum',
+    '0x7516EB8B8Edfa420f540a162335eACF3ea05a247': 'bitcoin',
+    '0x97855Ba65aa7ed2F65Ed832a776537268158B78a': 'klay-token',
+    '0xD17a41Cd199edF1093A9Be4404EaDe52Ec19698e': 'matic-network',
+    '0x2Df041186C844F8a2e2b63F16145Bc6Ff7d23E25': 'fantom'
 }
 
 decimal_units = {
