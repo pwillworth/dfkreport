@@ -337,7 +337,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             elif 'PetIncubator' in action:
                 logging.info('Pet hatching activity: {0}'.format(tx))
                 # pet hatching
-                results = extractHatchingResults(w3, tx, account, timestamp, receipt)
+                results = extractHatchingResults(w3, tx, account, timestamp, receipt, network)
                 if results != None:
                     if results[1] != None and results[1].event == 'crack':
                         eventsFound = True
@@ -1101,12 +1101,17 @@ def extractJourneyResults(w3, txn, account, timestamp, receipt, inputs):
 
     return rewards
 
-def extractHatchingResults(w3, txn, account, timestamp, receipt):
+def extractHatchingResults(w3, txn, account, timestamp, receipt, network):
     # Record egg hatching costs and pet nft gains
     jewelAmount = decimal.Decimal(0.0)
     otherCosts = {}
 
-    powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
+    if network == 'dfkchain':
+        powerToken = '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'
+        hatchContract = '0x564D03ccF4A9634D97100Ec18d7770A3C4E45541'
+    else:
+        powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
+        hatchContract = '0x576C260513204392F0eC0bc865450872025CB1cA'
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
@@ -1120,7 +1125,7 @@ def extractHatchingResults(w3, txn, account, timestamp, receipt):
     r = None
     eggId = 0
     ABI = contracts.getABI('PetHatching')
-    contract = w3.eth.contract(address='0x576C260513204392F0eC0bc865450872025CB1cA', abi=ABI)
+    contract = w3.eth.contract(address=hatchContract, abi=ABI)
     incubate_logs = contract.events.EggIncubated().processReceipt(receipt, errors=DISCARD)
     
     for log in incubate_logs:

@@ -38,4 +38,4 @@ This is not called out in the bounty, but I thought it might be useful to includ
 Usage help is available on the sites help page [Help](https://dfkreport.cognifact.com/help.py)
 
 ## Other Resources
-For a more complete Harmony centric Tax transactions tool you can locally yourself, please see [this project Harmony TX Tool](https://github.com/tempoxylophone/Harmony-Tx-Tool).
+For a more complete Harmony centric Tax transactions tool you can run locally yourself, please see [this project Harmony TX Tool](https://github.com/tempoxylophone/Harmony-Tx-Tool).
