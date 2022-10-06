@@ -64,7 +64,7 @@ def getResponseCSV(records, contentType, format):
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, str(record.swapAmount), contracts.getAddressName(record.swapType), str(record.receiveAmount), contracts.getAddressName(record.receiveType), str(txFee), txFeeCurrency, str(record.fiatSwapValue), record.fiatType, '', 'swap', record.txHash, '\n'))
             elif format == 'coinledgeruniversal':
-                response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), txFeeCurrency, str(txFee), '', 'swap', record.txHash, '\n'))
+                response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), txFeeCurrency, str(txFee), '', 'Trade', record.txHash, '\n'))
             else:
                 response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash, str(txFee), '\n'))
         for record in eventRecords['liquidity']:
@@ -181,7 +181,7 @@ def getResponseCSV(records, contentType, format):
             if format == 'koinlyuniversal':
                 response += ','.join((blockDateStr, '', '', str(record.rewardAmount), contracts.getAddressName(record.rewardType), str(txFee), txFeeCurrency, str(record.fiatValue), record.fiatType, 'reward', 'quest', record.txHash, '\n'))
             elif format == 'coinledgeruniversal':
-                response += ','.join((blockDateStr, '', '', contracts.getAddressName(record.rewardType), str(record.rewardAmount), txFeeCurrency, str(txFee), 'staking', 'quest', record.txHash, '\n'))
+                response += ','.join((blockDateStr, '', '', contracts.getAddressName(record.rewardType), str(record.rewardAmount), txFeeCurrency, str(txFee), 'Staking', 'quest', record.txHash, '\n'))
             else:
                 response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
         for record in eventRecords['wallet']:
