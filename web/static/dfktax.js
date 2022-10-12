@@ -144,6 +144,7 @@ var address_map = {
   '0x38e76972BD173901B5E5E43BA5cB464293B80C31': 'Potion Use',
   '0x5F753dcDf9b1AD9AabC1346614D1f4746fd6Ce5C': 'Hero',
   '0x0405f1b828C7C9462877cC70A9f266887FF55adA': 'DFK Raffle Tix',
+  '0xBbd7c4Be2e54fF5e013471162e1ABAD7AB74c3C3': 'DFK Raffle Tix', //CV
   '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
   '0xA37851cCE4B2b65c0b290AA4cC2DFF00314ec85a': 'Eternal Story Page', // CV
   '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
@@ -282,6 +283,9 @@ var address_map = {
   '0xFADCb72aAE2713975a890b59FF47231D1A552De3': 'Magic Resistance Potion',
   '0x2dfFf745d2c7ddCAD4E97b80DF33705B1a95A172': 'Toughness Potion',
   '0x84246Ce3988742D46fC00d9b8b2AFb5CDBDaE660': 'Swiftness Potion',
+  '0xab2B495902f9A6652c382e5f289423929FFF2E65': 'Atonement Crystal',
+  '0xbFa812214a16EcA7814e5F5c270d7f8F37A110B5': 'Atonement Crystal Lesser',
+  '0x3A28E0D4eCF7558e1ba7357070032C5A6105B0C2': 'Greater Atonement Crystal',
   '0x5bAC3cAd961B01Ef9510C8e6c5402A2bB1542831': 'Lesser Might Crystal',  // Crystalvale crystals
   '0x234dCf10Db6817185F5A3b430a8CAF2B4a35e9E9': 'Might Crystal',
   '0x438A4e0673b7084D6b2379a362627789D845399c': 'Greater Might Crystal',
