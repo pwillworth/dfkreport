@@ -3,7 +3,10 @@ from web3 import Web3
 from pyhmy import account
 import nets
 import db
+import dfkInfo
 import requests
+import datetime
+from datetime import timezone
 import time
 import logging
 import settings
@@ -38,33 +41,66 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
     return txs
 
 # Return array of transactions on DFK Chain for the address
-def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0):
+def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
-    startKey = None
+    startKey = 0
+    blockLimit = None
+    blockSpan = 86400
+    retryCount = 0
     txs = []
+    upperBound = datetime.datetime.utcnow().timestamp()
 
-    while tx_end == False:
-        if startKey == None:
-            rURL = "{1}/transactions?address={0}&sort=asc".format(address, nets.dfk_main)
+    while tx_end == False or (blockLimit != None and blockLimit < upperBound):
+        if blockLimit == None:
+            rURL = "{1}/53935/address/{0}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit=0&block-signed-at-span=86400&page-size=1".format(address, nets.covalent)
         else:
-            rURL = "{1}/transactions?address={0}&startKey={2}&sort=asc".format(address, nets.dfk_main, startKey)
+            rURL = "{1}/53935/address/{0}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={4}&block-signed-at-span={5}&page-size={2}&page-number={3}".format(address, nets.covalent, page_size, startKey, blockLimit, blockSpan)
+
         try:
-            r = requests.get(rURL)
+            r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
         except ConnectionError:
-            logging.error("connection to DFK Chain explorer api failed")
+            logging.error("connection to Covalent api failed")
             break
         if r.status_code == 200:
+            retryCount = 0
             results = r.json()
-            if 'nextPageStartKey' in results:
-                startKey = results['nextPageStartKey']
+            if blockLimit == None:
+                # blockLimit not set means we are looking up the first transaction for this account to start
+                if 'items' in results['data'] and type(results['data']['items']) is list and len(results['data']['items']) > 0:
+                    blockDate = datetime.datetime.strptime(results['data']['items'][0]['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
+                    blockDate = blockDate.replace(tzinfo=timezone.utc)
+                    blockLimit = int(blockDate.timestamp())
+                else:
+                    logging.info('No first tx for account found.')
+                    break
             else:
-                startKey = None
-                tx_end = True
-            if 'transactions' in results and type(results['transactions']) is list and len(results['transactions']) > 0:
-                logging.info("got {0} transactions".format(len(results['transactions'])))
-                txs = txs + results['transactions']
+                # processing 1 day of transactions from blockLimit timestamp
+                if 'pagination' in results['data'] and results['data']['pagination']['has_more'] == True:
+                    startKey = results['data']['pagination']['page_number']+1
+                else:
+                    startKey = 0
+                    tx_end = True
+                    blockLimit += blockSpan
+
+                if 'items' in results['data'] and type(results['data']['items']) is list and len(results['data']['items']) > 0:
+                    logging.info("got {0} transactions".format(len(results['data']['items'])))
+                    txs = txs + results['data']['items']
+                else:
+                    tx_end = True
+        elif r.status_code == 429:
+            # rate limiting
+            logging.error('Exceeded rate limit for Covalent API')
+            break
+        elif r.status_code == 504:
+            # covalent gateway timeout
+            logging.warning("Covalent gateway timeout getting Txs, retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(13)
+                continue
             else:
-                tx_end = True
+                logging.error("Covalent timeout too many times, exit")
+                break
         else:
             logging.error(r.text)
             break

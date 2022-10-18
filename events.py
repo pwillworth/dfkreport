@@ -10,6 +10,7 @@ import prices
 import db
 import settings
 import datetime
+from datetime import timezone
 import time
 import decimal
 import jsonpickle
@@ -58,8 +59,10 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             tx = txn['hash']
             timestamp = int(txn['timeStamp'])
         elif network == 'dfkchain':
-            tx = txn['hash']
-            timestamp = int(txn['timestamp'])
+            tx = txn['tx_hash']
+            blockDate = datetime.datetime.strptime(txn['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
+            blockDate = blockDate.replace(tzinfo=timezone.utc)
+            timestamp = blockDate.timestamp()
         else:
             tx = txn
         eventsFound = False
