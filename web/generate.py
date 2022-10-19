@@ -446,7 +446,7 @@ if not failure:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))
             db.deleteReport(status[0], status[1], status[2], status[8], status[9])
-            response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed due to Harmony RPC network congestion.  Please try again later and the report will continue where it left off in generation.  {0}"\n'.format(str(status[3])), '}'))
+            response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed due to Blockchain API or RPC network congestion.  Please try again later and the report will continue where it left off in generation.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True
         elif status[5] == 9:

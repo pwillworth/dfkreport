@@ -22,7 +22,7 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
             results = account.get_transaction_history(address, page=offset, page_size=page_size, include_full_tx=False, endpoint=nets.hmy_main)
         except ConnectionError as err:
             logging.error("connection to harmony api failed - ".format(str(err)))
-            break
+            raise Exception('Harmony Transactions Lookup Failure.')
         except Exception as err:
             logging.error("harmony connection failure getting records, waiting and trying again.  {0}".format(str(err)))
             time.sleep(2)
@@ -60,7 +60,7 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
             r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
         except ConnectionError:
             logging.error("connection to Covalent api failed")
-            break
+            raise Exception('DFK Chain Transactions Lookup Failure.')
         if r.status_code == 200:
             retryCount = 0
             results = r.json()
@@ -90,7 +90,7 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
         elif r.status_code == 429:
             # rate limiting
             logging.error('Exceeded rate limit for Covalent API')
-            break
+            raise Exception('DFK Chain Transactions Lookup Failure.')
         elif r.status_code == 504:
             # covalent gateway timeout
             logging.warning("Covalent gateway timeout getting Txs, retrying")
@@ -100,10 +100,10 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
                 continue
             else:
                 logging.error("Covalent timeout too many times, exit")
-                break
+                raise Exception('DFK Chain Transactions Lookup Failure.')
         else:
             logging.error(r.text)
-            break
+            raise Exception('DFK Chain Transactions Lookup Failure.')
 
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
@@ -120,7 +120,7 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
             r = requests.get("{3}/api?module=account&action=txlist&address={0}&page={2}&offset={1}&sort=asc&apikey={4}".format(address, offset, page_size, nets.avax_main, nets.avax_key))
         except ConnectionError:
             logging.error("connection to AVAX api failed")
-            break
+            raise Exception('Avalanche Transactions Lookup Failure.')
         if r.status_code == 200:
             results = r.json()
             if results['result'] != None and type(results['result']) is list and len(results['result']) > 0:
@@ -131,7 +131,7 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
                 tx_end = True
         else:
             logging.error(r.text)
-            break
+            raise Exception('Avalanche Transactions Lookup Failure.')
 
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
@@ -144,7 +144,7 @@ def getTransactionList(address, startDate, endDate, page_size, includedChains=co
     avx_txs = []
     if includedChains & constants.HARMONY > 0:
         logging.info('Get Harmony data for {0}'.format(address))
-        hmy_txs += getHarmonyData(address, startDate, endDate, page_size)
+        hmy_txs = getHarmonyData(address, startDate, endDate, page_size)
         # Sometimes the paged return tx lookup can result in duplicate txs in the list
         hmy_txs = list(dict.fromkeys(hmy_txs))
     if includedChains & constants.DFKCHAIN > 0:
