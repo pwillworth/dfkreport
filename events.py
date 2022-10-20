@@ -926,8 +926,9 @@ def extractAuctionResults(w3, txn, account, timestamp, receipt, auctionType):
     for log in decoded_logs:
         auctionPrice = Web3.fromWei(log['args']['totalPrice'], 'ether')
         logging.info("  {2}  Bought {3} {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, log['args']['winner'], auctionType))
-        r = records.TavernTransaction(txn, auctionType, log['args']['tokenId'], 'purchase', timestamp, auctionToken, auctionPrice)
-        r.fiatAmount = prices.priceLookup(timestamp, auctionToken) * r.coinCost
+        if log['args']['winner'] == account:
+            r = records.TavernTransaction(txn, auctionType, log['args']['tokenId'], 'purchase', timestamp, auctionToken, auctionPrice)
+            r.fiatAmount = prices.priceLookup(timestamp, auctionToken) * r.coinCost
 
         if auctionSeller != "":
             logging.info("  {2}  Sold {3} {0} for {1} jewel".format(log['args']['tokenId'], auctionPrice, auctionSeller, auctionType))
