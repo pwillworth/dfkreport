@@ -140,6 +140,9 @@ def getPrice(token, date, fiatType='usd'):
 
 # Return USD price of token based on its pair to throughToken to 1USDC
 def getCurrentPrice(token, throughToken, network):
+    # use the current gaias tears for lookup because the logs still emit the old address for some reason
+    if token == '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278':
+        token = '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA'
     if network == 'dfkchain':
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         ABI = contracts.getABI('UniswapV2Router02')

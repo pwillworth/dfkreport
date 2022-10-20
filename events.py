@@ -799,7 +799,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt, network):
     hiredFromAccount = ''
     if network == 'dfkchain':
         powerToken = '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'
-        tearsToken = '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278'
+        tearsToken = '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA'
     else:
         powerToken = '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'
         tearsToken = '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04'
