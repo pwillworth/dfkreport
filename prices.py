@@ -148,11 +148,13 @@ def getCurrentPrice(token, throughToken, network):
         ABI = contracts.getABI('UniswapV2Router02')
         contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
         addrUSDC = '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a'
+        usdcDecimals = 18
     else:
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
         ABI = contracts.getABI('UniswapV2Router02')
         contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
         addrUSDC = '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+        usdcDecimals = 6
     if token in contracts.alternate_pair_through_tokens:
         throughToken = contracts.alternate_pair_through_tokens[token]
 
@@ -177,7 +179,7 @@ def getCurrentPrice(token, throughToken, network):
             if throughToken in token_map:
                 throughPrice = priceLookup(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc)), throughToken)
             if throughPrice > -1:
-                token1Amount = [1, Web3.toWei(throughPrice, decimal_units[6])]
+                token1Amount = [1, Web3.toWei(throughPrice, decimal_units[usdcDecimals])]
             else:
                 token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
             # USD price by multiplying value in through token by through token value in USDC
@@ -206,8 +208,8 @@ def main():
     # Initialize database and ensure price history is pre-populated
     startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    #result = fetchItemPrice('0x75E8D8676d774C9429FbB148b30E304b5542aC3d', '15-07-2022')
-    result = getCurrentPrice('0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
+    result = fetchItemPrice('0xC989c916F189D2A2BE0322c020942d7c43aEa830', '15-10-2022')
+    #result = getCurrentPrice('0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
     sys.stdout.write(str(result))
     #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
