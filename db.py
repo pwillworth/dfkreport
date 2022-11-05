@@ -14,12 +14,21 @@ def ReportOptions():
     }
 
 def aConn():
-	conn = pymysql.connect(host = dfkInfo.DB_HOST,
-	db= dfkInfo.DB_NAME,
-	user = dfkInfo.DB_USER,
-	passwd = dfkInfo.DB_PASS)
-	conn.autocommit(True)
-	return conn
+    conn = pymysql.connect(host = dfkInfo.DB_HOST,
+    db= dfkInfo.DB_NAME,
+    user = dfkInfo.DB_USER,
+    passwd = dfkInfo.DB_PASS)
+    conn.autocommit(True)
+    return conn
+
+def dbInsertSafe(insertStr):
+    newStr = ""
+    if (insertStr != None):
+        for i in range(len(str(insertStr))):
+            if (str(insertStr)[i] == "'"):
+                newStr = newStr + "'"
+            newStr = newStr + str(insertStr)[i]
+    return newStr
 
 def findPriceData(date, token):
     try:
@@ -89,6 +98,23 @@ def saveTransaction(tx, timestamp, type, events, wallet, network, gasUsed, gasVa
         con.close()
     else:
         logging.info('Skipping tx save due to previous db failure.')
+
+# For determining how much history we already have for a wallet cached
+def getLastTransactionTimestamp(account, network):
+    try:
+        con = aConn()
+        cur = con.cursor()
+        cur.execute("SELECT max(blockTimestamp) FROM transactions WHERE account=%s and network=%s", (account, network))
+        row = cur.fetchone()
+        con.close()
+    except Exception as err:
+        # if db is unavailable we can just continue
+        logging.error('Error finding tx {0}'.format(str(err)))
+        row = None
+    if row == None:
+        return 0
+    else:
+        return row[0]
 
 # Look up and return any transaction events where wallet was the seller
 def getTavernSales(wallet, startDate, endDate):

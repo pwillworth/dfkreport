@@ -48,7 +48,10 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
     blockSpan = 86400
     retryCount = 0
     txs = []
-    upperBound = datetime.datetime.utcnow().timestamp()
+    lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
+    upperBound = datetime.datetime.utcnow().timestamp()+86400
+    if lowerBound > 0:
+        blockLimit = lowerBound
 
     while tx_end == False or (blockLimit != None and blockLimit < upperBound):
         if blockLimit == None:

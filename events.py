@@ -283,7 +283,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 else:
                     logging.error('Error: Failed to parse a vendor result. {0}'.format(receipt['logs'][0]['address']))
             elif 'Summoning' in action:
-                logging.debug('Summoning activity: {0}'.format(tx))
+                logging.info('Summoning {1} activity: {0}'.format(tx, action))
                 results = extractSummonResults(w3, tx, account, timestamp, receipt, network)
                 if results != None:
                     if type(results[1]) == int:
@@ -819,7 +819,7 @@ def extractSummonResults(w3, txn, account, timestamp, receipt, network):
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        logging.debug('{3} transfer for summon from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.getAddressName(log['address'])))
+        logging.info('{3} transfer for summon from: {0} to: {1} value: {2}'.format(log['args']['from'], log['args']['to'], log['args']['value'], contracts.getAddressName(log['address'])))
         if log['address'] == powerToken:
             jewelAmount += Web3.fromWei(log['args']['value'], 'ether')
             # capture transfer amount to other player so we can create a record for thier gains
