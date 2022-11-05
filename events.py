@@ -263,6 +263,14 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
                     for log in decoded_logs:
                         logging.info('banklog: ' + str(log))
+            elif 'cJewel' in action:
+                results = extractJewelerResults(w3, tx, account, timestamp, receipt)
+                if results != None:
+                    results.fiatFeeValue = feeValue
+                    events_map['bank'].append(results)
+                    eventsFound = True
+                    if settings.USE_CACHE:
+                        db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode(results), account, network, txFee, feeValue)
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
                 results = extractSwapResults(w3, tx, account, timestamp, receipt)
@@ -621,6 +629,10 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
             return r
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
 
+def extractJewelerResults(w3, txn, account, timestamp, receipt):
+    logging.info('Awaiting ABI')
+    return None
+
 def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
     # events record amount of jewel/crystal received when claiming at the gardens
     if network == 'dfkchain':
@@ -823,17 +835,26 @@ def extractSummonResults(w3, txn, account, timestamp, receipt, network):
     rs = None
     rt = None
     crystalId = 0
+    bonusItem = ''
     summoner = 'unk'
     assistant = 'unk'
+    decoded_logs = []
     contract = w3.eth.contract(address='0x65DEA93f7b886c33A78c10343267DD39727778c2', abi=ABI)
     decoded_logs = contract.events.CrystalSummoned().processReceipt(receipt, errors=DISCARD)
+    decoded_logs += contract.events.CrystalDarkSummoned().processReceipt(receipt, errors=DISCARD)
+    #EnhancementStoneAdded event
     for log in decoded_logs:
         logging.info('Summonning Crystal log: {0}'.format(log))
         if type(log['args']['generation']) is int:
             summoner = log['args']['summonerId']
             assistant = log['args']['assistantId']
             crystalId = log['args']['crystalId']
-            bonusItem = log['args']['bonusItem']
+            if 'bonusItem' in log['args']:
+                bonusItem = log['args']['bonusItem']
+            elif 'enhancementStone' in log['args']:
+                bonusItem = log['args']['enhancementStone']
+            else:
+                bonusItem = '0x0000000000000000000000000000000000000000'
             rc = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'summon', timestamp, powerToken, jewelAmount)
             rc.fiatAmount = prices.priceLookup(timestamp, rc.coinType) * rc.coinCost
             r = records.TavernTransaction(txn, 'hero', '/'.join((str(summoner),str(assistant))), 'crystal', timestamp, tearsToken, int(tearsAmount))
@@ -843,18 +864,14 @@ def extractSummonResults(w3, txn, account, timestamp, receipt, network):
                 rt.fiatAmount = prices.priceLookup(timestamp, bonusItem)
             logging.info('{3} Summon Crystal event {0} jewel/{1} tears {2} gen result'.format(jewelAmount, tearsAmount, log['args']['generation'], txn))
 
-    decoded_logs = contract.events.AuctionSuccessful().processReceipt(receipt, errors=DISCARD)
-    for log in decoded_logs:
-        logging.info('{0} Summonning Auction log: '.format(txn) + str(log))
-        if hiredFromAccount != '':
-            # Saves record of owner of hired hero gaining proceeds from hire
-            hiredHero = log['args']['tokenId']
-            if assistant != 'unk':
-                hiredHero = assistant
-            rs = records.TavernTransaction(txn, 'hero', hiredHero, 'hire', timestamp, powerToken, hiringProceeds)
-            rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
-            rs.seller = hiredFromAccount
-            logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))
+    if hiredFromAccount != '':
+        logging.info('{0} Summoning hire: {1}'.format(hiredFromAccount, hiringProceeds))
+        # Saves record of owner of hired hero gaining proceeds from hire
+        hiredHero = assistant
+        rs = records.TavernTransaction(txn, 'hero', hiredHero, 'hire', timestamp, powerToken, hiringProceeds)
+        rs.fiatAmount = prices.priceLookup(timestamp, rs.coinType) * rs.coinCost
+        rs.seller = hiredFromAccount
+        logging.info('Hero hired {0} for {1}'.format(rs.coinCost, rs.itemID))
 
     decoded_logs = contract.events.CrystalOpen().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:

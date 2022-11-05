@@ -3,19 +3,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
         "indexed": false,
         "internalType": "uint256",
-        "name": "auctionId",
+        "name": "crystalId",
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "tokenId",
+        "name": "createdBlock",
         "type": "uint256"
       }
     ],
-    "name": "AuctionCancelled",
+    "name": "CrystalAirdrop",
     "type": "event"
   },
   {
@@ -24,7 +30,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "auctionId",
+        "name": "crystalId",
         "type": "uint256"
       },
       {
@@ -34,68 +40,49 @@
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "tokenId",
+        "name": "summonerId",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "startingPrice",
+        "name": "assistantId",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "endingPrice",
-        "type": "uint256"
+        "internalType": "uint16",
+        "name": "generation",
+        "type": "uint16"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "duration",
+        "name": "createdBlock",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "winner",
-        "type": "address"
-      }
-    ],
-    "name": "AuctionCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "auctionId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "summonerTears",
+        "type": "uint8"
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "totalPrice",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "assistantTears",
+        "type": "uint8"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "winner",
+        "name": "enhancementStone",
         "type": "address"
       }
     ],
-    "name": "AuctionSuccessful",
+    "name": "CrystalDarkSummoned",
     "type": "event"
   },
   {
@@ -177,7 +164,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "bonusItem",
+        "name": "enhancementStone",
         "type": "address"
       }
     ],
@@ -188,19 +175,26 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
+        "name": "atunementItemAddress",
         "type": "address"
       }
     ],
-    "name": "OwnershipTransferred",
+    "name": "EnhancementStoneAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
     "type": "event"
   },
   {
@@ -331,16 +325,53 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "auctionHeroCore",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract IHeroCore",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
     ],
+    "name": "activeEnhancementStones",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "name": "addEnhancementStone",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_address",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveAuctionSpending",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -367,24 +398,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_bidAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "bid",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -429,7 +442,7 @@
                 "type": "uint32"
               }
             ],
-            "internalType": "struct IHeroTypes.SummoningInfo",
+            "internalType": "struct SummoningInfo",
             "name": "summoningInfo",
             "type": "tuple"
           },
@@ -446,7 +459,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum IHeroTypes.Rarity",
+                "internalType": "enum Rarity",
                 "name": "rarity",
                 "type": "uint8"
               },
@@ -486,7 +499,7 @@
                 "type": "uint8"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroInfo",
+            "internalType": "struct HeroInfo",
             "name": "info",
             "type": "tuple"
           },
@@ -528,12 +541,12 @@
                 "type": "uint8"
               },
               {
-                "internalType": "enum IHeroTypes.HeroStatus",
+                "internalType": "enum HeroStatus",
                 "name": "status",
                 "type": "uint8"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroState",
+            "internalType": "struct HeroState",
             "name": "state",
             "type": "tuple"
           },
@@ -595,7 +608,7 @@
                 "type": "uint16"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroStats",
+            "internalType": "struct HeroStats",
             "name": "stats",
             "type": "tuple"
           },
@@ -672,7 +685,7 @@
                 "type": "uint16"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroStatGrowth",
+            "internalType": "struct HeroStatGrowth",
             "name": "primaryStatGrowth",
             "type": "tuple"
           },
@@ -749,7 +762,7 @@
                 "type": "uint16"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroStatGrowth",
+            "internalType": "struct HeroStatGrowth",
             "name": "secondaryStatGrowth",
             "type": "tuple"
           },
@@ -776,12 +789,12 @@
                 "type": "uint16"
               }
             ],
-            "internalType": "struct IHeroTypes.HeroProfessions",
+            "internalType": "struct HeroProfessions",
             "name": "professions",
             "type": "tuple"
           }
         ],
-        "internalType": "struct IHeroTypes.Hero",
+        "internalType": "struct Hero",
         "name": "_hero",
         "type": "tuple"
       }
@@ -795,32 +808,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "cancelAuction",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "cancelAuctionWhenPaused",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -840,33 +827,19 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_startingPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_endingPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_duration",
-        "type": "uint64"
-      },
+      }
+    ],
+    "name": "feeAddresses",
+    "outputs": [
       {
         "internalType": "address",
-        "name": "_winner",
+        "name": "",
         "type": "address"
       }
     ],
-    "name": "createAuction",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -877,282 +850,7 @@
         "type": "uint256"
       }
     ],
-    "name": "crystals",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "summonerId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "assistantId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint16",
-        "name": "generation",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "createdBlock",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "heroId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "summonerTears",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint8",
-        "name": "assistantTears",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "bonusItem",
-        "type": "address"
-      },
-      {
-        "internalType": "uint32",
-        "name": "maxSummons",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "firstName",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "lastName",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint8",
-        "name": "shinyStyle",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_rarityRoll",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_rarityMod",
-        "type": "uint256"
-      }
-    ],
-    "name": "determineRarity",
-    "outputs": [
-      {
-        "internalType": "enum IHeroTypes.Rarity",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "enabled",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "randomNumber",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "digits",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "offset",
-        "type": "uint256"
-      }
-    ],
-    "name": "extractNumber",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "result",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getAuction",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "auctionId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "seller",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startingPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "endingPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startedAt",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_crystalId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getCrystal",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "summonerId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "assistantId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint16",
-            "name": "generation",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint256",
-            "name": "createdBlock",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "heroId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint8",
-            "name": "summonerTears",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "assistantTears",
-            "type": "uint8"
-          },
-          {
-            "internalType": "address",
-            "name": "bonusItem",
-            "type": "address"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maxSummons",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "firstName",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "lastName",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint8",
-            "name": "shinyStyle",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct ICrystalTypes.HeroCrystal",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getCurrentPrice",
+    "name": "feePercents",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1177,44 +875,6 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_address",
-        "type": "address"
-      }
-    ],
-    "name": "getUserAuctions",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_address",
-        "type": "address"
-      }
-    ],
-    "name": "getUserCrystals",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -1292,17 +952,17 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_crystalCoreAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "_heroCoreAddress",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "_geneScienceAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_jewelTokenAddress",
+        "name": "_powerTokenAddress",
         "type": "address"
       },
       {
@@ -1314,132 +974,11 @@
         "internalType": "address",
         "name": "_statScienceAddress",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_cut",
-        "type": "uint256"
       }
     ],
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "isOnAuction",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "jewelToken",
-    "outputs": [
-      {
-        "internalType": "contract IJewelToken",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "maxPrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "minPrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "newSummonCooldown",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_crystalId",
-        "type": "uint256"
-      }
-    ],
-    "name": "open",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "ownerCut",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1456,21 +995,27 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "powerToken",
+    "outputs": [
       {
-        "internalType": "uint256",
-        "name": "_crystalId",
-        "type": "uint256"
+        "internalType": "contract IPowerToken",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "rechargeCrystal",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "renounceOwnership",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "name": "removeEnhancementStone",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1533,29 +1078,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_geneScienceAddress",
+        "name": "_heroCoreAddress",
         "type": "address"
       }
     ],
-    "name": "setGeneScienceAddress",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_min",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_max",
-        "type": "uint256"
-      }
-    ],
-    "name": "setLimits",
+    "name": "setHeroCore",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1568,18 +1095,13 @@
         "type": "address"
       }
     ],
-    "name": "setStatScienceAddress",
+    "name": "setStatScience",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_newSummonCooldown",
-        "type": "uint256"
-      },
       {
         "internalType": "uint256",
         "name": "_baseCooldown",
@@ -1620,16 +1142,16 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "statScience",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract IStatScience",
-        "name": "",
+        "internalType": "address",
+        "name": "_tearsAddress",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
+    "name": "setTears",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1656,11 +1178,54 @@
       },
       {
         "internalType": "address",
-        "name": "_bonusItem",
+        "name": "_enhancementStone",
         "type": "address"
       }
     ],
     "name": "summonCrystal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_summonerId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_assistantId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_summonerTears",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_assistantTears",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "_enhancementStone",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_assistingAuctionAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_hireAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "summonCrystalWithAuction",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1679,93 +1244,6 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "toggleEnabled",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "userAuctions",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "userCrystals",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "blockNumber",
-        "type": "uint256"
-      }
-    ],
-    "name": "vrf",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "result",
-        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
