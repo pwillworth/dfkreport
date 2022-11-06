@@ -90,6 +90,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         # cache records saved before feb 2022 did not have txHash property
                         events.txHash = tx
                         events_map[checkCache[2]].append(events)
+                savedTx.pop(tx)
                 txCount += 1
                 continue
         try:
@@ -575,6 +576,29 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             db.saveTransaction(tx, timestamp, 'nonee', '', account, network, txFee, feeValue)
 
         txCount += 1
+        # add any cached data in range not already added
+        tmpStart = datetime.datetime.combine(startDate, datetime.datetime.min.time())
+        tmpStart = tmpStart.replace(tzinfo=datetime.timezone.utc)
+        minTimestamp = tmpStart.timestamp()
+        tmpEnd = datetime.datetime.combine(endDate, datetime.datetime.min.time())
+        tmpEnd = tmpEnd.replace(tzinfo=datetime.timezone.utc)
+        maxTimestamp = tmpEnd.timestamp()
+        for k, checkCache in savedTx.items():
+            if checkCache[1] >= minTimestamp and checkCache[1] <= maxTimestamp and checkCache[5] == network:
+                # load the gas
+                if checkCache[7] != None:
+                    events_map['gas'] += decimal.Decimal(checkCache[7])
+                # if event data is empty it is just record with no events we care about and in the db so we dont have to parse blockchain again
+                if checkCache[3] != '':
+                    events = jsonpickle.decode(checkCache[3])
+                    if type(events) is list:
+                        for evt in events:
+                            evt.txHash = tx
+                            events_map[checkCache[2]].append(evt)
+                    else:
+                        # cache records saved before feb 2022 did not have txHash property
+                        events.txHash = tx
+                        events_map[checkCache[2]].append(events)
 
     db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + len(txs))
     return events_map
