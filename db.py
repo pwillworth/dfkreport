@@ -111,7 +111,7 @@ def getLastTransactionTimestamp(account, network):
         # if db is unavailable we can just continue
         logging.error('Error finding tx {0}'.format(str(err)))
         row = None
-    if row == None:
+    if row == None or row[0] == None:
         return 0
     else:
         return row[0]
