@@ -462,6 +462,7 @@ address_map = {
     '0x78C893E262e2681Dbd6B6eBA6CCA2AaD45de19AD': 'Crystal LP Token Crystal/Ethereum',
     '0x7d4daa9eB74264b082A92F3f559ff167224484aC': 'Crystal LP Token Ethereum/USDC',
     '0x79724B6996502afc773feB3Ff8Bb3C23ADf2854B': 'Crystal LP Token Ethereum/Jewel',
+    '0xaFC1fBc3F3fB517EB54Bb2472051A6f0b2105320': 'Crystal LP Token Klay/Crystal',
     '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
 }
 

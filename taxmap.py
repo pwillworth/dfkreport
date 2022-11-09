@@ -54,7 +54,7 @@ def inReportRange(item, startDate, endDate):
     return itemDate >= startDate and itemDate <= endDate
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, moreOptions):
+def buildTaxMap(txns, txCounts, account, startDate, endDate, costBasis, includedChains, moreOptions):
     # Generate map of all events from transaction list
     logging.info('Start Event map build')
     if includedChains & constants.HARMONY > 0:
@@ -64,13 +64,13 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     else:
         eventMap = events.EventsMap()
     if includedChains & constants.DFKCHAIN > 0:
-        eventMapDFK = events.checkTransactions(txns[2], account, startDate, endDate, 'dfkchain', len(txns[0]))
+        eventMapDFK = events.checkTransactions(txns[2], account, startDate, endDate, 'dfkchain', txCounts[0])
         if eventMapDFK == 'Error: Blockchain connection failure.':
             raise ConnectionError('Service Unavailable')
     else:
         eventMapDFK = events.EventsMap()
     if includedChains & constants.AVALANCHE > 0:
-        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', len(txns[0])+len(txns[1]))
+        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', txCounts[0]+txCounts[1])
         if eventMapAvax == 'Error: Blockchain connection failure.':
             raise ConnectionError('Service Unavailable')
     else:
@@ -94,16 +94,26 @@ def buildTaxMap(txns, account, startDate, endDate, costBasis, includedChains, mo
     # Look up wallet payments distributed by interacting with Jewel contract also
     eventMap['airdrops'] += eventMapAvax['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
     eventMap['gas'] += eventMapAvax['gas'] + eventMapDFK['gas']
+    logging.info('building swap data')
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
+    logging.info('building liquidity data')
     liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
+    logging.info('building payment data')
     walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
+    logging.info('building bank data')
     bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
+    logging.info('building gardens data')
     gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
+    logging.info('building tavern data')
     tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
+    logging.info('building quest data')
     questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
+    logging.info('building airdrop data')
     airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
+    logging.info('building lending data')
     lendingData = buildLendingRecords(eventMap['lending'], startDate, endDate)
     # pop out all events not in date range
+    logging.info('paring data to range')
     eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
     eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
     eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
@@ -294,6 +304,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     swapEvents = sorted(swapEvents, key=lambda x: x.timestamp)
 
     # Build list of token recieve events to search for cost basis that can all be sorted together
+    logging.info('  setup list for cost basis')
     cbList = []
     for sEvent in swapEvents:
         ci = CostBasisItem(sEvent.txHash, sEvent.timestamp, sEvent.receiveType, sEvent.receiveAmount, sEvent.fiatType, sEvent.fiatReceiveValue)
@@ -331,6 +342,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     cbList = costBasisSort(cbList, costBasis)
 
     #TODO consider also search bank gains income for cost basis
+    logging.info('  build events in range')
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
         # questionable where to draw the line between game and currency trades

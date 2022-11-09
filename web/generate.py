@@ -306,18 +306,20 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
             # wipe the old report and re-map for new options or transactions
             logging.debug('updating existing report row to regenerate')
             result = transactions.getTransactionCount(wallet)
-            if type(result) is int:
+            if len(result) == 3:
                 generateTime = datetime.now(timezone.utc)
-                db.resetReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), result, costBasis, includedChains, reportRow[8], reportRow[9])
-                return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), result]
+                totalTx = result[0] + result[1] + result[2]
+                db.resetReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9])
+                return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), totalTx]
             else:
                 return 'Error: No Transactions for that wallet found'
     else:
         logging.debug('start new report row')
         result = transactions.getTransactionCount(wallet, includedChains)
-        if type(result) is int:
+        if len(result) == 3:
             generateTime = datetime.now(timezone.utc)
-            db.createReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), result, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
+            totalTx = result[0] + result[1] + result[2]
+            db.createReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
             report = db.findReport(wallet, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]

@@ -30,7 +30,7 @@ def main():
         costBasis = args.costbasis
 
     page_size = settings.TX_PAGE_SIZE
-    txResult = 0
+    txResult = []
     txData = []
     moreOptions = db.ReportOptions()
 
@@ -45,9 +45,19 @@ def main():
         if reportInfo == None:
             generateTime = datetime.datetime.now()
             txResult = transactions.getTransactionCount(args.wallet)
+            if len(txResult) != 3:
+                logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
+                db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+                return 1
+            txTotal = txResult[0] + txResult[1] + txResult[2]
             includedChains = 1
-            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txResult, costBasis, includedChains, 1)
+            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, 1)
         else:
+            txResult = transactions.getTransactionCount(args.wallet)
+            if len(txResult) != 3:
+                logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
+                db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+                return 1
             includedChains = reportInfo[12]
             try:
                 moreOptions = jsonpickle.loads(reportInfo[13])
@@ -76,7 +86,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(txData, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
+        reportData = taxmap.buildTaxMap(txData, txResult, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()

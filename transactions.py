@@ -200,7 +200,7 @@ def getTransactionCount(address, includedChains=constants.HARMONY):
     if result != "" or hmy_result + avx_result + dfk_result == 0:
         return result
     else:
-        return hmy_result + avx_result + dfk_result
+        return [hmy_result, avx_result, dfk_result]
 
 if __name__ == "__main__":
     logging.basicConfig(filename='transactions.log', level=logging.INFO)

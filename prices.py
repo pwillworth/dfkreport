@@ -104,11 +104,11 @@ def fetchItemPrice(token, date):
     price = None
 
     # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
-    logging.info('getting current price from dex.')
     if token in today_prices:
         price = today_prices[token]
     else:
         # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
+        logging.info('getting current price from dex.')
         if token in contracts.CV_TOKENS:
             price = getCurrentPrice(token, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', 'dfkchain')
         else:
