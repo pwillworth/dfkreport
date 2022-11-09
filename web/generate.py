@@ -467,6 +467,11 @@ if not failure:
             failure = True
         else:
             # report is not ready
+            # prevent status from showing a little over 100% when more tx than count which
+            # is often the case with additional tx coming in not counted by total count method
+            txComplete = status[7]
+            if txComplete > status[4]:
+                txComplete = status[4]
             response = '{ "response" : {\n'
             if status[5] == 0:
                 response += '  "status" : "fetchingtx",\n '
@@ -475,7 +480,7 @@ if not failure:
             else:
                 response += '  "status" : "generating",\n '
             response += '  "transactionsFetched" : {0},\n '.format(status[6])
-            response += '  "transactionsComplete" : {0},\n '.format(status[7])
+            response += '  "transactionsComplete" : {0},\n '.format(txComplete)
             response += '  "transactionsTotal" : {0},\n '.format(status[4])
             response += '  "startedOn" : {0}\n   '.format(status[3])
             response += '  }\n}'

@@ -68,8 +68,8 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
             tx = txn
         txList.append(tx)
         eventsFound = False
-        # Update report tracking record for status every 10 txs
-        if txCount % 10 == 0:
+        # Update report tracking record for status every 50 txs
+        if txCount % 50 == 0:
             try:
                 db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
             except Exception as err:
@@ -581,6 +581,12 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
 
     # add any cached data not already added
     for k, item in savedTx.items():
+        # Update report tracking record for status every 100 txs
+        if txCount % 100 == 0:
+            try:
+                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+            except Exception as err:
+                logging.error('Failed to update tx count {0}'.format(str(err)))
         # load the gas
         if item[7] != None:
             events_map['gas'] += decimal.Decimal(item[7])
