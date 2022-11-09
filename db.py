@@ -127,7 +127,7 @@ def getTavernSales(wallet, startDate, endDate):
     except Exception as err:
         logging.error('DB error trying to look up tavern sales. {0}'.format(str(err)))
     if con != None and con.open:
-        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
+        cur.execute("SELECT * FROM transactions WHERE account=%s and network != 'dfkchain' and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
         row = cur.fetchone()
         while row != None:
             r = jsonpickle.decode(row[3])
