@@ -373,6 +373,10 @@ var address_map = {
   '0xCF329b34049033dE26e4449aeBCb41f1992724D3': 'Crystal LP Token Jewel/USDC',
   '0x9f378F48d0c1328fd0C80d7Ae544C6CadB5Ba99E': 'Crystal LP Token Crystal/AVAX',
   '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC',
+  '0x78C893E262e2681Dbd6B6eBA6CCA2AaD45de19AD': 'Crystal LP Token Crystal/Ethereum',
+  '0x7d4daa9eB74264b082A92F3f559ff167224484aC': 'Crystal LP Token Ethereum/USDC',
+  '0x79724B6996502afc773feB3Ff8Bb3C23ADf2854B': 'Crystal LP Token Ethereum/Jewel',
+  '0xaFC1fBc3F3fB517EB54Bb2472051A6f0b2105320': 'Crystal LP Token Klay/Crystal',
   '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
 };
 crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'];
@@ -436,6 +440,19 @@ function loadReport(results, contentType, eventGroup='all') {
     }
   }
 }
+
+function addTaxRow(recordCategory, description, acquiredDate, soldDate, proceeds, costs, gains, accountedString) {
+  $('#tax_' + recordCategory + '_data').show();
+  $('#tax_' + recordCategory + '_data').append(
+    '<tr><td>' + description + '</td>' +
+    '<td>' + acquiredDate + '</td>' +
+    '<td>' + soldDate + '</td>' +
+    '<td>' + usdFormat.format(proceeds) + '</td>' +
+    '<td>' + usdFormat.format(costs) + accountedString + '</td>' +
+    '<td>' + usdFormat.format(gains) + '</td></tr>'
+  );
+}
+
 function loadTaxes(results) {
   var taxResult = results.tax_records;
   if (taxResult == undefined) {
@@ -452,22 +469,27 @@ function loadTaxes(results) {
     if ( taxResult[i].amountNotAccounted > .01 ) {
       accountedString = '<img src="' + BASE_SCRIPT_URL + 'static/images/alertred.png" style="max-width:24px;float:right; title="Only found Partial Cost Basis for this item."/>';
     }
-    $('#tax_' + recordCategory + '_data').show();
-    $('#tax_' + recordCategory + '_data').append(
-      '<tr><td>' + taxResult[i].description + '</td>' +
-      '<td>' + taxResult[i].acquiredDate + '</td>' +
-      '<td>' + taxResult[i].soldDate + '</td>' +
-      '<td>' + usdFormat.format(taxResult[i].proceeds) + '</td>' +
-      '<td>' + usdFormat.format(taxResult[i].costs) + accountedString + '</td>' +
-      '<td>' + usdFormat.format(taxResult[i].gains) + '</td></tr>'
-    );
-  }
 
+    setTimeout(addTaxRow, 50, recordCategory, taxResult[i].description, taxResult[i].acquiredDate, taxResult[i].soldDate, taxResult[i].proceeds, taxResult[i].costs, taxResult[i].gains, accountedString);
+  }
   // some very small accounts may result in no tax generating records
   // switch to the transaction tab in this case as there may be something there
   if ( taxResult.length == 0 ) {
     switchView('transaction')
   }
+}
+
+function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount) {
+  $('#tx_tavern_data').show();
+  $('#tx_tavern_data').append(
+    '<tr title="' + seller + '"><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + itemType + '</td>' +
+    '<td>' + itemID + '</td>' +
+    '<td>' + event + '</td>' +
+    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + coinCost + '</td>' +
+    '<td>' + usdFormat.format(fiatAmount) + '</td></tr>'
+  );
 }
 
 function loadTavernEvents(tavernEvents) {
@@ -485,16 +507,8 @@ function loadTavernEvents(tavernEvents) {
     if (tavernEvents[i].fiatAmount['py/reduce'] != undefined) {
       fiatAmount = tavernEvents[i].fiatAmount['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_tavern_data').show();
-    $('#tx_tavern_data').append(
-      '<tr title="' + tavernEvents[i].seller + '"><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + tavernEvents[i].itemType + '</td>' +
-      '<td>' + tavernEvents[i].itemID + '</td>' +
-      '<td>' + tavernEvents[i].event + '</td>' +
-      '<td>' + address_map[tavernEvents[i].coinType] + '</td>' +
-      '<td>' + coinCost + '</td>' +
-      '<td>' + usdFormat.format(fiatAmount) + '</td></tr>'
-    );
+
+    setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount);
 
     if ( tavernEvents[i].event in tavernTotals ) {
       tavernTotals[tavernEvents[i].event] += 1;
@@ -509,6 +523,19 @@ function loadTavernEvents(tavernEvents) {
     tavernTable = tavernTable + '<tr><td>' + k + 's</td><td>' + tavernTotals[k] + '</td></tr>';
   }
   $("#smy_tavern_data").html('<table>' + tavernTable + '</table>');
+}
+
+function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue) {
+  $('#tx_swaps_data').show();
+  $('#tx_swaps_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + address_map[swapType] + '</td>' +
+    '<td>' + Number(swapAmount).toFixed(3) + '</td>' +
+    '<td>' + address_map[receiveType] + '</td>' +
+    '<td>' + Number(receiveAmount).toFixed(3) + '</td>' +
+    '<td>' + usdFormat.format(fiatSwapValue) + '</td>' +
+    '<td>' + usdFormat.format(fiatReceiveValue) + '</td></tr>'
+  );
 }
 
 function loadSwapEvents(swapEvents) {
@@ -526,16 +553,8 @@ function loadSwapEvents(swapEvents) {
     if (swapEvents[i].fiatSwapValue['py/reduce'] != undefined) {
       fiatSwapValue = swapEvents[i].fiatSwapValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_swaps_data').show();
-    $('#tx_swaps_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + address_map[swapEvents[i].swapType] + '</td>' +
-      '<td>' + Number(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]).toFixed(3) + '</td>' +
-      '<td>' + address_map[swapEvents[i].receiveType] + '</td>' +
-      '<td>' + Number(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0]).toFixed(3) + '</td>' +
-      '<td>' + usdFormat.format(fiatSwapValue) + '</td>' +
-      '<td>' + usdFormat.format(fiatReceiveValue) + '</td></tr>'
-    );
+
+    setTimeout(addSwapRow, 50, eventDate, swapEvents[i].swapType, swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], swapEvents[i].receiveType, swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue);
 
     if ( address_map[swapEvents[i].swapType] in swapTotals ) {
       swapTotals[address_map[swapEvents[i].swapType]][0] += parseInt(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]);
@@ -557,6 +576,19 @@ function loadSwapEvents(swapEvents) {
   $("#smy_swaps_data").html(swapTable + '</table>');
 }
 
+function addLiquidityRow(eventDate, action, poolName, poolAmount, coin1Amount, coin2Amount, coin1FiatValue, coin2FiatValue) {
+  $('#tx_liquidity_data').show();
+  $('#tx_liquidity_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + action + ' ' + poolName + '</td>' +
+    '<td>' + Number(poolAmount).toFixed(5) + '</td>' +
+    '<td>' + Number(coin1Amount).toFixed(3) + '</td>' +
+    '<td>' + Number(coin2Amount).toFixed(3) + '</td>' +
+    '<td>' + usdFormat.format(coin1FiatValue) + '</td>' +
+    '<td>' + usdFormat.format(coin2FiatValue) + '</td></tr>'
+  );
+}
+
 function loadLiquidityEvents(liquidityEvents) {
   // Populate the Transaction list with Liquidity Pool events
   var liquidityTotals = {};
@@ -572,16 +604,9 @@ function loadLiquidityEvents(liquidityEvents) {
     if (liquidityEvents[i].coin2FiatValue['py/reduce'] != undefined) {
       coin2FiatValue = Number(liquidityEvents[i].coin2FiatValue['py/reduce'][1]['py/tuple'][0]);
     }
-    $('#tx_liquidity_data').show();
-    $('#tx_liquidity_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + liquidityEvents[i].action + ' ' + poolName + '</td>' +
-      '<td>' + Number(liquidityEvents[i].poolAmount['py/reduce'][1]['py/tuple'][0]).toFixed(5) + '</td>' +
-      '<td>' + Number(liquidityEvents[i].coin1Amount['py/reduce'][1]['py/tuple'][0]).toFixed(3) + '</td>' +
-      '<td>' + Number(liquidityEvents[i].coin2Amount['py/reduce'][1]['py/tuple'][0]).toFixed(3) + '</td>' +
-      '<td>' + usdFormat.format(coin1FiatValue) + '</td>' +
-      '<td>' + usdFormat.format(coin2FiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addLiquidityRow, 50, eventDate, liquidityEvents[i].action, poolName, liquidityEvents[i].poolAmount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin1Amount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin2Amount['py/reduce'][1]['py/tuple'][0], coin1FiatValue, coin2FiatValue);
+
     if ( poolName in liquidityTotals ) {
       if (liquidityEvents[i].action == 'withdraw') {
         liquidityTotals[poolName][0] += (coin1FiatValue + coin2FiatValue);
@@ -603,6 +628,18 @@ function loadLiquidityEvents(liquidityEvents) {
     liquidityTable = liquidityTable + '<tr><td>' + k + '</td><td>' + usdFormat.format(liquidityTotals[k][0]) + '</td><td>' + usdFormat.format(liquidityTotals[k][1]) + '</td></tr>';
   }
   $("#smy_liquidity_data").html(liquidityTable + '</table>');
+}
+
+function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue) {
+  $('#tx_gardens_data').show();
+  $('#tx_gardens_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + location + '</td>' +
+    '<td>' + event + '</td>' +
+    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
 }
 
 function loadGardensEvents(gardensEvents) {
@@ -636,15 +673,9 @@ function loadGardensEvents(gardensEvents) {
     if (lpName.includes('Pangolin LP')) {
       location = 'Pangolin'
     }
-    $('#tx_gardens_data').show();
-    $('#tx_gardens_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + location + '</td>' +
-      '<td>' + gardensEvents[i].event + '</td>' +
-      '<td>' + address_map[gardensEvents[i].coinType] + '</td>' +
-      '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
-      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addGardensRow, 50, eventDate, location, gardensEvents[i].event, gardensEvents[i].coinType, coinAmount, fiatValue);
+
     if ( address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event in gardensTotals ) {
       gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] += Number(coinAmount);
     } else {
@@ -664,6 +695,19 @@ function loadGardensEvents(gardensEvents) {
   $("#smy_gardens_data").html('<table>' + gardensTable + '</table>');
 }
 
+function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount, fiatValue) {
+  $('#tx_bank_data').show();
+  $('#tx_bank_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + bankLocation + '</td>' +
+    '<td>' + action + '</td>' +
+    '<td>' + Number(xRate).toFixed(4) + '</td>' +
+    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
+}
+
 function loadBankEvents(bankEvents) {
   // Populate the transaction list with Bank deposit/withdrawal events
   var bankTotals = {};
@@ -674,16 +718,9 @@ function loadBankEvents(bankEvents) {
     if (bankEvents[i].coinType == '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb') {
       bankLocation = 'Crystalvale';
     }
-    $('#tx_bank_data').show();
-    $('#tx_bank_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + bankLocation + '</td>' +
-      '<td>' + bankEvents[i].action + '</td>' +
-      '<td>' + Number(bankEvents[i].xRate['py/reduce'][1]['py/tuple'][0]).toFixed(4) + '</td>' +
-      '<td>' + address_map[bankEvents[i].coinType] + '</td>' +
-      '<td>' + Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]).toFixed(5) + '</td>' +
-      '<td>' + usdFormat.format(bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]) + '</td></tr>'
-    );
+
+    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, bankEvents[i].xRate['py/reduce'][1]['py/tuple'][0], bankEvents[i].coinType, bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0], bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
+
     if ( address_map[bankEvents[i].coinType] in bankTotals ) {
       if ( bankEvents[i].action == 'withdraw' ) {
         bankTotals[address_map[bankEvents[i].coinType]][0] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
@@ -707,6 +744,17 @@ function loadBankEvents(bankEvents) {
   $("#smy_bank_data").html(bankTable + '</table>');
 }
 
+function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue) {
+  $('#tx_alchemist_data').show();
+  $('#tx_alchemist_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + address_map[craftingType] + 'x' + craftedAmount + '</td>' +
+    '<td>' + craftingCosts + '</td>' +
+    '<td>' + usdFormat.format(fiatCraftedValue) + '</td>' +
+    '<td>' + usdFormat.format(fiatIngredientsValue) + '</td></tr>'
+  );
+}
+
 function loadAlchemistEvents(alchemistEvents) {
   // Populate the Transaction list with Alchemist Data
   var craftingTotals = {}
@@ -726,14 +774,8 @@ function loadAlchemistEvents(alchemistEvents) {
     if (alchemistEvents[i].costsFiatValue['py/reduce'] != undefined) {
       fiatIngredientsValue = alchemistEvents[i].costsFiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_alchemist_data').show();
-    $('#tx_alchemist_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + address_map[alchemistEvents[i].craftingType] + 'x' + craftedAmount + '</td>' +
-      '<td>' + alchemistEvents[i].craftingCosts + '</td>' +
-      '<td>' + usdFormat.format(fiatCraftedValue) + '</td>' +
-      '<td>' + usdFormat.format(fiatIngredientsValue) + '</td></tr>'
-    );
+
+    setTimeout(addAlchemistRow, 50, eventDate, alchemistEvents[i].craftingType, craftedAmount, alchemistEvents[i].craftingCosts, fiatCraftedValue, fiatIngredientsValue);
 
     if ( address_map[alchemistEvents[i].craftingType] in craftingTotals ) {
       craftingTotals[address_map[alchemistEvents[i].craftingType]][0] += parseInt(craftedAmount);
@@ -750,6 +792,17 @@ function loadAlchemistEvents(alchemistEvents) {
     craftingTable = craftingTable + '<tr><td>' + k + '</td><td>' + craftingTotals[k][0].toFixed(0) + '</td><td>' + usdFormat.format(craftingTotals[k][1]) + '</td><td>' + usdFormat.format(craftingTotals[k][2]) + '</td></tr>';
   }
   $("#smy_alchemist_data").html(craftingTable + '</table>');
+}
+
+function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue) {
+  $('#tx_airdrops_data').show();
+  $('#tx_airdrops_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + location + '</td>' +
+    '<td>' + address_map[tokenReceived] + '</td>' +
+    '<td>' + tokenAmount + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
 }
 
 function loadAirdropEvents(airdropEvents) {
@@ -771,14 +824,9 @@ function loadAirdropEvents(airdropEvents) {
     if (airdropEvents[i].address != undefined && airdropEvents[i].address in address_map) {
       location = address_map[airdropEvents[i].address]
     }
-    $('#tx_airdrops_data').show();
-    $('#tx_airdrops_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + location + '</td>' +
-      '<td>' + address_map[airdropEvents[i].tokenReceived] + '</td>' +
-      '<td>' + tokenAmount + '</td>' +
-      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addAirdropRow, 50, eventDate, location, airdropEvents[i].tokenReceived, tokenAmount, fiatValue);
+
     if ( address_map[airdropEvents[i].tokenReceived] in airdropTotals ) {
       airdropTotals[address_map[airdropEvents[i].tokenReceived]] += Number(tokenAmount);
     } else {
@@ -803,6 +851,18 @@ function loadAirdropEvents(airdropEvents) {
   $("#smy_airdrops_data").html(airdropTable + '</table>');
 }
 
+function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue) {
+  $('#tx_lending_data').show();
+  $('#tx_lending_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + address_map[address] + '</td>' +
+    '<td>' + event + '</td>' +
+    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
+}
+
 function loadLendingEvents(lendingEvents) {
   // Populate the transaction list with lending borrow/repay events
   var lendingTotals = {};
@@ -817,15 +877,9 @@ function loadLendingEvents(lendingEvents) {
     if (lendingEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = Number(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
     }
-    $('#tx_lending_data').show();
-    $('#tx_lending_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + address_map[lendingEvents[i].address] + '</td>' +
-      '<td>' + lendingEvents[i].event + '</td>' +
-      '<td>' + address_map[lendingEvents[i].coinType] + '</td>' +
-      '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
-      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addLendingRow, 50, eventDate, lendingEvents[i].address, lendingEvents[i].event, lendingEvents[i].coinType, tokenAmount, fiatValue);
+
     switch (lendingEvents[i].event) {
       case 'lend':
         aIndex = 0;
@@ -868,6 +922,17 @@ function loadLendingEvents(lendingEvents) {
   $("#smy_lending_data").html(lendingTable + '</table>');
 }
 
+function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue) {
+  $('#tx_quests_data').show();
+  $('#tx_quests_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + questLocation + '</td>' +
+    '<td>' + address_map[rewardType] + '</td>' +
+    '<td>' + rewardAmount + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
+}
+
 function loadQuestEvents(questEvents) {
   // Populate the transaction list with Quest reward receipts
   var questTotals = {};
@@ -886,14 +951,9 @@ function loadQuestEvents(questEvents) {
     if (crystalvale_rewards.includes(questEvents[i].rewardType)) {
       questLocation = 'Crystalvale';
     }
-    $('#tx_quests_data').show();
-    $('#tx_quests_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + questLocation + '</td>' +
-      '<td>' + address_map[questEvents[i].rewardType] + '</td>' +
-      '<td>' + rewardAmount + '</td>' +
-      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addQuestRow, 50, eventDate, questLocation, questEvents[i].rewardType, rewardAmount, fiatValue);
+
     if ( address_map[questEvents[i].rewardType] in questTotals ) {
       questTotals[address_map[questEvents[i].rewardType]] += rewardAmount;
     } else {
@@ -913,6 +973,18 @@ function loadQuestEvents(questEvents) {
   $("#smy_quests_data").html(questTable + '</table>');
 }
 
+function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue) {
+  $('#tx_wallet_data').show();
+  $('#tx_wallet_data').append(
+    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + action + '</td>' +
+    '<td>' + address + '</td>' +
+    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + coinAmount + '</td>' +
+    '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
+  );
+}
+
 function loadWalletEvents(walletEvents) {
   // Populate the transaction list with basic wallet in/out transfers
   var walletTotals = {};
@@ -927,15 +999,9 @@ function loadWalletEvents(walletEvents) {
     if (walletEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = walletEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    $('#tx_wallet_data').show();
-    $('#tx_wallet_data').append(
-      '<tr><td>' + eventDate.toUTCString() + '</td>' +
-      '<td>' + walletEvents[i].action + '</td>' +
-      '<td>' + walletEvents[i].address + '</td>' +
-      '<td>' + address_map[walletEvents[i].coinType] + '</td>' +
-      '<td>' + coinAmount + '</td>' +
-      '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
-    );
+
+    setTimeout(addWalletRow, 50, eventDate, walletEvents[i].action, walletEvents[i].address, walletEvents[i].coinType, coinAmount, fiatValue);
+
     if ( address_map[walletEvents[i].coinType] in walletTotals ) {
       if ( walletEvents[i].action == 'withdraw' ) {
         walletTotals[address_map[walletEvents[i].coinType]][0] += coinAmount;
