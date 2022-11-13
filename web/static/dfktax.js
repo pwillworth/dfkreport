@@ -719,22 +719,35 @@ function loadBankEvents(bankEvents) {
   for (var i = 0; i < bankEvents.length; i++) {
     var eventDate = new Date(bankEvents[i].timestamp * 1000)
     var bankLocation = 'Serendale';
-    if (bankEvents[i].coinType == '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb') {
+    if (['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x9ed2c155632C042CB8bC20634571fF1CA26f5742','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260'].includes(bankEvents[i].coinType)) {
       bankLocation = 'Crystalvale';
     }
-
-    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, bankEvents[i].xRate['py/reduce'][1]['py/tuple'][0], bankEvents[i].coinType, bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0], bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
+    var xRate = bankEvents[i].xRate;
+    if (bankEvents[i].xRate['py/reduce'] != undefined) {
+      xRate = bankEvents[i].xRate['py/reduce'][1]['py/tuple'][0];
+    }
+    var coinAmount = bankEvents[i].coinAmount;
+    if (bankEvents[i].coinAmount['py/reduce'] != undefined) {
+      coinAmount = bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0];
+    }
+    var fiatValue = bankEvents[i].fiatValue;
+    if (bankEvents[i].fiatValue['py/reduce'] != undefined) {
+      fiatValue = bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
+    }
+    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, xRate, bankEvents[i].coinType, coinAmount, fiatValue);
 
     if ( address_map[bankEvents[i].coinType] in bankTotals ) {
       if ( bankEvents[i].action == 'withdraw' ) {
         bankTotals[address_map[bankEvents[i].coinType]][0] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
-      } else {
+      }
+      if ( bankEvents[i].action == 'deposit' ) {
         bankTotals[address_map[bankEvents[i].coinType]][1] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
       }
     } else {
       if ( bankEvents[i].action == 'withdraw' ) {
         bankTotals[address_map[bankEvents[i].coinType]] = [Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]), 0];
-      } else {
+      }
+      if ( bankEvents[i].action == 'deposit' ) {
         bankTotals[address_map[bankEvents[i].coinType]] = [0, Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0])];
       }
     }

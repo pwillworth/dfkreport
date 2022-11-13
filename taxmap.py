@@ -448,7 +448,7 @@ def buildBankRecords(bankEvents, startDate, endDate):
     for event in bankEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Withdrawal from Bank triggers realized xJewel rewards, make tax item and find cost basis
-        if event.action == 'withdraw' and eventDate >= startDate and eventDate <= endDate:
+        if (event.action == 'claim' or (event.action == 'withdraw' and event.coinType in ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x72Cb10C6bfA5624dD07Ef608027E366bd690048F'])) and eventDate >= startDate and eventDate <= endDate:
             ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getAddressName(event.coinType), 'Bank Rewards {0}'.format(contracts.getAddressName(event.coinType)), 'income', eventDate, event.fiatType, event.fiatValue)
             if hasattr(event, 'fiatFeeValue'):
                 ti.txFees = event.fiatFeeValue

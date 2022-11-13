@@ -105,7 +105,7 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
                 logging.error("Covalent timeout too many times, exit")
                 raise Exception('DFK Chain Transactions Lookup Failure.')
         else:
-            logging.error(r.text)
+            logging.error('{0}: {1}'.format(r.status_code, r.text))
             raise Exception('DFK Chain Transactions Lookup Failure.')
 
         if startDate != "" and endDate != "":

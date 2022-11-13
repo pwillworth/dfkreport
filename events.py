@@ -268,12 +268,19 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         logging.info('banklog: ' + str(log))
             elif 'cJewel' in action:
                 results = extractJewelerResults(w3, tx, account, timestamp, receipt)
-                if results != None:
-                    results.fiatFeeValue = feeValue
-                    events_map['bank'].append(results)
+                if results[0] != None:
+                    results[0].fiatFeeValue = feeValue
+                    events_map['bank'].append(results[0])
+                if results[1] != None:
+                    if results[0] == None:
+                        results[1].fiatFeeValue = feeValue
+                    events_map['bank'].append(results[1])
+                if results[2] != None:
+                    events_map['bank'].append(results[2])
                     eventsFound = True
+                if results[0] != None or results[1] != None:
                     if settings.USE_CACHE:
-                        db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode(results), account, network, txFee, feeValue)
+                        db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode([result for result in results if result != None]), account, network, txFee, feeValue)
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
                 results = extractSwapResults(w3, tx, account, timestamp, receipt)
@@ -657,8 +664,81 @@ def extractBankResults(w3, txn, account, timestamp, receipt):
     logging.warn('Bank fail data: {0} {1} {2} {3}'.format(sentAmount, sentToken, rcvdAmount, rcvdToken))
 
 def extractJewelerResults(w3, txn, account, timestamp, receipt):
-    logging.info('Awaiting ABI')
-    return None
+    r = None
+    rc = None
+    rb = None
+    claimAmount = 0
+    rewardRatio = decimal.Decimal(1.0)
+    ABI = contracts.getABI('VoteEscrowRewardPool')
+    contract = w3.eth.contract(address='0x9ed2c155632C042CB8bC20634571fF1CA26f5742', abi=ABI)
+    decoded_logs = contract.events.RewardCollected().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        rewardRatio = Web3.fromWei(log['args']['accGovTokenPerShare'], 'ether')
+    decoded_logs = contract.events.RewardClaimed().processReceipt(receipt, errors=DISCARD)
+    for log in decoded_logs:
+        claimAmount = log['args']['amount']
+        logging.info('{0} Claimed {1} Jewel reward from Jeweler.'.format(log['args']['user'], Web3.fromWei(claimAmount, 'ether')))
+        rc = records.BankTransaction(txn, timestamp, 'claim', rewardRatio, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', Web3.fromWei(log['args']['amount'], 'ether'))
+        rc.fiatValue = prices.priceLookup(timestamp, rc.coinType) * rc.coinAmount
+
+    ABI = contracts.getABI('JewelToken')
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
+    decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
+    rcvdToken = ''
+    rcvdAmount = 0
+    sentToken = ''
+    sentAmount = 0
+    burnToken = ''
+    burnAmount = 0
+    extendAmount = 0
+    for log in decoded_logs:
+        # Token Transfers
+        if 'to' in log['args'] and 'from' in log['args']:
+            # TODO - figure out what event is happening and decode it for what sends normal jewel to account after wrapped is burned
+            if log['args']['to'] == account or (log['address'] == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and log['args']['from'] == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and log['args']['to'] == '0x0000000000000000000000000000000000000000'):
+                if claimAmount > 0 and log['args']['value'] == claimAmount:
+                    # skip claim already added
+                    logging.info('skip already accounted claim')
+                elif log['address'] == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and rcvdAmount > 0 and contracts.valueFromWei(log['args']['value'], log['address']) == rcvdAmount:
+                    # must be emergency withdraw burn amount
+                    burnToken = log['address']
+                    burnAmount = contracts.valueFromWei(log['args']['value'], log['address'])
+                elif log['address'] == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and rcvdAmount > 0 and rcvdToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742':
+                    extendAmount = contracts.valueFromWei(log['args']['value'], log['address'])
+                else:
+                    rcvdToken = log['address']
+                    rcvdAmount += contracts.valueFromWei(log['args']['value'], log['address'])
+                    logging.info('rcvd added {0}'.format(contracts.getAddressName(log['address'])))
+            elif log['args']['from'] == account or (log['address'] == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and log['args']['to'] == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and log['args']['from'] == '0x0000000000000000000000000000000000000000'):
+                sentToken = log['address']
+                sentAmount += contracts.valueFromWei(log['args']['value'], log['address'])
+                logging.info('sent added {0}'.format(contracts.getAddressName(log['address'])))
+            else:
+                logging.debug('ignored Jeweler log {0} to {1} not involving account'.format(log['args']['from'], log['args']['to']))
+
+    if sentToken == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and rcvdToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742':
+        # deposited jewel and received cJewel
+        r = records.BankTransaction(txn, timestamp, 'deposit', rcvdAmount / sentAmount, sentToken, sentAmount)
+        r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
+        if extendAmount > 0:
+            # additional cJewel receipt for extending lock duration
+            rb = records.BankTransaction(txn, timestamp, 'extend', extendAmount, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', 0)
+            rb.fiatValue = prices.priceLookup(timestamp, rb.coinType) * rb.coinAmount
+    elif sentToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and rcvdToken == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260':
+        # withdraw jewel and burn cJewel
+        r = records.BankTransaction(txn, timestamp, 'withdraw', sentAmount / (rcvdAmount+burnAmount), rcvdToken, rcvdAmount)
+        r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
+        if burnAmount > 0:
+            # Jewel burn for emergency withdraw
+            rb = records.BankTransaction(txn, timestamp, 'burn', sentAmount / (rcvdAmount+burnAmount), burnToken, burnAmount)
+            rb.fiatValue = prices.priceLookup(timestamp, rb.coinType) * rb.coinAmount
+    elif rcvdToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and sentToken == '':
+        # extend lock duration only
+        r = records.BankTransaction(txn, timestamp, 'extend', rcvdAmount, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', 0)
+        r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
+
+    return [r, rc, rb]
+    
 
 def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
     # events record amount of jewel/crystal received when claiming at the gardens

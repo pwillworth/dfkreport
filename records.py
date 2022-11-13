@@ -79,9 +79,9 @@ class BankTransaction:
     def __init__(self, txHash, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
         self.timestamp = timestamp
-        # deposit or withdraw
+        # deposit or withdraw or claim or extend or burn
         self.action = action
-        # Bank xJewel/interest multiplier at the time
+        # Bank xJewel/interest multiplier at the time or cJewel rcvd ratio for Jeweler
         self.xRate = xRate
         self.coinType = coinType
         self.coinAmount = coinAmount
