@@ -668,17 +668,14 @@ def extractJewelerResults(w3, txn, account, timestamp, receipt):
     rc = None
     rb = None
     claimAmount = 0
-    rewardRatio = decimal.Decimal(1.0)
+
     ABI = contracts.getABI('VoteEscrowRewardPool')
     contract = w3.eth.contract(address='0x9ed2c155632C042CB8bC20634571fF1CA26f5742', abi=ABI)
-    decoded_logs = contract.events.RewardCollected().processReceipt(receipt, errors=DISCARD)
-    for log in decoded_logs:
-        rewardRatio = Web3.fromWei(log['args']['accGovTokenPerShare'], 'ether')
     decoded_logs = contract.events.RewardClaimed().processReceipt(receipt, errors=DISCARD)
     for log in decoded_logs:
         claimAmount = log['args']['amount']
         logging.info('{0} Claimed {1} Jewel reward from Jeweler.'.format(log['args']['user'], Web3.fromWei(claimAmount, 'ether')))
-        rc = records.BankTransaction(txn, timestamp, 'claim', rewardRatio, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', Web3.fromWei(log['args']['amount'], 'ether'))
+        rc = records.BankTransaction(txn, timestamp, 'claim', 0, '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260', Web3.fromWei(log['args']['amount'], 'ether'))
         rc.fiatValue = prices.priceLookup(timestamp, rc.coinType) * rc.coinAmount
 
     ABI = contracts.getABI('JewelToken')
@@ -718,7 +715,7 @@ def extractJewelerResults(w3, txn, account, timestamp, receipt):
 
     if sentToken == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260' and rcvdToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742':
         # deposited jewel and received cJewel
-        r = records.BankTransaction(txn, timestamp, 'deposit', rcvdAmount / sentAmount, sentToken, sentAmount)
+        r = records.BankTransaction(txn, timestamp, 'deposit', rcvdAmount, sentToken, sentAmount)
         r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
         if extendAmount > 0:
             # additional cJewel receipt for extending lock duration
@@ -726,11 +723,11 @@ def extractJewelerResults(w3, txn, account, timestamp, receipt):
             rb.fiatValue = prices.priceLookup(timestamp, rb.coinType) * rb.coinAmount
     elif sentToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and rcvdToken == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260':
         # withdraw jewel and burn cJewel
-        r = records.BankTransaction(txn, timestamp, 'withdraw', sentAmount / (rcvdAmount+burnAmount), rcvdToken, rcvdAmount)
+        r = records.BankTransaction(txn, timestamp, 'withdraw', sentAmount / (2 if burnAmount>0 else 1), rcvdToken, rcvdAmount)
         r.fiatValue = prices.priceLookup(timestamp, r.coinType) * r.coinAmount
         if burnAmount > 0:
             # Jewel burn for emergency withdraw
-            rb = records.BankTransaction(txn, timestamp, 'burn', sentAmount / (rcvdAmount+burnAmount), burnToken, burnAmount)
+            rb = records.BankTransaction(txn, timestamp, 'burn', sentAmount / (2 if burnAmount>0 else 1), burnToken, burnAmount)
             rb.fiatValue = prices.priceLookup(timestamp, rb.coinType) * rb.coinAmount
     elif rcvdToken == '0x9ed2c155632C042CB8bC20634571fF1CA26f5742' and sentToken == '':
         # extend lock duration only

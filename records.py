@@ -89,7 +89,10 @@ class BankTransaction:
         self.fiatValue = fiatValue
         self.fiatFeeValue = fiatFeeValue
         # Just for tracking amounts that have been allocated to tax records during mapping
-        self.amountNotAccounted = coinAmount / xRate
+        if xRate > 0:
+            self.amountNotAccounted = coinAmount / xRate
+        else:
+            self.amountNotAccounted = coinAmount
 
 class AirdropTransaction:
     def __init__(self, txHash, timestamp, address, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):

@@ -715,7 +715,7 @@ function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount
 function loadBankEvents(bankEvents) {
   // Populate the transaction list with Bank deposit/withdrawal events
   var bankTotals = {};
-  $("#tx_bank_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>xJewel Multiplier</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
+  $("#tx_bank_data").html('<tr><th>Block Date</th><th>Location</th><th>Action</th><th>xJewel Ratio/cJewel</th><th>Coin Type</th><th>Coin Amount</th><th>Coin USD Value</th></tr>');
   for (var i = 0; i < bankEvents.length; i++) {
     var eventDate = new Date(bankEvents[i].timestamp * 1000)
     var bankLocation = 'Serendale';
