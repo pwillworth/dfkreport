@@ -59,7 +59,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         if network == 'avalanche':
             tx = txn['hash']
             timestamp = int(txn['timeStamp'])
-        elif network == 'dfkchain':
+        elif network in ['dfkchain', 'klaytn']:
             tx = txn['tx_hash']
             blockDate = datetime.datetime.strptime(txn['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
             blockDate = blockDate.replace(tzinfo=timezone.utc)
@@ -545,6 +545,9 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                     if settings.USE_CACHE and db.findTransaction(tx, account) == None:
                         db.saveTransaction(tx, timestamp, 'nonedd', '', account, network, txFee, feeValue)
                     logging.info('No events for DFK Duel tx {0}'.format(tx))
+            elif 'Raffle' in action:
+                logging.debug('Raffle Master activity: {0}'.format(tx))
+                # TODO raffle tix burn tracking
             else:
                 # Native token wallet transfers
                 results = []

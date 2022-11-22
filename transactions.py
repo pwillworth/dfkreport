@@ -41,23 +41,26 @@ def getHarmonyData(address, startDate="", endDate="", page_size=settings.TX_PAGE
     return txs
 
 # Return array of transactions on DFK Chain for the address
-def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+def getCovalentTxList(chainID, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     startKey = 0
     blockLimit = None
     blockSpan = 86400
     retryCount = 0
     txs = []
-    lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
+    if chainID == '8217':
+        lowerBound = db.getLastTransactionTimestamp(address, 'klaytn')
+    else:
+        lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
     upperBound = datetime.datetime.utcnow().timestamp()+86400
     if lowerBound > 0:
         blockLimit = lowerBound
 
     while tx_end == False or (blockLimit != None and blockLimit < upperBound):
         if blockLimit == None:
-            rURL = "{1}/53935/address/{0}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit=0&block-signed-at-span=86400&page-size=1".format(address, nets.covalent)
+            rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit=0&block-signed-at-span=86400&page-size=1".format(chainID, address, nets.covalent)
         else:
-            rURL = "{1}/53935/address/{0}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={4}&block-signed-at-span={5}&page-size={2}&page-number={3}".format(address, nets.covalent, page_size, startKey, blockLimit, blockSpan)
+            rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={5}&block-signed-at-span={6}&page-size={3}&page-number={4}".format(chainID, address, nets.covalent, page_size, startKey, blockLimit, blockSpan)
 
         try:
             r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
@@ -93,7 +96,7 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
         elif r.status_code == 429:
             # rate limiting
             logging.error('Exceeded rate limit for Covalent API')
-            raise Exception('DFK Chain Transactions Lookup Failure.')
+            raise Exception('Covalent Transactions Lookup Failure.')
         elif r.status_code == 504:
             # covalent gateway timeout
             logging.warning("Covalent gateway timeout getting Txs, retrying")
@@ -103,10 +106,10 @@ def getDFKChainData(address, startDate="", endDate="", alreadyFetched=0, page_si
                 continue
             else:
                 logging.error("Covalent timeout too many times, exit")
-                raise Exception('DFK Chain Transactions Lookup Failure.')
+                raise Exception('Covalent Transactions Lookup Failure.')
         else:
             logging.error('{0}: {1}'.format(r.status_code, r.text))
-            raise Exception('DFK Chain Transactions Lookup Failure.')
+            raise Exception('Covalent Transactions Lookup Failure.')
 
         if startDate != "" and endDate != "":
             db.updateReport(address, startDate, endDate, 'fetched', alreadyFetched + len(txs))
@@ -141,9 +144,10 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
 
     return txs
 
-def getTransactionList(address, startDate, endDate, page_size, includedChains=constants.HARMONY):
+def getTransactionList(address, startDate, endDate, page_size, includedChains=constants.DFKCHAIN):
     hmy_txs = []
     dfk_txs = []
+    ktn_txs = []
     avx_txs = []
     if includedChains & constants.HARMONY > 0:
         logging.info('Get Harmony data for {0}'.format(address))
@@ -152,17 +156,21 @@ def getTransactionList(address, startDate, endDate, page_size, includedChains=co
         hmy_txs = list(dict.fromkeys(hmy_txs))
     if includedChains & constants.DFKCHAIN > 0:
         logging.info('Get DFK Chain data for {0}'.format(address))
-        dfk_txs = getDFKChainData(address, startDate, endDate, len(hmy_txs))
+        dfk_txs = getCovalentTxList('53935', address, startDate, endDate, len(hmy_txs))
+    if includedChains & constants.KLAYTN > 0:
+        logging.info('Get Klaytn data for {0}'.format(address))
+        ktn_txs = getCovalentTxList('8217', address, startDate, endDate, len(hmy_txs)+len(dfk_txs))
     if includedChains & constants.AVALANCHE > 0:
         logging.info('Get Avalanche data for {0}'.format(address))
-        avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs)+len(dfk_txs))
-    return [hmy_txs, avx_txs, dfk_txs]
+        avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs)+len(dfk_txs)+len(ktn_txs))
+    return [hmy_txs, avx_txs, dfk_txs, ktn_txs]
 
-def getTransactionCount(address, includedChains=constants.HARMONY):
+def getTransactionCount(address, includedChains=constants.KLAYTN):
     result = ""
     hmy_result = 0
     avx_result = 0
     dfk_result = 0
+    ktn_result = 0
 
     if includedChains & constants.HARMONY > 0:
         try:
@@ -178,6 +186,14 @@ def getTransactionCount(address, includedChains=constants.HARMONY):
             result = 'Error: Blockchain connection failure.'
         else:
             dfk_result = w3.eth.get_transaction_count(address)
+
+    if includedChains & constants.KLAYTN > 0:
+        w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
+        if not w3.isConnected():
+            logging.error('Error: Critical w3 connection failure for Klaytn')
+            result = 'Error: Blockchain connection failure.'
+        else:
+            ktn_result = w3.eth.get_transaction_count(address)
 
     if includedChains & constants.AVALANCHE > 0:
         try:
@@ -197,10 +213,10 @@ def getTransactionCount(address, includedChains=constants.HARMONY):
             result = 'Error: Failed to connect to Avalanche Snowtrace API'
             logging.error(result)
 
-    if result != "" or hmy_result + avx_result + dfk_result == 0:
+    if result != "" or hmy_result + avx_result + dfk_result + ktn_result == 0:
         return result
     else:
-        return [hmy_result, avx_result, dfk_result]
+        return [hmy_result, avx_result, dfk_result, ktn_result]
 
 if __name__ == "__main__":
     logging.basicConfig(filename='transactions.log', level=logging.INFO)

@@ -452,6 +452,7 @@ address_map = {
     '0xA7F9B7B0f729Dc98ae748f5505497909aFfdfa8A': 'Bridge to Serendale',
     '0x57Dec9cC7f492d6583c773e2E7ad66dcDc6940Fb': 'CrystalvaleGardener',
     '0x123165B3a30fdA3655B30cfC10135C1CA3C21bFC': 'Airdrop Crystalvale',
+    '0x947873092dc57C1A70704033c41cB110f4462a8B': 'Airdrop Claim',
     '0xABABB0A2c42274D0e81417B824CABca464F5c16C': 'Crystalvale Donation',
     '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
     '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
@@ -467,7 +468,8 @@ address_map = {
     '0xfAa8507e822397bd56eFD4480Fb12ADC41ff940B': 'Crystal LP Token BTC.b/Jewel',
     '0x00BD81c9bAc29a3b6aea7ABc92d2C9a3366Bb4dD': 'Crystal LP Token BTC.b/Crystal',
     '0x59D642B471dd54207Cb1CDe2e7507b0Ce1b1a6a5': 'Crystal LP Token BTC.b/USDC',
-    '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
+    '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears',
+    '0x5819b6af194a78511c79c85ea68d2377a7e9335f': 'Klay' # Start Klaytn List
 }
 
 gold_values = {

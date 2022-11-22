@@ -51,6 +51,7 @@ $( function() {
 function optionsReset() {
   $("#optHarmony").prop('checked', true);
   $("#optDFKChain").prop('checked', true);
+  $("optKlaytn").prop('checked', true);
   $("#optAvalanche").prop('checked', false);
   // Default to last year if it is early in year, this year otherwise
   var dt = new Date();
@@ -106,11 +107,12 @@ function txGroupReset(value) {
   $('#smy_' + value + '_data').html('');
 }
 // Load the report in two steps after it is done, first tax report, then events
-function completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeAvalanche, contentType, eventGroup='all') {
+function completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche, contentType, eventGroup='all') {
   $.post(BASE_SCRIPT_URL + "generate.py",{
         walletAddress: generateAddress,
         includeHarmony: includeHarmony,
         includeDFKChain: includeDFKChain,
+        includeKlaytn: includeKlaytn,
         includeAvalanche: includeAvalanche,
         contentType: contentType,
         eventGroup: eventGroup,
@@ -126,7 +128,7 @@ function completeReport(generateAddress, generateStart, generateEnd, costBasis, 
             $("#reportProgress").progressbar( "option", "value", false);
             $("#reportPercent").html("");
             for (let i = 0; i < event_groups.length; i++) {
-              setTimeout('completeReport("' + generateAddress + '","' + generateStart + '","' + generateEnd + '","' + costBasis + '","' + includeHarmony + '","' + includeDFKChain + '","' + includeAvalanche + '","transaction","' + event_groups[i] + '")', 500);
+              setTimeout('completeReport("' + generateAddress + '","' + generateStart + '","' + generateEnd + '","' + costBasis + '","' + includeHarmony + '","' + includeDFKChain + '","' + includeKlaytn + '","' + includeAvalanche + '","transaction","' + event_groups[i] + '")', 500);
             }
           } else {
             reportRecords = data.response.event_records;
@@ -144,7 +146,7 @@ function completeReport(generateAddress, generateStart, generateEnd, costBasis, 
     return false;
 }
 // This function is recursively called to check on report status and will trigger report load when done
-function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='false', includeDFKChain='false', includeAvalanche='false', purchaseAddresses='') {
+function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='false', includeDFKChain='false', includeKlaytn='false', includeAvalanche='false', purchaseAddresses='') {
     $("#loadingSection").css("display","block");
     $("#mappingSection").css("display","block");
     clearReports();
@@ -152,6 +154,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
         walletAddress: generateAddress,
         includeHarmony: includeHarmony,
         includeDFKChain: includeDFKChain,
+        includeKlaytn: includeKlaytn,
         includeAvalanche: includeAvalanche,
         startDate: generateStart,
         endDate: generateEnd,
@@ -160,7 +163,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
           reportStatus = data.response.status
           if (reportStatus == 'complete') {
             $( "#loadingMessage").html('Lila: I have that report ready now, here it is...');
-            completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeAvalanche, 'tax');
+            completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche, 'tax');
           } else if (reportStatus == 'generating') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
@@ -171,19 +174,19 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             }
             $("#reportPercent").html('.:' + (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 4000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeAvalanche);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
           } else if (reportStatus == 'fetchingtx') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#reportProgress").progressbar( "option", "value", data.response.transactionsFetched );
             $("#loadingMessage").html('Lila: Oh, I know I have that info here somewhere, looking for your records now.')
             $("#reportPercent").html('.:' + (data.response.transactionsFetched / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 2000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeAvalanche);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
           } else if (reportStatus == 'initiated') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
             $("#exportContainer").hide(500);
             await new Promise(r => setTimeout(r, 2000));
-            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeAvalanche);
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
           } else {
             // If no status was returned, there must have been some kind of failure and an Error message should be in response
             $("#loadingSection").css("display","none");
@@ -214,13 +217,15 @@ function downloadDone() {
 <body>
 <div>
 <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
-  <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));">Generate!</button>
+  <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));">Generate!</button>
   <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
   <fieldset class="chainSelect">
     <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
     <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
     <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked"/>
     <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
+    <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
+    <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
     <input type="checkbox" id="optAvalanche" name="optAvalanche"/>
     <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" style="max-width: 36px;margin-bottom:-4px;"/></label>
   </fieldset>

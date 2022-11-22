@@ -22,7 +22,7 @@ def main():
     parser.add_argument("startDate", help="The starting date for the report")
     parser.add_argument("endDate", help="The ending date for the report")
     parser.add_argument("--costbasis", choices=['fifo','lifo','hifo','acb'], help="Method for mapping cost basis to gains")
-    parser.add_argument("--chains", choices=['1','2','3','4','5','6','7'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax,4=DFKChain")
+    parser.add_argument("--chains", choices=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax,4=DFKChain")
     args = parser.parse_args()
     if args.costbasis == None:
         costBasis = 'fifo'
@@ -45,16 +45,16 @@ def main():
         if reportInfo == None:
             generateTime = datetime.datetime.now()
             txResult = transactions.getTransactionCount(args.wallet)
-            if len(txResult) != 3:
+            if len(txResult) != 4:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
-            txTotal = txResult[0] + txResult[1] + txResult[2]
+            txTotal = txResult[0] + txResult[1] + txResult[2] + txResult[3]
             includedChains = 1
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, 1)
         else:
             txResult = transactions.getTransactionCount(args.wallet)
-            if len(txResult) != 3:
+            if len(txResult) != 4:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1

@@ -69,8 +69,14 @@ def buildTaxMap(txns, txCounts, account, startDate, endDate, costBasis, included
             raise ConnectionError('Service Unavailable')
     else:
         eventMapDFK = events.EventsMap()
+    if includedChains & constants.KLAYTN > 0:
+        eventMapKlay = events.checkTransactions(txns[3], account, startDate, endDate, 'klaytn', txCounts[0]+txCounts[2])
+        if eventMapKlay == 'Error: Blockchain connection failure.':
+            raise ConnectionError('Service Unavailable')
+    else:
+        eventMapKlay = events.EventsMap()
     if includedChains & constants.AVALANCHE > 0:
-        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', txCounts[0]+txCounts[1])
+        eventMapAvax = events.checkTransactions(txns[1], account, startDate, endDate, 'avalanche', txCounts[0]+txCounts[2]+txCounts[3])
         if eventMapAvax == 'Error: Blockchain connection failure.':
             raise ConnectionError('Service Unavailable')
     else:
@@ -78,22 +84,29 @@ def buildTaxMap(txns, txCounts, account, startDate, endDate, costBasis, included
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(account))
     # Have to look up Tavern sale/hire events because they are not associated direct to wallet
-    eventMap['tavern'] = eventMap['tavern'] + eventMapDFK['tavern'] + db.getTavernSales(account, startDate, endDate)
+    eventMap['tavern'] = eventMap['tavern'] + eventMapDFK['tavern'] + eventMapKlay['tavern'] + db.getTavernSales(account, startDate, endDate)
     eventMap['swaps'] += eventMapAvax['swaps']
     eventMap['swaps'] += eventMapDFK['swaps']
+    eventMap['swaps'] += eventMapKlay['swaps']
     eventMap['liquidity'] += eventMapAvax['liquidity']
     eventMap['liquidity'] += eventMapDFK['liquidity']
+    eventMap['liquidity'] += eventMapKlay['liquidity']
     eventMap['wallet'] += eventMapAvax['wallet']
     eventMap['wallet'] += eventMapDFK['wallet']
+    eventMap['wallet'] += eventMapKlay['wallet']
     eventMap['bank'] += eventMapAvax['bank']
     eventMap['bank'] += eventMapDFK['bank']
+    eventMap['bank'] += eventMapKlay['bank']
     eventMap['gardens'] += eventMapAvax['gardens']
     eventMap['gardens'] += eventMapDFK['gardens']
+    eventMap['gardens'] += eventMapKlay['gardens']
     eventMap['quests'] += eventMapDFK['quests']
+    eventMap['quests'] += eventMapKlay['quests']
     eventMap['alchemist'] += eventMapDFK['alchemist']
+    eventMap['alchemist'] += eventMapKlay['alchemist']
     # Look up wallet payments distributed by interacting with Jewel contract also
-    eventMap['airdrops'] += eventMapAvax['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
-    eventMap['gas'] += eventMapAvax['gas'] + eventMapDFK['gas']
+    eventMap['airdrops'] = eventMap['airdrops'] + eventMapKlay['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(account)
+    eventMap['gas'] = eventMap['gas'] + eventMapAvax['gas'] + eventMapDFK['gas'] + eventMapKlay['gas']
     logging.info('building swap data')
     swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
     logging.info('building liquidity data')

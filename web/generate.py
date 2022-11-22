@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 
- Copyright 2021 Paul Willworth <ioscode@gmail.com>
+ Copyright 2022 Paul Willworth <ioscode@gmail.com>
 
 """
 
@@ -306,9 +306,9 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
             # wipe the old report and re-map for new options or transactions
             logging.debug('updating existing report row to regenerate')
             result = transactions.getTransactionCount(wallet)
-            if len(result) == 3:
+            if len(result) == 4:
                 generateTime = datetime.now(timezone.utc)
-                totalTx = result[0] + result[1] + result[2]
+                totalTx = result[0] + result[1] + result[2] + result[3]
                 db.resetReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9])
                 return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), totalTx]
             else:
@@ -316,9 +316,9 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
     else:
         logging.debug('start new report row')
         result = transactions.getTransactionCount(wallet, includedChains)
-        if len(result) == 3:
+        if len(result) == 4:
             generateTime = datetime.now(timezone.utc)
-            totalTx = result[0] + result[1] + result[2]
+            totalTx = result[0] + result[1] + result[2] + result[3]
             db.createReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
             report = db.findReport(wallet, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
@@ -336,6 +336,7 @@ endDate = form.getfirst('endDate', '')
 includeHarmony = form.getfirst('includeHarmony', 'on')
 includeDFKChain = form.getfirst('includeDFKChain', 'on')
 includeAvalanche = form.getfirst('includeAvalanche', 'false')
+includeKlaytn = form.getfirst('includeKlaytn', 'on')
 costBasis = form.getfirst('costBasis', 'fifo')
 # can be set to csv, otherwise json response is returned
 formatType = form.getfirst('formatType', '')
@@ -391,6 +392,8 @@ if includeAvalanche == 'on':
     includedChains += 2
 if includeDFKChain == 'on':
     includedChains += 4
+if includeKlaytn == 'on':
+    includedChains += 8
 if includedChains < 1:
     response = '{ "response" : "Error: You have to select at least 1 blockchain to include." }'
     failure = True
@@ -422,9 +425,9 @@ if not failure:
         logging.error('Responding DB unavailable report error.')
         status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."
     except Exception as err:
-        # Failure can happen here if harmony api is completely down
+        # Failure can happen here if api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
-        status = "Generation failed!  Harmony API could not be contacted!."
+        status = "Generation failed!  Blockchain API could not be contacted!."
     if len(status) == 14:
         if status[5] == 2:
             # report is ready
