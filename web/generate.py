@@ -26,6 +26,7 @@ def getResponseCSV(records, contentType, format):
     eventRecords = records['events']
 
     if contentType == 'transaction' or format in ['koinlyuniversal','coinledgeruniversal']:
+        logging.info('tx report detail')
         # translate output based on req format
         response = csvFormats.getHeaderRow(format)
         for record in eventRecords['tavern']:
@@ -54,6 +55,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), label, 'NFT {0} {1}'.format(record.itemID, record.event), record.txHash, '\n'))
             else:
                 response += ','.join(('tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getAddressName(record.coinType), str(record.coinCost), '', str(record.fiatAmount), record.txHash, str(txFee), '\n'))
+        logging.info('done with tavern')
         for record in eventRecords['swaps']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -67,6 +69,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), txFeeCurrency, str(txFee), '', 'Trade', record.txHash, '\n'))
             else:
                 response += ','.join(('trader', blockDateStr, 'swap', contracts.getAddressName(record.swapType), str(record.swapAmount), contracts.getAddressName(record.receiveType), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash, str(txFee), '\n'))
+        logging.info('done with swaps')
         for record in eventRecords['liquidity']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -90,6 +93,7 @@ def getResponseCSV(records, contentType, format):
                     response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getAddressName(record.coin2Type), str(record.coin2Amount), '', '', txFeeCurrency, str(txFee), 'Withdrawal', '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), record.txHash, '\n'))
             else:
                 response += ','.join(('liquidity', blockDateStr, '{0} {1} to {2}'.format(record.action, record.poolAmount, contracts.getAddressName(record.poolAddress)), contracts.getAddressName(record.coin1Type), str(record.coin1Amount), contracts.getAddressName(record.coin2Type), str(record.coin2Amount), str(record.coin1FiatValue), str(record.coin2FiatValue), record.txHash, str(txFee), '\n'))
+        logging.info('done with liquidity')
         for record in eventRecords['gardens']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -121,6 +125,7 @@ def getResponseCSV(records, contentType, format):
                 else:
                     location = 'Serendale'
                 response += ','.join((location, blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        logging.info('done with gardens')
         for record in eventRecords['bank']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -132,11 +137,18 @@ def getResponseCSV(records, contentType, format):
                 if record.action == 'deposit':
                     sentAmount = record.coinAmount
                     sentType = contracts.getAddressName(record.coinType)
-                    rcvdAmount = record.coinAmount / record.xRate
+                    if record.xRate > 0:
+                        rcvdAmount = record.coinAmount / record.xRate
+                    else:
+                        rcvdAmount = 0
                     rcvdType = 'xJewel'
                 else:
-                    sentAmount = record.coinAmount / record.xRate
-                    sentType = 'xJewel'
+                    if record.xRate > 0:
+                        sentAmount = record.coinAmount / record.xRate
+                        sentType = 'xJewel'
+                    else:
+                        sentAmount = ''
+                        sentType = ''
                     rcvdAmount = record.coinAmount
                     rcvdType = contracts.getAddressName(record.coinType)
             if format == 'koinlyuniversal':
@@ -145,6 +157,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), '', 'bank {0}'.format(record.action), record.txHash, '\n'))
             else:
                 response += ','.join(('bank', blockDateStr, record.action, 'xRate', str(record.xRate), contracts.getAddressName(record.coinType), str(record.coinAmount), '', str(record.fiatValue), record.txHash, str(txFee), '\n'))
+        logging.info('done with bank')
         for record in eventRecords['alchemist']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -158,6 +171,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', '"' + record.craftingCosts + '"', '', contracts.getAddressName(record.craftingType), str(record.craftingAmount), txFeeCurrency, str(txFee), 'Deposit', 'potion crafting', record.txHash, '\n'))
             else:
                 response += ','.join(('alchemist', blockDateStr, 'crafting', contracts.getAddressName(record.craftingType), str(record.craftingAmount), '"' + record.craftingCosts + '"', '', str(record.fiatValue), str(record.costsFiatValue), record.txHash, str(txFee), '\n'))
+        logging.info('done with alchemist')
         for record in eventRecords['airdrops']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -171,6 +185,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', '', '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), txFeeCurrency, str(txFee), 'Airdrop', '', record.txHash, '\n'))
             else:
                 response += ','.join(('airdrops', blockDateStr, '', contracts.getAddressName(record.tokenReceived), str(record.tokenAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        logging.info('done with airdrops')
         for record in eventRecords['quests']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -184,6 +199,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, '', '', contracts.getAddressName(record.rewardType), str(record.rewardAmount), txFeeCurrency, str(txFee), 'Staking', 'quest', record.txHash, '\n'))
             else:
                 response += ','.join(('quest', blockDateStr, 'rewards', contracts.getAddressName(record.rewardType), str(record.rewardAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        logging.info('done with quests')
         for record in eventRecords['wallet']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
             txFee = ''
@@ -208,6 +224,7 @@ def getResponseCSV(records, contentType, format):
                 response += ','.join((blockDateStr, 'Defi Kingdoms', sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), record.action, 'wallet transfer', record.txHash, '\n'))
             else:
                 response += ','.join(('wallet', blockDateStr, record.action, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        logging.info('done with wallet')
         if 'lending' in eventRecords:
             for record in eventRecords['lending']:
                 blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(csvFormats.getDateFormat(format))
@@ -233,6 +250,7 @@ def getResponseCSV(records, contentType, format):
                     response += ','.join((blockDateStr, sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), '', 'lending {0}'.format(record.event), record.txHash, '\n'))
                 else:
                     response += ','.join(('lending', blockDateStr, record.event, contracts.getAddressName(record.coinType), str(record.coinAmount), '', '', str(record.fiatValue), '', record.txHash, str(txFee), '\n'))
+        logging.info('done with lending')
     else:
         response = 'category,description,acquired date,sold date,proceeds,costs,gains,term,basis amt not accounted,txHash\n'
 
@@ -326,7 +344,7 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
         else:
             return 'Error: No Transactions for that wallet found'
 
-logging.basicConfig(filename='../generate.log', level=logging.WARNING, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='../generate.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Extract query parameters
 form = cgi.FieldStorage()
 
@@ -437,6 +455,7 @@ if not failure:
                 with open('../reports/{0}'.format(status[9]), 'rb') as file:
                     results = pickle.load(file)
                 if formatType == 'csv':
+                    logging.info('Getting response CSV')
                     response = getResponseCSV(results, contentType, csvFormat)
                 else:
                     response = getResponseJSON(results, contentType, eventGroup)
@@ -488,6 +507,7 @@ if not failure:
             response += '  "startedOn" : {0}\n   '.format(status[3])
             response += '  }\n}'
     elif len(status) == 5:
+        logging.info('Waiting for initiated report to be picked up by main.')
         response = '{ "response" : {\n'
         response += '  "status" : "initiated",\n '
         response += '  "transactionsTotal" : {0}\n '.format(status[4])
