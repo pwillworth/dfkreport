@@ -165,7 +165,7 @@ def getTransactionList(address, startDate, endDate, page_size, includedChains=co
         avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs)+len(dfk_txs)+len(ktn_txs))
     return [hmy_txs, avx_txs, dfk_txs, ktn_txs]
 
-def getTransactionCount(address, includedChains=constants.KLAYTN):
+def getTransactionCount(address, includedChains=constants.DFKCHAIN):
     result = ""
     hmy_result = 0
     avx_result = 0
@@ -213,8 +213,10 @@ def getTransactionCount(address, includedChains=constants.KLAYTN):
             result = 'Error: Failed to connect to Avalanche Snowtrace API'
             logging.error(result)
 
-    if result != "" or hmy_result + avx_result + dfk_result + ktn_result == 0:
+    if result != "":
         return result
+    elif hmy_result + avx_result + dfk_result + ktn_result == 0:
+        return 'Error: No transactions found for that wallet'
     else:
         return [hmy_result, avx_result, dfk_result, ktn_result]
 

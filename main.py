@@ -44,21 +44,21 @@ def main():
         # generate.py pre-generates report record, but if running outside of that, create one
         if reportInfo == None:
             generateTime = datetime.datetime.now()
-            txResult = transactions.getTransactionCount(args.wallet)
+            txResult = transactions.getTransactionCount(args.wallet, includedChains)
             if len(txResult) != 4:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
             txTotal = txResult[0] + txResult[1] + txResult[2] + txResult[3]
-            includedChains = 1
+            includedChains = args.chains
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, 1)
         else:
-            txResult = transactions.getTransactionCount(args.wallet)
+            includedChains = reportInfo[12]
+            txResult = transactions.getTransactionCount(args.wallet, includedChains)
             if len(txResult) != 4:
-                logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
+                logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(str(txResult)))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
-            includedChains = reportInfo[12]
             try:
                 moreOptions = jsonpickle.loads(reportInfo[13])
             except Exception as err:

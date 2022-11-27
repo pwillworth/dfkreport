@@ -104,7 +104,8 @@ def getLastTransactionTimestamp(account, network):
     try:
         con = aConn()
         cur = con.cursor()
-        cur.execute("SELECT max(blockTimestamp) FROM transactions WHERE account=%s and network=%s", (account, network))
+        # Dont include tavern transactions to find last tx cached because it may be from block crawler
+        cur.execute("SELECT max(blockTimestamp) FROM transactions WHERE account=%s and network=%s and eventType != 'tavern'", (account, network))
         row = cur.fetchone()
         con.close()
     except Exception as err:

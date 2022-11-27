@@ -17,22 +17,16 @@ def handleLogs(w3, event, network):
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
     receipt = w3.eth.get_transaction_receipt(tx)
     # Heroes or Lands or Pets
-    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0', '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3']:
+    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0', '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3', '0x49744F76caA3B63CccE9CE7de5C8282C92c891e5']:
         if event['address'] == '0x77D991987ca85214f9686131C58c1ABE4C93E547':
             auctionType = 'land'
-        elif event['address'] == '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3':
+        elif event['address'] in ['0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0x49744F76caA3B63CccE9CE7de5C8282C92c891e5']:
             auctionType = 'pet'
         else:
             auctionType = 'hero'
         results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
-    # summoning portal
-    elif event['address'] in ['0x65DEA93f7b886c33A78c10343267DD39727778c2','0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355','0xa2D001C829328aa06a2DB2740c05ceE1bFA3c6bb', '0xBc36D18662Bb97F9e74B1EAA1B752aA7A44595A7']:
-        results = events.extractSummonResults(w3, tx, None, timestamp, receipt, network)
-        if results != None and type(results[1]) != int and len(results[1]) > 2 and results[1][2] != None:
-            if db.findTransaction(tx, results[1][2].seller) == None:
-                db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1][2]), results[1][2].seller, network, 0, 0)
     else:
         logging.error('Unknown contract in filter')
 
@@ -42,12 +36,12 @@ def parseEvents(network):
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         # middleware used to allow for interpreting longer data length for get_block on dfkchain
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        tavernContract = '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0'
-        portalContract = '0xBc36D18662Bb97F9e74B1EAA1B752aA7A44595A7'
+        tavernContractAddress = '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0'
+        petCatalogContractAddress = '0x49744F76caA3B63CccE9CE7de5C8282C92c891e5'
     else:
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
-        tavernContract = '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892'
-        portalContract = '0x65DEA93f7b886c33A78c10343267DD39727778c2'
+        tavernContractAddress = '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892'
+        petCatalogContractAddress = '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3'
 
     if not w3.isConnected():
         logging.critical('Error: Critical w3 connection failure for '.format(network))
@@ -66,13 +60,11 @@ def parseEvents(network):
     toBlock = w3.eth.block_number
     logging.warning('Getting {2} events from block {0} through {1}'.format(str(blockNumber), str(toBlock), network))
 
-    # create a filter for unsearched blocks of auction house and summoning portal contracts
-    with open('abi/HeroSummoningUpgradeable.json', 'r') as f:
-        ABI = f.read()
-    portalContract = w3.eth.contract(address=portalContract, abi=ABI)
+    # create a filter for unsearched blocks of auction houses
     with open('abi/SaleAuction.json', 'r') as f:
         ABI = f.read()
-    tavernContract = w3.eth.contract(address=tavernContract, abi=ABI)
+    tavernContract = w3.eth.contract(address=tavernContractAddress, abi=ABI)
+    petCatalogContract = w3.eth.contract(address=petCatalogContractAddress, abi=ABI)
 
     endBlock = blockNumber
     while endBlock < toBlock:
@@ -84,20 +76,15 @@ def parseEvents(network):
         tavernChanges = tavernFilter.get_all_entries()
         w3.eth.uninstall_filter(tavernFilter.filter_id)
 
-        portalFilter = portalContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
-        portalChanges = portalFilter.get_all_entries()
-        w3.eth.uninstall_filter(portalFilter.filter_id)
-
-        allChanges = tavernChanges + portalChanges
-        if network == 'harmony':
-            petCatalogContract = w3.eth.contract(address='0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3', abi=ABI)
-            petSalesFilter = petCatalogContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
-            petSaleChanges = petSalesFilter.get_all_entries()
-            w3.eth.uninstall_filter(petSalesFilter.filter_id)
-            allChanges = allChanges + petSaleChanges
+        petSalesFilter = petCatalogContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
+        petSaleChanges = petSalesFilter.get_all_entries()
+        w3.eth.uninstall_filter(petSalesFilter.filter_id)
+        allChanges = tavernChanges + petSaleChanges
 
         for event in allChanges:
+            # We do not need to call handle function for multiple events in same tx because the fuction handles the whole tx
             handleLogs(w3, event, network)
+
             # keep track of what block we are on
             try:
                 if event['blockNumber'] > 0:
@@ -120,7 +107,7 @@ def main():
     logging.basicConfig(handlers=[handler], level=logging.WARNING, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('started crawler')
 
-    parseEvents('harmony')
+    #parseEvents('harmony')
     parseEvents('dfkchain')
 
 if __name__ == "__main__":
