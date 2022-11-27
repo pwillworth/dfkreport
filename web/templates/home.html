@@ -205,7 +205,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
 
 function exportData(format) {
   // TODO tie the parameters to saved of last report run instead of current selections
-  var url = BASE_SCRIPT_URL + "generate.py?formatType=" + format + "&contentType=" + currentView + "&walletAddress=" + $("#ethAddress").val() + "&startDate=" + $("#startDate").val() + "&endDate=" + $("#endDate").val() + "&costBasis=" + $('input[name=cbs]:checked').val() + "&csvFormat=" + $('input[name=csvf]:checked').val() + "&includeHarmony=" + $('input[name=optHarmony]:checked').val() + "&includeDFKChain=" + $('input[name=optDFKChain]:checked').val() + "&includeAvalanche=" + $('input[name=optAvalanche]:checked').val();
+  var url = BASE_SCRIPT_URL + "generate.py?formatType=" + format + "&contentType=" + currentView + "&walletAddress=" + $("#ethAddress").val() + "&startDate=" + $("#startDate").val() + "&endDate=" + $("#endDate").val() + "&costBasis=" + $('input[name=cbs]:checked').val() + "&csvFormat=" + $('input[name=csvf]:checked').val() + "&includeHarmony=" + $('input[name=optHarmony]:checked').val() + "&includeDFKChain=" + $('input[name=optDFKChain]:checked').val() + "&includeKlaytn=" + $('input[name=optKlaytn]:checked').val() + "&includeAvalanche=" + $('input[name=optAvalanche]:checked').val();
   var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
   document.getElementById('frame_box').innerHTML = htm;
 }

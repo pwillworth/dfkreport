@@ -28,6 +28,10 @@ def main():
         costBasis = 'fifo'
     else:
         costBasis = args.costbasis
+    if args.chains == None:
+        includedChains = '15'
+    else:
+        includedChains = args.chains
 
     page_size = settings.TX_PAGE_SIZE
     txResult = []
@@ -50,7 +54,6 @@ def main():
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
             txTotal = txResult[0] + txResult[1] + txResult[2] + txResult[3]
-            includedChains = args.chains
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, 1)
         else:
             includedChains = reportInfo[12]
