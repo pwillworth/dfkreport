@@ -499,6 +499,7 @@ function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coin
 function loadTavernEvents(tavernEvents) {
   // Populate the Transaction list with Hero Data
   var tavernTotals = {}
+  var tavernCosts = {}
   $("#tx_tavern_data").html('<tr><th>Block Date</th><th>Item Type</th><th>Item ID</th><th>Event</th><th>Coin</th><th>Coin Amt</th><th>USD Amount</th></tr>');
   for (var i = 0; i < tavernEvents.length; i++) {
     var eventDate = new Date(tavernEvents[i].timestamp * 1000);
@@ -508,6 +509,7 @@ function loadTavernEvents(tavernEvents) {
     if (tavernEvents[i].coinCost['py/reduce'] != undefined) {
       coinCost = tavernEvents[i].coinCost['py/reduce'][1]['py/tuple'][0];
     }
+    coinCost = Number(coinCost)
     if (tavernEvents[i].fiatAmount['py/reduce'] != undefined) {
       fiatAmount = tavernEvents[i].fiatAmount['py/reduce'][1]['py/tuple'][0];
     }
@@ -516,17 +518,19 @@ function loadTavernEvents(tavernEvents) {
 
     if ( tavernEvents[i].event in tavernTotals ) {
       tavernTotals[tavernEvents[i].event] += 1;
+      tavernCosts[tavernEvents[i].event] += coinCost
     } else {
       tavernTotals[tavernEvents[i].event] = 1;
+      tavernCosts[tavernEvents[i].event] = coinCost
     }
     $('#tx_tavern_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
-  var tavernTable = '';
+  var tavernTable = '<table><tr><th>Event</th><th>Count</th><th>Total Token Amt</th></tr>';
   for (let k in tavernTotals) {
-    tavernTable = tavernTable + '<tr><td>' + k + 's</td><td>' + tavernTotals[k] + '</td></tr>';
+    tavernTable = tavernTable + '<tr><td>' + k + 's</td><td>' + tavernTotals[k] + '</td><td>' + tavernCosts[k].toFixed(1) + '</td></tr>';
   }
-  $("#smy_tavern_data").html('<table>' + tavernTable + '</table>');
+  $("#smy_tavern_data").html(tavernTable + '</table>');
 }
 
 function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue) {

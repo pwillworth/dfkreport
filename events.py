@@ -1289,7 +1289,7 @@ def extractPetBurnResults(w3, txn, account, timestamp, receipt):
     return [r1, r2]
 
 def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs):
-    # Create record of the alchemist crafting activity with total costs
+    # Create record of the duel activity with total costs and rewards
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
@@ -1300,12 +1300,11 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs):
     r = None
     for log in decoded_logs:
         # Token Transfers
-        logging.info(str(log))
         if 'to' in log['args'] and 'from' in log['args']:
-            if log['args']['to'] == account and log['address'] == '0x0405f1b828C7C9462877cC70A9f266887FF55adA':
+            if log['args']['to'] == account and log['address'] in ['0x0405f1b828C7C9462877cC70A9f266887FF55adA','0xBbd7c4Be2e54fF5e013471162e1ABAD7AB74c3C3']:
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
-            elif log['args']['from'] == account and log['address'] == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F':
+            elif log['args']['from'] == account and log['address'] in ['0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb']:
                 sentToken.append(log['address'])
                 sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address']))
             else:
@@ -1314,7 +1313,6 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs):
     ABI = contracts.getABI('DFKDuel')
     contract = w3.eth.contract(address='0xE97196f4011dc9DA0829dd8E151EcFc0f37EE3c7', abi=ABI)
     input_data = contract.decode_function_input(inputs)
-    logging.info(str(input_data))
     # TODO maybe account for the gold too, seems minimal as winner gets it back anyway
     # if received items, it was pvp complete rewards, otherwise initiation costs/fees
     if len(rcvdToken) > 0:
