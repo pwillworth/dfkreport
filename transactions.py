@@ -53,7 +53,7 @@ def getCovalentTxList(chainID, address, startDate="", endDate="", alreadyFetched
     else:
         lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
     upperBound = datetime.datetime.utcnow().timestamp()+86400
-    if lowerBound > 0:
+    if lowerBound > 1648710000:
         blockLimit = lowerBound
 
     while tx_end == False or (blockLimit != None and blockLimit < upperBound):

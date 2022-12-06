@@ -113,7 +113,7 @@ def getLastTransactionTimestamp(account, network):
         logging.error('Error finding tx {0}'.format(str(err)))
         row = None
     if row == None or row[0] == None:
-        return 0
+        return 1648710000
     else:
         return row[0]
 

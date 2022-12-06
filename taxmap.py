@@ -355,6 +355,7 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     cbList = costBasisSort(cbList, costBasis)
 
     #TODO consider also search bank gains income for cost basis
+    #TODO add hero purchase events as taxable sell of token for NFT
     logging.info('  build events in range')
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
