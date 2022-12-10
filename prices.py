@@ -39,7 +39,13 @@ token_map = {
     '0x7516EB8B8Edfa420f540a162335eACF3ea05a247': 'bitcoin',
     '0x97855Ba65aa7ed2F65Ed832a776537268158B78a': 'klay-token',
     '0xD17a41Cd199edF1093A9Be4404EaDe52Ec19698e': 'matic-network',
-    '0x2Df041186C844F8a2e2b63F16145Bc6Ff7d23E25': 'fantom'
+    '0x2Df041186C844F8a2e2b63F16145Bc6Ff7d23E25': 'fantom',
+    '0xe4f05A66Ec68B54A58B17c22107b02e0232cC817': 'klay-token',
+    '0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432': 'klay-token',
+    '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43': 'defi-kingdoms', # jewel on klaytn
+    '0xcd8fe44a29db9159db36f96570d7a4d91986f528': 'avalanche-2',
+    '0x34d21b1e550D73cee41151c77F3c73359527a396': 'ethereum', #oETH on klaytn
+    '0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c': 'bitcoin' #oWBTC on klaytn
 }
 
 decimal_units = {

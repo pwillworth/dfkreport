@@ -35,12 +35,17 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
     events_map = EventsMap()
 
     # Connect to right network that txs are for
-    if network == 'avalanche':
-        w3 = Web3(Web3.HTTPProvider(nets.avax_web3))
+    if network == 'klaytn':
+        w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
     elif network == 'dfkchain':
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
-    else:
+    elif network == 'avalanche':
+        w3 = Web3(Web3.HTTPProvider(nets.avax_web3))
+    elif network == 'harmony':
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+    else:
+        logging.error('could not check transactions for unsupported network: {0}'.format(network))
+        return 'Error: Blockchain connection failure'
 
     if not w3.isConnected():
         logging.error('Error: Critical w3 connection failure for {0}'.format(network))
@@ -173,7 +178,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
                     db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
             elif 'Uniswap' in action:
-                results = extractSwapResults(w3, tx, account, timestamp, receipt)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt, value, network)
                 if results != None:
                     if type(results) is records.TraderTransaction:
                         results.fiatFeeValue = feeValue
@@ -283,7 +288,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'bank', jsonpickle.encode([result for result in results if result != None]), account, network, txFee, feeValue)
             elif 'Vendor' in action:
                 logging.debug('Vendor activity: {0}'.format(str(receipt['logs'][0]['address'])))
-                results = extractSwapResults(w3, tx, account, timestamp, receipt)
+                results = extractSwapResults(w3, tx, account, timestamp, receipt, value, network)
                 if results != None and type(results) is records.TraderTransaction:
                     results.fiatFeeValue = feeValue
                     events_map['swaps'].append(results)
@@ -823,7 +828,7 @@ def extractFarmResults(w3, txn, account, timestamp, receipt):
 
     return events
 
-def extractSwapResults(w3, txn, account, timestamp, receipt):
+def extractSwapResults(w3, txn, account, timestamp, receipt, value, network):
     ABI = contracts.getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)
     decoded_logs = contract.events.Transfer().processReceipt(receipt, errors=DISCARD)
@@ -855,7 +860,10 @@ def extractSwapResults(w3, txn, account, timestamp, receipt):
             if log['event'] == 'Deposit':
                 sentToken.append(log['address'])
                 sentAmount.append(contracts.valueFromWei(log['args']['wad'], log['address']))
-
+    # when swapping gas for something else does not show up as transfer event from self
+    if len(sentAmount) == 0 and value > 0:
+        sentToken.append(contracts.getNativeToken(network))
+        sentAmount.append(value)
     if len(rcvdAmount) > 0 and rcvdAmount[0] > 0:
         if len(sentToken) == 1 and len(rcvdToken) == 1:
             # simple 1 coin in 1 coin out swaps
