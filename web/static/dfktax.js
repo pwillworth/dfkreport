@@ -1,9 +1,8 @@
 var BASE_SCRIPT_URL = '/';
-var address_map = {
-  '0xf390830DF829cf22c53c8840554B98eafC5dCBc2': 'anyJewel',
-  '0x3405A1bd46B85c5C029483FbECf2F3E611026e45': 'anyMAI',
-  '0x647dC1366Da28f8A64EB831fC8E9F05C90d1EA5a': 'anySwapFrom',
-  '0xD67de0e0a0Fd7b15dC8348Bb9BE742F3c5850454': 'anySwapTo',
+var HARMONY_TOKENS = {
+  '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'Jewel',
+  '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': 'xJewels',
+  '0x985458E523dB3d53125813eD68c274899e9DfAb4': '1USDC',
   '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'ONE',
   '0xb12c13e66AdE1F72f71834f2FC5082Db8C091358': 'wAVAX',
   '0x53BA62dDD5a9A6B6d97C7a496D7832D13A9218c4': 'rAVAX',
@@ -15,6 +14,7 @@ var address_map = {
   '0xD74433B187Cf0ba998Ad9Be3486B929c76815215': 'Artemis',
   '0x3cebA57a1AA15A35a4A29a9E067D4AE441dE779F': 'Babymis',
   '0xCf1709Ad76A79d5a60210F23e81cE2460542A836': 'Tranquil',
+  '0xB4aA8c8e555b3A2F1BFd04234FF803C011760E59': 'xTranq',
   '0xB55106308974CEbe299A0f0505435C47b404b9a6': 'Eden',
   '0x0159ED2E06DDCD46a25E74eb8e159Ce666B28687': 'FOX',
   '0xED0B4b0F0E2c17646682fc98ACe09feB99aF3adE': 'RVRS',
@@ -29,7 +29,7 @@ var address_map = {
   '0x1e05C8B69e4128949FcEf16811a819eF2f55D33E': 'SONIC',
   '0x224e64ec1BDce3870a6a6c777eDd450454068FEC': 'wUST',
   '0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f': '1USDT',
-  '0xE176EBE47d621b984a73036B9DA5d834411ef734': 'BinanceUSD',
+  '0xE176EBE47d621b984a73036B9DA5d834411ef734': 'Binance USD',
   '0xb1f6E61E1e113625593a22fa6aa94F8052bc39E0': 'bscBNB',
   '0x0aB43550A6915F9f67d0c454C2E90385E6497EaA': 'bscBUSD',
   '0x44cED87b9F1492Bf2DCf5c16004832569f7f6cBa': 'bscUSDC',
@@ -43,16 +43,16 @@ var address_map = {
   '0xA5445d24E5dbF641f76058CD7a95b1c402Eb97b5': 'bscTLM',
   '0x2A719aF848bf365489E548BE5edbEC1D65858e59': 'Fira',
   '0x690f506C7FB8e76d61C077Ca75341a6F8AC37Ed5': 'sFira',
-  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'Tranquil ONE Staking',
   '0x22D62b19b7039333ad773b7185BB61294F3AdC19': 'stONE',
   '0x892D81221484F690C0a97d3DD18B9144A3ECDFB7': 'MAGIC',
+  '0xf390830DF829cf22c53c8840554B98eafC5dCBc2': 'anyJewel',
+  '0x3405A1bd46B85c5C029483FbECf2F3E611026e45': 'anyMAI',
   '0x093956649D43f23fe4E7144fb1C3Ad01586cCf1e': 'Jewel LP Token AVAX/Jewel',
   '0xEb579ddcD49A7beb3f205c9fF6006Bb6390F138f': 'Jewel LP Token ONE/Jewel',
   '0xFdAB6B23053E22b74f21ed42834D7048491F8F32': 'Jewel LP Token ONE/xJewel',
   '0x66C17f5381d7821385974783BE34c9b31f75Eb78': 'Jewel LP Token ONE/1USDC',
   '0x3733062773B24F9bAfa1e8f2e5A352976f008A95': 'Jewel LP Token XYA/Jewel',
   '0xc74eaf04777F784A7854e8950daEb27559111b85': 'Jewel LP Token XYA/ONE',
-  '0xc74eaf04777F784A7854e8950daEb27559111b85': 'Jewel LP Token XYA/Jewel/ONE',
   '0x61356C852632813f3d71D57559B06cdFf70E538B': 'Jewel LP Token ONE/UST',
   '0xb91A0dFA0178500FEDC526f26A89803C387772E8': 'Jewel LP Token Jewel/UST',
   '0xf0504847fDbe0AEFaB006EA002BfC1CFe20d8985': 'Jewel LP Token ONE/1USDT',
@@ -97,56 +97,11 @@ var address_map = {
   '0xD74B9b22860b52d8d6bc666Cf8E7274D76Cd596d': 'Jewel LP Token bscTLM/Jewel',
   '0xa8589d575aeD9C6dc12C860867c5348791D2D097': 'Jewel LP Token KURO/Jewel',
   '0x500afc0C82DA45C618fbBfc2F6931Bc415d334ea': 'Jewel LP Token 1MATIC/Jewel',
-  '0x3685ec75ea531424bbe67db11e07013abeb95f1e': 'LP withdraw fees?',
+  '0x321EafB0aeD358966a90513290De99763946A54b': 'Jewel LP Token DFKGold/Jewel',
+  '0xB270556714136049B27485f1aA8089B10F6F7f57': 'Jewel LP Token Shvas/Jewel',
   '0x6574026Db45bA8d49529145080489C3da71a82DF': 'Venom LP Token ONE/UST',
   '0xF170016d63fb89e1d559e8F87a17BCC8B7CD9c00': 'Venom LP Token ONE/USDC',
   '0xA0E4f1f65e80A7aFb07cB43956DC8b91C7dBC640': 'Venom LP Token bscUSDC/1USDC',
-  '0x9014B937069918bd319f80e8B3BB4A2cf6FAA5F7': 'UniswapV2Factory',
-  '0x24ad62502d1C652Cc7684081169D04896aC20f30': 'UniswapV2Router02 Serendale',
-  '0xf012702a5f0e54015362cBCA26a26fc90AA832a3': 'UniswapV2Router02 VenomSwap',
-  '0xcEEB22Faf32FF4EAd24565225503807e41E5FE87': 'Uniswap SonicSwap',
-  '0x481721B918c698ff5f253c56684bAC8dCa84346c': '1BTC Bridge',
-  '0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940': 'TranqOneLending',
-  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'TranqStoneLending',
-  '0xd9c0D8Ad06ABE10aB29655ff98DcAAA0E059184A': 'Tranq1WBTCLending',
-  '0x481721B918c698ff5f253c56684bAC8dCa84346c': 'Tranq1BTCLending',
-  '0xc63AB8c72e636C9961c5e9288b697eC5F0B8E1F7': 'Tranq1ETHLending',
-  '0xCa3e902eFdb2a410C952Fd3e4ac38d7DBDCB8E96': 'Tranq1USDCLending',
-  '0x7af2430eFa179dB0e76257E5208bCAf2407B2468': 'Tranq1USDTLending',
-  '0x49d95736FE7f1F32E3ee5deFc26c95bA22834639': 'Tranq1DAILending',
-  '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'Jewel',
-  '0xA9cE83507D872C5e1273E745aBcfDa849DAA654F': 'xJewels',
-  '0x985458E523dB3d53125813eD68c274899e9DfAb4': 'USD Coin',
-  '0x3685Ec75Ea531424Bbe67dB11e07013ABeB95f1e': 'Banker',
-  '0xe53BF78F8b99B6d356F93F41aFB9951168cca2c6': 'Vendor',
-  '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892': 'AuctionHouse',
-  '0x65DEA93f7b886c33A78c10343267DD39727778c2': 'SummoningPortal',
-  '0xf4d3aE202c9Ae516f7eb1DB5afF19Bf699A5E355': 'SummoningPortal2',
-  '0x0594D86b2923076a2316EaEA4E1Ca286dAA142C1': 'MeditationCircle',
-  '0xDB30643c71aC9e2122cA0341ED77d09D5f99F924': 'MasterGardener',
-  '0x87CBa8F998F902f2fff990efFa1E261F35932e57': 'Alchemist',
-  '0x77D991987ca85214f9686131C58c1ABE4C93E547': 'LandAuction',
-  '0xD5f5bE1037e457727e011ADE9Ca54d21c21a3F8A': 'Land',
-  '0xa678d193fEcC677e137a00FEFb43a9ccffA53210': 'Airdrop',
-  '0x8AbEbcDBF5AF9FC602814Eabf6Fbf952acF682A2': 'Airdrops',
-  '0x2b12D9A2480D6Dd9F71DabAa366C87134195b679': 'Airdrop Payments Portal',
-  '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C': 'Payment Service',
-  '0xa4b9A93013A5590dB92062CF58D4b0ab4F35dBfB': 'Dev Fund',
-  '0x1e3B6b278BA3b340d4BE7321e9be6DfeD0121Eac': 'Old Dev Fund',
-  '0x3875e5398766a29c1B28cC2068A0396cba36eF99': 'Marketing Fund',
-  '0xabD4741948374b1f5DD5Dd7599AC1f85A34cAcDD': 'Profiles',
-  '0xE92Db3bb6E4B21a8b9123e7FdAdD887133C64bb7': 'Perilous Journey',
-  '0x5100Bd31b822371108A0f63DCFb6594b9919Eaf4': 'Serendale Quest',
-  '0x3132c76acF2217646fB8391918D28a16bD8A8Ef4': 'Foraging Quest',
-  '0xE259e8386d38467f0E7fFEdB69c3c9C935dfaeFc': 'Fishing Quest',
-  '0xF5Ff69f4aC4A851730668b93Fc408bC1C49Ef4CE': 'Wishing Well Quest',
-  '0xe4154B6E5D240507F9699C730a496790A722DF19': 'Gardening Quest',
-  '0x38e76972BD173901B5E5E43BA5cB464293B80C31': 'Potion Use',
-  '0x5F753dcDf9b1AD9AabC1346614D1f4746fd6Ce5C': 'Hero',
-  '0x0405f1b828C7C9462877cC70A9f266887FF55adA': 'DFK Raffle Tix',
-  '0xBbd7c4Be2e54fF5e013471162e1ABAD7AB74c3C3': 'DFK Raffle Tix', //CV
-  '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
-  '0xA37851cCE4B2b65c0b290AA4cC2DFF00314ec85a': 'Eternal Story Page', // CV
   '0x3a4EDcf3312f44EF027acfd8c21382a5259936e7': 'DFK Gold',
   '0x24eA0D436d3c2602fbfEfBe6a16bBc304C963D04': 'Gaia\'s Tears',
   '0x66F5BfD910cd83d3766c4B39d13730C911b2D286': 'Shvas Rune',
@@ -173,38 +128,9 @@ var address_map = {
   '0xAC5c49Ff7E813dE1947DC74bbb1720c353079ac9': 'Blue Stem',
   '0xc0214b37FCD01511E6283Af5423CF24C96BB9808': 'Milkweed',
   '0x19B9F05cdE7A61ab7aae5b0ed91aA62FF51CF881': 'Spiderfruit',
-  '0x75E8D8676d774C9429FbB148b30E304b5542aC3d': 'Shvas Rune', //Crystalvale quest items
-  '0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4': 'Moksha Rune',
-  '0x7E121418cC5080C96d967cf6A033B0E541935097': 'Grey Pet Egg',
-  '0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB': 'Green Pet Egg',
-  '0xa61Bac689AD6867a605633520D70C49e1dCce853': 'Blue Pet Egg',
-  '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3': 'Yellow Pet Egg',
-  '0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7': 'Golden Egg',
-  '0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943': 'Ambertaffy',
-  '0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd': 'Darkweed',
-  '0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e': 'Goldvein',
-  '0x137995beEEec688296B0118131C1052546475fF3': 'Ragweed',
-  '0x473A41e71618dD0709Ba56518256793371427d79': 'Redleaf',
-  '0x60170664b52c035Fcb32CF5c9694b22b47882e5F': 'Rockroot',
-  '0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A': 'Swift-Thistle',
-  '0xe7a1B580942148451E47b92e95aEB8d31B0acA37': 'Frost Drum',
-  '0xBcdD90034eB73e7Aec2598ea9082d381a285f63b': 'Knaproot',
-  '0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4': 'Shaggy Caps',
-  '0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3': 'Skunk Shade',
-  '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61': 'Bloater',
-  '0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88': 'Ironscale',
-  '0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB': 'Lanterneye',
-  '0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81': 'Redgill',
-  '0x7f46E45f6e0361e7B9304f338404DA85CB94E33D': 'Sailfish',
-  '0xd44ee492889C078934662cfeEc790883DCe245f3': 'Shimmerskin',
-  '0xA7CFd21223151700FB82684Cd9c693596267375D': 'Silverfin',
-  '0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD': 'Frost Bloater',
-  '0xE7CB27ad646C49dC1671Cb9207176D864922C431': 'Speckle Tail',
-  '0x60A3810a3963f23Fa70591435bbe93BF8786E202': 'King Pincer',
-  '0x6513757978E89e822772c16B60AE033781A29A4F': 'Three Eyed Eel',
-  '0x0776b936344DE7bd58A4738306a6c76835ce5D3F': 'Blue Stem',
-  '0xA2cef1763e59198025259d76Ce8F9E60d27B17B5': 'Milkweed',
-  '0x3E022D84D397F18743a90155934aBAC421D5FA4C': 'Spiderfruit',
+  '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
+  '0x0405f1b828C7C9462877cC70A9f266887FF55adA': 'DFK Raffle Tix',
+  '0x909EF175d58d0e17d3Ceb005EeCF24C1E5C6F390': 'Eternal Story Page',
   '0x2789F04d22a845dC854145d3c289240517f2BcF0': 'Health Vial',
   '0x87361363A75c9A6303ce813D0B2656c34B68FF52': 'Full Health Potion',
   '0x19b020001AB0C12Ffa93e1FDeF90c7C37C8C71ef': 'Mana Vial',
@@ -272,8 +198,70 @@ var address_map = {
   '0x7f26CB2BBBcFCE8e5866cc02a887A591E1Adc02A': 'Greater Fortune Stone',
   '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 'Lesser Chaos Stone',
   '0x3633F956410163A98D58D2D928B38C64A488654e': 'Chaos Stone',
-  '0x2fB31FF9E9945c5c1911386865cD666b2C5dfeB6': 'Greater Chaos Stone',
-  '0x591853e01EcFDcF1Bdc9f093423C197BfBBd1A4f': 'Health Vial', // Crystalvale crafted items
+  '0x2fB31FF9E9945c5c1911386865cD666b2C5dfeB6': 'Greater Chaos Stone'
+};
+var DFKCHAIN_TOKENS = {
+  '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
+  '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystalOld',
+  '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2': 'xCrystal',
+  '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'wJewel',
+  '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'wxJewel',
+  '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'dfkAVAX',
+  '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'USDC',
+  '0xfBDF0E31808d0aa7b9509AA6aBC9754E48C58852': 'Ethereum',
+  '0x576C260513204392F0eC0bc865450872025CB1cA': 'DFK Gold',
+  '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278': 'Gaia\'s Tears',
+  '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA': 'Gaia\'s Tears',
+  '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
+  '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
+  '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
+  '0xCF329b34049033dE26e4449aeBCb41f1992724D3': 'Crystal LP Token Jewel/USDC',
+  '0x9f378F48d0c1328fd0C80d7Ae544C6CadB5Ba99E': 'Crystal LP Token Crystal/AVAX',
+  '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC',
+  '0x78C893E262e2681Dbd6B6eBA6CCA2AaD45de19AD': 'Crystal LP Token Crystal/Ethereum',
+  '0x7d4daa9eB74264b082A92F3f559ff167224484aC': 'Crystal LP Token Ethereum/USDC',
+  '0x79724B6996502afc773feB3Ff8Bb3C23ADf2854B': 'Crystal LP Token Ethereum/Jewel',
+  '0xaFC1fBc3F3fB517EB54Bb2472051A6f0b2105320': 'Crystal LP Token Klay/Crystal',
+  '0x561091E2385C90d41b4c0dAef651A4b33E1a5CfE': 'Crystal LP Token Klay/Jewel',
+  '0xfAa8507e822397bd56eFD4480Fb12ADC41ff940B': 'Crystal LP Token BTC.b/Jewel',
+  '0x00BD81c9bAc29a3b6aea7ABc92d2C9a3366Bb4dD': 'Crystal LP Token BTC.b/Crystal',
+  '0x59D642B471dd54207Cb1CDe2e7507b0Ce1b1a6a5': 'Crystal LP Token BTC.b/USDC',
+  '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears',
+  '0x75E8D8676d774C9429FbB148b30E304b5542aC3d': 'Shvas Rune',
+  '0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4': 'Moksha Rune',
+  '0x7E121418cC5080C96d967cf6A033B0E541935097': 'Grey Pet Egg',
+  '0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB': 'Green Pet Egg',
+  '0xa61Bac689AD6867a605633520D70C49e1dCce853': 'Blue Pet Egg',
+  '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3': 'Yellow Pet Egg',
+  '0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7': 'Golden Egg',
+  '0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943': 'Ambertaffy',
+  '0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd': 'Darkweed',
+  '0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e': 'Goldvein',
+  '0x137995beEEec688296B0118131C1052546475fF3': 'Ragweed',
+  '0x473A41e71618dD0709Ba56518256793371427d79': 'Redleaf',
+  '0x60170664b52c035Fcb32CF5c9694b22b47882e5F': 'Rockroot',
+  '0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A': 'Swift-Thistle',
+  '0xe7a1B580942148451E47b92e95aEB8d31B0acA37': 'Frost Drum',
+  '0xBcdD90034eB73e7Aec2598ea9082d381a285f63b': 'Knaproot',
+  '0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4': 'Shaggy Caps',
+  '0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3': 'Skunk Shade',
+  '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61': 'Bloater',
+  '0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88': 'Ironscale',
+  '0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB': 'Lanterneye',
+  '0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81': 'Redgill',
+  '0x7f46E45f6e0361e7B9304f338404DA85CB94E33D': 'Sailfish',
+  '0xd44ee492889C078934662cfeEc790883DCe245f3': 'Shimmerskin',
+  '0xA7CFd21223151700FB82684Cd9c693596267375D': 'Silverfin',
+  '0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD': 'Frost Bloater',
+  '0xE7CB27ad646C49dC1671Cb9207176D864922C431': 'Speckle Tail',
+  '0x60A3810a3963f23Fa70591435bbe93BF8786E202': 'King Pincer',
+  '0x6513757978E89e822772c16B60AE033781A29A4F': 'Three Eyed Eel',
+  '0x0776b936344DE7bd58A4738306a6c76835ce5D3F': 'Blue Stem',
+  '0xA2cef1763e59198025259d76Ce8F9E60d27B17B5': 'Milkweed',
+  '0x3E022D84D397F18743a90155934aBAC421D5FA4C': 'Spiderfruit',
+  '0xBbd7c4Be2e54fF5e013471162e1ABAD7AB74c3C3': 'DFK Raffle Tix CV',
+  '0xA37851cCE4B2b65c0b290AA4cC2DFF00314ec85a': 'Eternal Story Page',
+  '0x591853e01EcFDcF1Bdc9f093423C197BfBBd1A4f': 'Health Vial',
   '0x5948dd8Df6afEFE05B033AD8f3ae513a9Cd4F1Dc': 'Full Health Potion',
   '0x240da5314B05E84392e868aC8f2b80ad6becadd4': 'Mana Vial',
   '0xf17FD21bDF6713a1Dfed668b97835b21e32651e8': 'Full Mana Potion',
@@ -286,7 +274,7 @@ var address_map = {
   '0xab2B495902f9A6652c382e5f289423929FFF2E65': 'Atonement Crystal',
   '0xbFa812214a16EcA7814e5F5c270d7f8F37A110B5': 'Atonement Crystal Lesser',
   '0x3A28E0D4eCF7558e1ba7357070032C5A6105B0C2': 'Greater Atonement Crystal',
-  '0x5bAC3cAd961B01Ef9510C8e6c5402A2bB1542831': 'Lesser Might Crystal',  // Crystalvale crystals
+  '0x5bAC3cAd961B01Ef9510C8e6c5402A2bB1542831': 'Lesser Might Crystal',
   '0x234dCf10Db6817185F5A3b430a8CAF2B4a35e9E9': 'Might Crystal',
   '0x438A4e0673b7084D6b2379a362627789D845399c': 'Greater Might Crystal',
   '0x9d9ef1Bf6A46b8413bf6b1b54F6A7aAb53c6b1b6': 'Lesser Finesse Crystal',
@@ -313,7 +301,7 @@ var address_map = {
   '0xeEe5b16Cc49e7cef65391Fe7325cea17f787e245': 'Lesser Chaos Crystal',
   '0xC6b00B4005883C1Ff09fa1351B0f49027bCAB71a': 'Chaos Crystal',
   '0xb0155Fdb7B6972717C4774Fa2AEAEe9D6c0040b9': 'Greater Chaos Crystal',
-  '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 'Lesser Might Stone', // Crystalvale stones
+  '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 'Lesser Might Stone',
   '0x37bAa710391c1D6e22396E4B7F78477F0fF2fFA7': 'Might Stone',
   '0xA0851F6368AfA693a6654e9fdaf76CB6F160B837': 'Greater Might Stone',
   '0xF1D53fa23C562246B9d8EC591eEa12Ec0288a888': 'Lesser Finesse Stone',
@@ -339,54 +327,198 @@ var address_map = {
   '0x8FfF0f5A660b4D38441DDF6127bca42D7a2755a9': 'Greater Fortune Stone',
   '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 'Lesser Chaos Stone',
   '0x1ED1a6Ed588945C59227f7a0c622Ad564229d3d6': 'Chaos Stone',
-  '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 'Greater Chaos Stone',
-  '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 'Bounty Hero Achievement',
-  '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',  // Start Avalanche list
+  '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 'Greater Chaos Stone'
+};
+var KLAYTN_TOKENS = {
+  '0x5819b6af194a78511c79c85ea68d2377a7e9335f': 'wKlay',
+  '0xe4f05A66Ec68B54A58B17c22107b02e0232cC817': 'KLAY',
+  '0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432': 'wKlay',
+  '0xB3F5867E277798b50ba7A71C0b24FDcA03045eDF': 'Jade',
+  '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43': 'Jewel',
+  '0xcd8fe44a29db9159db36f96570d7a4d91986f528': 'Avax',
+  '0x6270B58BE569a7c0b8f47594F191631Ae5b2C86C': 'synUSDC',
+  '0xceE8FAF64bB97a73bb51E115Aa89C17FfA8dD167': 'oUSDT',
+  '0x34d21b1e550D73cee41151c77F3c73359527a396': 'oETH',
+  '0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c': 'oWBTC',
+  '0xaA8548665bCC12C202d5d0C700093123F2463EA6': 'sJewel',
+  '0x6fc625D907b524475887524b11DE833feF460698': 'Jade LP Token oETH/Jade',
+  '0x509d49AC90EF180363269E35b363E10b95c983AF': 'Jade LP Token oUSDT/Jade',
+  '0x6CE5bb25A4E7aBF7214309F7b8D7cceCEF60867E': 'Jade LP Token Avax/Jewel',
+  '0x63b67d4a0f553D436B0a511836A7A4bDF8Af376A': 'Jade LP Token Avax/Jade',
+  '0x7828926761e7a6E1f9532914A282bf6631EA3C81': 'Jade LP Token Jewel/oWBTC',
+  '0x50943e1E500D7D62cc4c6904FBB3957fAfaEbEd5': 'Jade LP Token Jade/oWBTC',
+  '0xd08A937a67eb5613ccC8729C01605E0320f1B216': 'Jade LP Token Klay/Jade',
+  '0xd3e2Fd9dB41Acea03f0E0c22d85D3076186f4f24': 'Jade LP Token Jewel/oETH',
+  '0x0d9a7780ce1d680ec32c37d815e966304b09be9b': 'Jade LP Token Jade/Gaia Tears',
+  '0xFab984b38039D3D4CbfeE8f274Fa6E193206a0EC': 'Jade LP Token Jewel/Gaia Tears',
+  '0x0d9d200720021F9de5C8413244f81087ecB4AdcC': 'Jade LP Token Klay/Jewel',
+  '0xe7a1B580942148451E47b92e95aEB8d31B0acA37': 'DFKGold',
+  '0x8Be0cbA3c8c8F392408364ef21dfCF714A918234': 'Gaia\'s Tears',
+  '0x907a98319AEB249e387246637149f4B2e7D21dB7': 'Shvas Rune',
+  '0xd0223143057Eb44065e789b202E03A5869a6006C': 'Moksha Rune',
+  '0xfd29ebdE0dd1331C19BBF54518df94b442ACb38C': 'Grey Pet Egg',
+  '0xb1Ec534fBBfEBd4563A4B0055E744286CE490f26': 'Green Pet Egg',
+  '0x29ADd7D022c591D56eb4aFd262075dA900C67ab1': 'Blue Pet Egg',
+  '0x0A73aF98781bad9BCb80A71241F129EA877eF1b7': 'Yellow Pet Egg',
+  '0xc9731BE04F217543E3010cCbf903E858EFde840f': 'Golden Egg',
+  '0x75E8D8676d774C9429FbB148b30E304b5542aC3d': 'Ambertaffy',
+  '0xEDFBe9EEf42FfAf8909EC9Ce0d79850BA0C232FE': 'Darkweed',
+  '0xeaF833A0Ae97897f6F69a728C9c17916296cecCA': 'Goldvein',
+  '0x4cD7025BD6e1b77105b90928362e6715101d0b5a': 'Ragweed',
+  '0xadbF23Fe3B47857614940dF31B28179685aE9B0c': 'Redleaf',
+  '0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7': 'Rockroot',
+  '0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4': 'Swift-Thistle',
+  '0xD69542aBE74413242e387Efb9e55BE6A4863ca10': 'Frost Drum',
+  '0xFceFA4Abcb18a7053393526f75Ad33fac5F25dc9': 'Knaproot',
+  '0xCe370D379f0CCf746B3426E3BD3923f3aDF0DC1a': 'Shaggy Caps',
+  '0x874FC0015ece1d77ba3D5668F16c46ba72913239': 'Skunk Shade',
+  '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3': 'Bloater',
+  '0xBcdD90034eB73e7Aec2598ea9082d381a285f63b': 'Ironscale',
+  '0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4': 'Lanterneye',
+  '0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB': 'Redgill',
+  '0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3': 'Sailfish',
+  '0xa61Bac689AD6867a605633520D70C49e1dCce853': 'Shimmerskin',
+  '0x7E121418cC5080C96d967cf6A033B0E541935097': 'Silverfin',
+  '0x18cB286EeCE992f79f601E49acde1D1F5dE32a30': 'Frost Bloater',
+  '0x48d9fC80A47cee2d52DE950898Bc6aBF54223F81': 'Speckle Tail',
+  '0xB4A516bf36e44c0CE9E3E6769D3BA87341Cd9959': 'King Pincer',
+  '0x7E1298EBF3a8B259561df6E797Ff8561756E50EA': 'Three Eyed Eel',
+  '0xDbd4fA2D2C62C6c60957a126970e412Ed6AC1bD6': 'Blue Stem',
+  '0xE408814828f2b51649473c1a05B861495516B920': 'Milkweed',
+  '0x08D93Db24B783F8eBb68D7604bF358F5027330A6': 'Spiderfruit',
+  '0xa27C1429a676db902B9f0360686eDbB57d0A7B01': 'Health Vial',
+  '0xf710244462431b9962706B46826AFB3B38376c7b': 'Full Health Potion',
+  '0x8639d64A2088500EC4f20fB5C41A995fE4f1d85a': 'Mana Vial',
+  '0x108D31E23bC6540878E6532F3376b3EC982e1C58': 'Full Mana Potion',
+  '0x4546DBaAb48Bf1BF2ad7B56d04952d946Ab6e2a7': 'Stamina Vial',
+  '0xE34a733fA92B41A1CA4241da9D2d5834Cc8D1011': 'Anti-Poison Potion',
+  '0x5FB537aF1d929af7BDD7935C289158c940782ed6': 'Anti-Blind Potion',
+  '0x9c8A0C6a7ad8Be153773070D434CDbeA5176D2ff': 'Magic Resistance Potion',
+  '0xf757a7F4ffF29e7F7b4aCCe6Ffb04E59e91EFDA8': 'Toughness Potion',
+  '0xcb7aA7cA9357DAF9F2b78D262A4f89cDfE5abC70': 'Swiftness Potion',
+  '0x80Ab38fc9fA0a484b98d5600147e7C695627747D': 'Lesser Might Crystal',
+  '0xa3907dEA6f16f1918B4BcDd178c2928c7e6A571D': 'Might Crystal',
+  '0x1F93421DaE2f8de79C3Fd197a227ec5EE3Eef71b': 'Greater Might Crystal',
+  '0xC3B36a02f360c3d18042bF3533be602cb775007A': 'Lesser Finesse Crystal',
+  '0x15E77beB33D3B09aB7da529daB1E556b955fECf6': 'Finesse Crystal',
+  '0x616df872971A3f31dffC9a2B55BF55C760B966bF': 'Greater Finesse Crystal',
+  '0x32Cbbfd741EB7634818aa2e3E8502367cB6602BE': 'Lesser Swiftness Crystal',
+  '0xc2Ff16F357b51E070c977501563A01a70F3B7BF5': 'Swiftness Crystal',
+  '0xa5CC44e60F5a898e5c776952E66D1c9905077608': 'Greater Swiftness Crystal',
+  '0x6C7AF7483b050a00b5fbC4241eD06944c5f0bD77': 'Lesser Vigor Crystal',
+  '0x14a9D5a75799E4C6B4BfA65C8293a75e02DD5339': 'Vigor Crystal',
+  '0x73286f76E05aAa7A73F896DE0Ebc745021Cb50F2': 'Greater Vigor Crystal',
+  '0x1E672a8385b39E13267efA2Fb39f574a2a23AE9F': 'Lesser Fortitude Crystal',
+  '0xA844059503289B781854aEdcA04E5bB13290bd86': 'Fortitude Crystal',
+  '0x147b3263F1C4ca729B13Ca1D2A7148c32Aa1d8d0': 'Greater Fortitude Crystal',
+  '0xf15035b5eD13Feb18f63D829ABc1c3139041e7C2': 'Lesser Wit Crystal',
+  '0xf30214D43E55BE1cbaC712b49A75d4D3220302a7': 'Wit Crystal',
+  '0x5F8A485ed5B4B13c1fc3c1C7fe82164E8e534060': 'Greater Wit Crystal',
+  '0x5f967E325E91977B42D2591Fc2f57da75Ee4490B': 'Lesser Insight Crystal',
+  '0xAd7fBD9EDDE05227964104Bb23Ff8d171D4c90C8': 'Insight Crystal',
+  '0x17bb680872D7631e3056136d7e15eC5f6570976a': 'Greater Insight Crystal',
+  '0x8baD15B5C531d119b328d0F716a6B9D90CeDa88A': 'Lesser Fortune Crystal',
+  '0x02d27BC195E58498C687A82d96188A8EF282a1e1': 'Fortune Crystal',
+  '0x0d2ea025007995e9Bb1815864CD4e7B98B47DF7c': 'Greater Fortune Crystal',
+  '0x537E800b8fD22Dc76A438Af8b9923986A5487853': 'Lesser Chaos Crystal',
+  '0xE078C782fF0cC1789D0608834A3cD5076896e4FC': 'Chaos Crystal',
+  '0x9e185426354AA53aAC07De79c2fa1e0B50490fdd': 'Greater Chaos Crystal',
+  '0xbb8ac0BB95E433204217b0478B3f6d815EcB2d8C': 'Lesser Might Stone',
+  '0x532bce28c28616552a4BcDdb5D4B4126Dea35f66': 'Might Stone',
+  '0x434619b18466dEAA26475f97467754135aB8f3AF': 'Greater Might Stone',
+  '0x784bd01e3882b80aa837f6A3041Cd386eC54a501': 'Lesser Finesse Stone',
+  '0x31eb3b534E29D10Db08109A1fa50ccB081d10816': 'Finesse Stone',
+  '0xFE4ac39174C2637537711f0cb3112EaD47E77D37': 'Greater Finesse Stone',
+  '0xAd51199B453075C73FA106aFcAAD59f705EF7872': 'Lesser Swiftness Stone',
+  '0xf200597430eAc3e22B4566D1BCd70A3b63804B24': 'Swiftness Stone',
+  '0x954296fd7563f737BD502e3DdbAdA3f5223F92f1': 'Greater Swiftness Stone',
+  '0x50F683acefA41b226CEfAdc0dd2ea6fFBfED56A0': 'Lesser Vigor Stone',
+  '0xA0c89fB3cbb115cf86EdcB4319578312D026A07a': 'Vigor Stone',
+  '0x9A587bBD01D5B2745b20A89ddd9B83268129fEda': 'Greater Vigor Stone',
+  '0xBC5248B4f50f4c7D2F9A67Be1f1d4b8be44ffc75': 'Lesser Fortitude Stone',
+  '0x254787d3b87d8c21A300Ab8D5A06C01426CE40c0': 'Fortitude Stone',
+  '0x3D0EA055081e62e40257fde3A2036a557af6Ff77': 'Greater Fortitude Stone',
+  '0x5903F478e456DD4Ce5387caBE3984DfEf93D0A46': 'Lesser Wit Stone',
+  '0x3BaEFAfF21Fa2F06Ad3899903B7A899a91B5915A': 'Wit Stone',
+  '0x3C0B9C87b1747C47D0B73910f995A08D75D81Af1': 'Greater Wit Stone',
+  '0xfC66cF68505F8E95C52C4F7f84936436DBd52e9B': 'Lesser Insight Stone',
+  '0x22A92428605a3B5b66695A60e96b683E98a9a035': 'Insight Stone',
+  '0xF861104131825320C3d0D9B7bd373Ea0549f0587': 'Greater Insight Stone',
+  '0x816E22125021530535364390a3E2fA305a436247': 'Lesser Fortune Stone',
+  '0xf0cBbd41652d9A93A899f070669186F0c8475F7D': 'Fortune Stone',
+  '0x91aced74b0CEE03EF8902f13E97F6e308941E6Bd': 'Greater Fortune Stone',
+  '0x38bDed7C399bbD214a19De35260766b130cAFd2F': 'Lesser Chaos Stone',
+  '0x880cb941AAb394775f54F2b6468035bbdD0B81dF': 'Chaos Stone',
+  '0x932049DF7f09DeE7cF5Aefe03f373810EBbdDDc7': 'Greater Chaos Stone',
+  '0x26bdcB310313eFf8D580e43762e2020B23f3e728': 'Eternal Story Pages'
+};
+var AVALANCHE_TOKENS = {
+  '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7': 'AVAX',
   '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'AVAX Jewel',
   '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70': 'DAI',
   '0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664': 'USDC',
   '0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB': 'wETH',
+  '0x152b9d0fdc40c096757f570a51e494bd4b943e50': 'BTC.b',
   '0x60781C2586D68229fde47564546784ab3fACA982': 'PNG',
-  '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106': 'Uniswap AVAX',
-  '0x1f806f7C8dED893fd3caE279191ad7Aa3798E928': 'Pangolin Farms V2',
-  '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
-  '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX',
-  '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
-  '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystal',
-  '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2': 'xCrystal',
-  '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'wJewel',
-  '0x77f2656d04E158f915bC22f07B779D94c1DC47Ff': 'xJewel',
-  '0x9ed2c155632C042CB8bC20634571fF1CA26f5742': 'cJewel',
-  '0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a': 'AVAX',
-  '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 'USDC',
-  '0xfBDF0E31808d0aa7b9509AA6aBC9754E48C58852': 'Ethereum',
-  '0x7516EB8B8Edfa420f540a162335eACF3ea05a247': 'BTC.b',
-  '0x97855Ba65aa7ed2F65Ed832a776537268158B78a': 'Klay',
-  '0xD17a41Cd199edF1093A9Be4404EaDe52Ec19698e': 'Matic',
-  '0x2Df041186C844F8a2e2b63F16145Bc6Ff7d23E25': 'Fantom',
-  '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278': 'Gaia\'s Tears',
-  '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA': 'Gaia\'s Tears',
-  '0x576C260513204392F0eC0bc865450872025CB1cA': 'DFK Gold',
-  '0x6AC38A4C112F125eac0eBDbaDBed0BC8F4575d0d': 'Crystal LP Token Jewel/xJewel',
-  '0x48658E69D741024b4686C8f7b236D3F1D291f386': 'Crystal LP Token Jewel/Crystal',
-  '0xF3EabeD6Bd905e0FcD68FC3dBCd6e3A4aEE55E98': 'Crystal LP Token Jewel/AVAX',
-  '0xCF329b34049033dE26e4449aeBCb41f1992724D3': 'Crystal LP Token Jewel/USDC',
-  '0x9f378F48d0c1328fd0C80d7Ae544C6CadB5Ba99E': 'Crystal LP Token Crystal/AVAX',
-  '0x04Dec678825b8DfD2D0d9bD83B538bE3fbDA2926': 'Crystal LP Token Crystal/USDC',
-  '0x78C893E262e2681Dbd6B6eBA6CCA2AaD45de19AD': 'Crystal LP Token Crystal/Ethereum',
-  '0x7d4daa9eB74264b082A92F3f559ff167224484aC': 'Crystal LP Token Ethereum/USDC',
-  '0x79724B6996502afc773feB3Ff8Bb3C23ADf2854B': 'Crystal LP Token Ethereum/Jewel',
-  '0xaFC1fBc3F3fB517EB54Bb2472051A6f0b2105320': 'Crystal LP Token Klay/Crystal',
-  '0x561091E2385C90d41b4c0dAef651A4b33E1a5CfE': 'Crystal LP Token Klay/Jewel',
-  '0xfAa8507e822397bd56eFD4480Fb12ADC41ff940B': 'Crystal LP Token BTC.b/Jewel',
-  '0x00BD81c9bAc29a3b6aea7ABc92d2C9a3366Bb4dD': 'Crystal LP Token BTC.b/Crystal',
-  '0x59D642B471dd54207Cb1CDe2e7507b0Ce1b1a6a5': 'Crystal LP Token BTC.b/USDC',
-  '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears'
 };
+const JEWEL_ADDRESSES = {
+  '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F': 'harmony',
+  '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 'dfkchain',
+  '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43': 'klaytn',
+  '0x4f60a160D8C2DDdaAfe16FCC57566dB84D674BD6': 'avalanche'
+};
+const AIRDROP_ADDRESSES = {
+  '0xa678d193fEcC677e137a00FEFb43a9ccffA53210': 'Airdrop',
+  '0x8AbEbcDBF5AF9FC602814Eabf6Fbf952acF682A2': 'Airdrops',
+  '0x2b12D9A2480D6Dd9F71DabAa366C87134195b679': 'Airdrop Payments Portal',
+  '0x123165B3a30fdA3655B30cfC10135C1CA3C21bFC': 'Airdrop Crystalvale',
+  '0x947873092dc57C1A70704033c41cB110f4462a8B': 'Airdrop Claim'
+}
+const LENDING_ADDRESSES = {
+  '0x34B9aa82D89AE04f0f546Ca5eC9C93eFE1288940': 'TranqOneLending',
+  '0x973f22036A0fF3A93654e7829444ec64CB37BD78': 'TranqStoneLending',
+  '0xd9c0D8Ad06ABE10aB29655ff98DcAAA0E059184A': 'Tranq1WBTCLending',
+  '0x481721B918c698ff5f253c56684bAC8dCa84346c': 'Tranq1BTCLending',
+  '0xc63AB8c72e636C9961c5e9288b697eC5F0B8E1F7': 'Tranq1ETHLending',
+  '0xCa3e902eFdb2a410C952Fd3e4ac38d7DBDCB8E96': 'Tranq1USDCLending',
+  '0x7af2430eFa179dB0e76257E5208bCAf2407B2468': 'Tranq1USDTLending',
+  '0x49d95736FE7f1F32E3ee5deFc26c95bA22834639': 'Tranq1DAILending',
+}
 crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'];
 event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
 paymentsTotalValue = 0;
+
+function getTokenName(address, network) {
+  result = address;
+  if (network == 'dfkchain' && address in DFKCHAIN_TOKENS) {
+    result = DFKCHAIN_TOKENS[address];
+  }
+  if (network == 'klaytn' && address in KLAYTN_TOKENS) {
+    result = KLAYTN_TOKENS[address];
+  }
+  if (network == 'harmony' && address in HARMONY_TOKENS) {
+    result = HARMONY_TOKENS[address];
+  }
+  if (network == 'avalanche' && address in AVALANCHE_TOKENS) {
+    result = AVALANCHE_TOKENS[address];
+  }
+  return result;
+}
+function getAirdropName(address) {
+  if (address in AIRDROP_ADDRESSES) {
+    return AIRDROP_ADDRESSES[address];
+  } else {
+    return '';
+  }
+}
+function getLendingName(address) {
+  if (address in LENDING_ADDRESSES) {
+    return LENDING_ADDRESSES[address];
+  } else {
+    return address;
+  }
+}
 
 // Update running total summary of airdrop/payment income
 function updatePaymentTotal(addAmount, addValue) {
@@ -483,14 +615,14 @@ function loadTaxes(results) {
   }
 }
 
-function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount) {
+function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount, network) {
   $('#tx_tavern_data').show();
   $('#tx_tavern_data').append(
     '<tr title="' + seller + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + itemType + '</td>' +
     '<td>' + itemID + '</td>' +
     '<td>' + event + '</td>' +
-    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + getTokenName(coinType, network) + '</td>' +
     '<td>' + coinCost + '</td>' +
     '<td>' + usdFormat.format(fiatAmount) + '</td></tr>'
   );
@@ -514,7 +646,7 @@ function loadTavernEvents(tavernEvents) {
       fiatAmount = tavernEvents[i].fiatAmount['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount);
+    setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount, tavernEvents[i].network);
 
     if ( tavernEvents[i].event in tavernTotals ) {
       tavernTotals[tavernEvents[i].event] += 1;
@@ -533,13 +665,13 @@ function loadTavernEvents(tavernEvents) {
   $("#smy_tavern_data").html(tavernTable + '</table>');
 }
 
-function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue) {
+function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network) {
   $('#tx_swaps_data').show();
   $('#tx_swaps_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
-    '<td>' + address_map[swapType] + '</td>' +
+    '<td>' + getTokenName(swapType, network) + '</td>' +
     '<td>' + Number(swapAmount).toFixed(3) + '</td>' +
-    '<td>' + address_map[receiveType] + '</td>' +
+    '<td>' + getTokenName(receiveType, network) + '</td>' +
     '<td>' + Number(receiveAmount).toFixed(3) + '</td>' +
     '<td>' + usdFormat.format(fiatSwapValue) + '</td>' +
     '<td>' + usdFormat.format(fiatReceiveValue) + '</td></tr>'
@@ -562,17 +694,19 @@ function loadSwapEvents(swapEvents) {
       fiatSwapValue = swapEvents[i].fiatSwapValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addSwapRow, 50, eventDate, swapEvents[i].swapType, swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], swapEvents[i].receiveType, swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue);
+    setTimeout(addSwapRow, 50, eventDate, swapEvents[i].swapType, swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], swapEvents[i].receiveType, swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue, swapEvents[i].network);
 
-    if ( address_map[swapEvents[i].swapType] in swapTotals ) {
-      swapTotals[address_map[swapEvents[i].swapType]][0] += parseInt(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]);
+    swapName = getTokenName(swapEvents[i].swapType, swapEvents[i].network);
+    rcvdName = getTokenName(swapEvents[i].receiveType, swapEvents[i].network);
+    if ( swapName in swapTotals ) {
+      swapTotals[swapName][0] += parseInt(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]);
     } else {
-      swapTotals[address_map[swapEvents[i].swapType]] = [parseInt(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]), 0];
+      swapTotals[swapName] = [parseInt(swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]), 0];
     }
-    if ( address_map[swapEvents[i].receiveType] in swapTotals ) {
-      swapTotals[address_map[swapEvents[i].receiveType]][1] += parseInt(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0]);
+    if ( rcvdName in swapTotals ) {
+      swapTotals[rcvdName][1] += parseInt(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0]);
     } else {
-      swapTotals[address_map[swapEvents[i].receiveType]] = [0, parseInt(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0])];
+      swapTotals[rcvdName] = [0, parseInt(swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0])];
     }
     $('#tx_swaps_count').html(' (' + (i + 1) + ')');
   }
@@ -605,7 +739,7 @@ function loadLiquidityEvents(liquidityEvents) {
     var eventDate = new Date(liquidityEvents[i].timestamp * 1000);
     var coin1FiatValue = liquidityEvents[i].coin1FiatValue;
     var coin2FiatValue = liquidityEvents[i].coin2FiatValue;
-    var poolName = address_map[liquidityEvents[i].coin1Type] + '/' + address_map[liquidityEvents[i].coin2Type];
+    var poolName = getTokenName(liquidityEvents[i].coin1Type, liquidityEvents[i].network) + '/' + getTokenName(liquidityEvents[i].coin2Type, liquidityEvents[i].network);
     if (liquidityEvents[i].coin1FiatValue['py/reduce'] != undefined) {
       coin1FiatValue = Number(liquidityEvents[i].coin1FiatValue['py/reduce'][1]['py/tuple'][0]);
     }
@@ -638,13 +772,13 @@ function loadLiquidityEvents(liquidityEvents) {
   $("#smy_liquidity_data").html(liquidityTable + '</table>');
 }
 
-function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue) {
+function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue, network) {
   $('#tx_gardens_data').show();
   $('#tx_gardens_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + location + '</td>' +
     '<td>' + event + '</td>' +
-    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + getTokenName(coinType, network) + '</td>' +
     '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -665,7 +799,7 @@ function loadGardensEvents(gardensEvents) {
       fiatValue = gardensEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
     var location = 'Farms'
-    var lpName = String(address_map[gardensEvents[i].coinType])
+    var lpName = String(getTokenName(gardensEvents[i].coinType, gardensEvents[i].network))
     if (lpName.includes('Jewel LP')) {
       location = 'Serendale'
     }
@@ -682,15 +816,15 @@ function loadGardensEvents(gardensEvents) {
       location = 'Pangolin'
     }
 
-    setTimeout(addGardensRow, 50, eventDate, location, gardensEvents[i].event, gardensEvents[i].coinType, coinAmount, fiatValue);
+    setTimeout(addGardensRow, 50, eventDate, location, gardensEvents[i].event, gardensEvents[i].coinType, coinAmount, fiatValue, gardensEvents[i].network);
 
-    if ( address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event in gardensTotals ) {
-      gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] += Number(coinAmount);
+    if ( lpName + ' ' + gardensEvents[i].event in gardensTotals ) {
+      gardensTotals[lpName + ' ' + gardensEvents[i].event] += Number(coinAmount);
     } else {
-      gardensTotals[address_map[gardensEvents[i].coinType] + ' ' + gardensEvents[i].event] = Number(coinAmount);
+      gardensTotals[lpName + ' ' + gardensEvents[i].event] = Number(coinAmount);
     }
     // Maintain header total of Jewel income
-    if (fiatValue > 0 && gardensEvents[i].coinType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+    if (fiatValue > 0 && gardensEvents[i].coinType in JEWEL_ADDRESSES) {
       updatePaymentTotal(Number(coinAmount), Number(fiatValue));
     }
     $('#tx_gardens_count').html(' (' + (i + 1) + ')');
@@ -703,14 +837,14 @@ function loadGardensEvents(gardensEvents) {
   $("#smy_gardens_data").html('<table>' + gardensTable + '</table>');
 }
 
-function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount, fiatValue) {
+function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount, fiatValue, network) {
   $('#tx_bank_data').show();
   $('#tx_bank_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + bankLocation + '</td>' +
     '<td>' + action + '</td>' +
     '<td>' + Number(xRate).toFixed(4) + '</td>' +
-    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + getTokenName(coinType, network) + '</td>' +
     '<td>' + Number(coinAmount).toFixed(5) + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -738,21 +872,22 @@ function loadBankEvents(bankEvents) {
     if (bankEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, xRate, bankEvents[i].coinType, coinAmount, fiatValue);
+    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, xRate, bankEvents[i].coinType, coinAmount, fiatValue, bankEvents[i].network);
 
-    if ( address_map[bankEvents[i].coinType] in bankTotals ) {
+    coinName = getTokenName(bankEvents[i].coinType, bankEvents[i].network)
+    if ( coinName in bankTotals ) {
       if ( bankEvents[i].action == 'withdraw' ) {
-        bankTotals[address_map[bankEvents[i].coinType]][0] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
+        bankTotals[coinName][0] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
       }
       if ( bankEvents[i].action == 'deposit' ) {
-        bankTotals[address_map[bankEvents[i].coinType]][1] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
+        bankTotals[coinName][1] += Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]);
       }
     } else {
       if ( bankEvents[i].action == 'withdraw' ) {
-        bankTotals[address_map[bankEvents[i].coinType]] = [Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]), 0];
+        bankTotals[coinName] = [Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0]), 0];
       }
       if ( bankEvents[i].action == 'deposit' ) {
-        bankTotals[address_map[bankEvents[i].coinType]] = [0, Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0])];
+        bankTotals[coinName] = [0, Number(bankEvents[i].coinAmount['py/reduce'][1]['py/tuple'][0])];
       }
     }
     $('#tx_bank_count').html(' (' + (i + 1) + ')');
@@ -765,11 +900,11 @@ function loadBankEvents(bankEvents) {
   $("#smy_bank_data").html(bankTable + '</table>');
 }
 
-function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue) {
+function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue, network) {
   $('#tx_alchemist_data').show();
   $('#tx_alchemist_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
-    '<td>' + address_map[craftingType] + 'x' + craftedAmount + '</td>' +
+    '<td>' + getTokenName(craftingType, network) + 'x' + craftedAmount + '</td>' +
     '<td>' + craftingCosts + '</td>' +
     '<td>' + usdFormat.format(fiatCraftedValue) + '</td>' +
     '<td>' + usdFormat.format(fiatIngredientsValue) + '</td></tr>'
@@ -796,14 +931,15 @@ function loadAlchemistEvents(alchemistEvents) {
       fiatIngredientsValue = alchemistEvents[i].costsFiatValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addAlchemistRow, 50, eventDate, alchemistEvents[i].craftingType, craftedAmount, alchemistEvents[i].craftingCosts, fiatCraftedValue, fiatIngredientsValue);
+    setTimeout(addAlchemistRow, 50, eventDate, alchemistEvents[i].craftingType, craftedAmount, alchemistEvents[i].craftingCosts, fiatCraftedValue, fiatIngredientsValue, alchemistEvents[i].network);
 
-    if ( address_map[alchemistEvents[i].craftingType] in craftingTotals ) {
-      craftingTotals[address_map[alchemistEvents[i].craftingType]][0] += parseInt(craftedAmount);
-      craftingTotals[address_map[alchemistEvents[i].craftingType]][1] += fiatCraftedValue;
-      craftingTotals[address_map[alchemistEvents[i].craftingType]][2] += fiatIngredientsValue;
+    craftedName = getTokenName(alchemistEvents[i].craftingType, alchemistEvents[i].network)
+    if ( craftedName in craftingTotals ) {
+      craftingTotals[craftedName][0] += parseInt(craftedAmount);
+      craftingTotals[craftedName][1] += fiatCraftedValue;
+      craftingTotals[craftedName][2] += fiatIngredientsValue;
     } else {
-      craftingTotals[address_map[alchemistEvents[i].craftingType]] = [parseInt(craftedAmount), fiatCraftedValue, fiatIngredientsValue];
+      craftingTotals[craftedName] = [parseInt(craftedAmount), fiatCraftedValue, fiatIngredientsValue];
     }
     $('#tx_alchemist_count').html(' (' + (i + 1) + ')');
   }
@@ -815,12 +951,12 @@ function loadAlchemistEvents(alchemistEvents) {
   $("#smy_alchemist_data").html(craftingTable + '</table>');
 }
 
-function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue) {
+function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue, network) {
   $('#tx_airdrops_data').show();
   $('#tx_airdrops_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + location + '</td>' +
-    '<td>' + address_map[tokenReceived] + '</td>' +
+    '<td>' + getTokenName(tokenReceived, network) + '</td>' +
     '<td>' + tokenAmount + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -841,25 +977,27 @@ function loadAirdropEvents(airdropEvents) {
     if (airdropEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = airdropEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    var location = 'Airdrop'
-    if (airdropEvents[i].address != undefined && airdropEvents[i].address in address_map) {
-      location = address_map[airdropEvents[i].address]
+    var location = 'Airdrop';
+    var airdropName = getAirdropName(airdropEvents[i].address);
+    if (airdropName != '') {
+      location = airdropName;
     }
 
-    setTimeout(addAirdropRow, 50, eventDate, location, airdropEvents[i].tokenReceived, tokenAmount, fiatValue);
+    setTimeout(addAirdropRow, 50, eventDate, location, airdropEvents[i].tokenReceived, tokenAmount, fiatValue, airdropEvents[i].network);
 
-    if ( address_map[airdropEvents[i].tokenReceived] in airdropTotals ) {
-      airdropTotals[address_map[airdropEvents[i].tokenReceived]] += Number(tokenAmount);
+    rcvdName = getTokenName(airdropEvents[i].tokenReceived, airdropEvents[i].network);
+    if ( rcvdName in airdropTotals ) {
+      airdropTotals[rcvdName] += Number(tokenAmount);
     } else {
-      airdropTotals[address_map[airdropEvents[i].tokenReceived]] = Number(tokenAmount);
+      airdropTotals[rcvdName] = Number(tokenAmount);
     }
-    if ( address_map[airdropEvents[i].tokenReceived] in airdropValues ) {
-      airdropValues[address_map[airdropEvents[i].tokenReceived]] += Number(fiatValue);
+    if ( rcvdName in airdropValues ) {
+      airdropValues[rcvdName] += Number(fiatValue);
     } else {
-      airdropValues[address_map[airdropEvents[i].tokenReceived]] = Number(fiatValue);
+      airdropValues[rcvdName] = Number(fiatValue);
     }
     // Maintain header total of Jewel income
-    if (fiatValue > 0 && airdropEvents[i].tokenReceived == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+    if (fiatValue > 0 && airdropEvents[i].tokenReceived in JEWEL_ADDRESSES) {
       updatePaymentTotal(Number(tokenAmount), Number(fiatValue));
     }
     $('#tx_airdrops_count').html(' (' + (i + 1) + ')');
@@ -872,13 +1010,13 @@ function loadAirdropEvents(airdropEvents) {
   $("#smy_airdrops_data").html(airdropTable + '</table>');
 }
 
-function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue) {
+function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue, network) {
   $('#tx_lending_data').show();
   $('#tx_lending_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
-    '<td>' + address_map[address] + '</td>' +
+    '<td>' + getLendingName(address) + '</td>' +
     '<td>' + event + '</td>' +
-    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + getTokenName(coinType, network) + '</td>' +
     '<td>' + Number(tokenAmount).toFixed(5) + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -899,7 +1037,7 @@ function loadLendingEvents(lendingEvents) {
       fiatValue = Number(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
     }
 
-    setTimeout(addLendingRow, 50, eventDate, lendingEvents[i].address, lendingEvents[i].event, lendingEvents[i].coinType, tokenAmount, fiatValue);
+    setTimeout(addLendingRow, 50, eventDate, lendingEvents[i].address, lendingEvents[i].event, lendingEvents[i].coinType, tokenAmount, fiatValue, lendingEvents[i].network);
 
     switch (lendingEvents[i].event) {
       case 'lend':
@@ -920,8 +1058,9 @@ function loadLendingEvents(lendingEvents) {
       default:
         aIndex = 5;
     }
-    if ( address_map[lendingEvents[i].coinType] in lendingTotals ) {
-      lendingTotals[address_map[lendingEvents[i].coinType]][aIndex] += tokenAmount;
+    var coinName = getTokenName(lendingEvents[i].coinType, lendingEvents[i].network);
+    if ( coinName in lendingTotals ) {
+      lendingTotals[coinName][aIndex] += tokenAmount;
     } else {
       aArray = [];
       for (e=0; e<6; e++) {
@@ -931,7 +1070,7 @@ function loadLendingEvents(lendingEvents) {
           aArray.push(0);
         }
       }
-      lendingTotals[address_map[lendingEvents[i].coinType]] = aArray;
+      lendingTotals[coinName] = aArray;
     }
     $('#tx_lending_count').html(' (' + (i + 1) + ')');
   }
@@ -943,12 +1082,12 @@ function loadLendingEvents(lendingEvents) {
   $("#smy_lending_data").html(lendingTable + '</table>');
 }
 
-function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue) {
+function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue, network) {
   $('#tx_quests_data').show();
   $('#tx_quests_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + questLocation + '</td>' +
-    '<td>' + address_map[rewardType] + '</td>' +
+    '<td>' + getTokenName(rewardType, network) + '</td>' +
     '<td>' + rewardAmount + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -973,15 +1112,16 @@ function loadQuestEvents(questEvents) {
       questLocation = 'Crystalvale';
     }
 
-    setTimeout(addQuestRow, 50, eventDate, questLocation, questEvents[i].rewardType, rewardAmount, fiatValue);
+    setTimeout(addQuestRow, 50, eventDate, questLocation, questEvents[i].rewardType, rewardAmount, fiatValue, questEvents[i].network);
 
-    if ( address_map[questEvents[i].rewardType] in questTotals ) {
-      questTotals[address_map[questEvents[i].rewardType]] += rewardAmount;
+    var rewardName = getTokenName(questEvents[i].rewardType, questEvents[i].network)
+    if ( rewardName in questTotals ) {
+      questTotals[rewardName] += rewardAmount;
     } else {
-      questTotals[address_map[questEvents[i].rewardType]] = rewardAmount;
+      questTotals[rewardName] = rewardAmount;
     }
     // Maintain header total of Jewel income
-    if (fiatValue > 0 && questEvents[i].rewardType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F') {
+    if (fiatValue > 0 && questEvents[i].rewardType in JEWEL_ADDRESSES) {
       updatePaymentTotal(Number(rewardAmount), Number(fiatValue));
     }
     $('#tx_quests_count').html(' (' + (i + 1) + ')');
@@ -994,13 +1134,13 @@ function loadQuestEvents(questEvents) {
   $("#smy_quests_data").html(questTable + '</table>');
 }
 
-function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue) {
+function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue, network) {
   $('#tx_wallet_data').show();
   $('#tx_wallet_data').append(
     '<tr><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + action + '</td>' +
     '<td>' + address + '</td>' +
-    '<td>' + address_map[coinType] + '</td>' +
+    '<td>' + getTokenName(coinType, network) + '</td>' +
     '<td>' + coinAmount + '</td>' +
     '<td>' + usdFormat.format(fiatValue) + '</td></tr>'
   );
@@ -1021,23 +1161,24 @@ function loadWalletEvents(walletEvents) {
       fiatValue = walletEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addWalletRow, 50, eventDate, walletEvents[i].action, walletEvents[i].address, walletEvents[i].coinType, coinAmount, fiatValue);
+    setTimeout(addWalletRow, 50, eventDate, walletEvents[i].action, walletEvents[i].address, walletEvents[i].coinType, coinAmount, fiatValue, walletEvents[i].network);
 
-    if ( address_map[walletEvents[i].coinType] in walletTotals ) {
+    var coinName = getTokenName(walletEvents[i].coinType, walletEvents[i].network);
+    if ( coinName in walletTotals ) {
       if ( walletEvents[i].action == 'withdraw' ) {
-        walletTotals[address_map[walletEvents[i].coinType]][0] += coinAmount;
+        walletTotals[coinName][0] += coinAmount;
       } else {
-        walletTotals[address_map[walletEvents[i].coinType]][1] += coinAmount;
+        walletTotals[coinName][1] += coinAmount;
       }
     } else {
       if ( walletEvents[i].action == 'withdraw' ) {
-        walletTotals[address_map[walletEvents[i].coinType]] = [coinAmount, 0];
+        walletTotals[coinName] = [coinAmount, 0];
       } else {
-        walletTotals[address_map[walletEvents[i].coinType]] = [0, coinAmount];
+        walletTotals[coinName] = [0, coinAmount];
       }
     }
     // Maintain header total of jewel income
-    if (walletEvents[i].action == 'payment' && walletEvents[i].coinType == '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F' && fiatValue > 0) {
+    if (walletEvents[i].action == 'payment' && walletEvents[i].coinType in JEWEL_ADDRESSES && fiatValue > 0) {
       updatePaymentTotal(Number(coinAmount), Number(fiatValue));
     }
     $('#tx_wallet_count').html(' (' + (i + 1) + ')');

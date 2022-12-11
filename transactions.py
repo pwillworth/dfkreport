@@ -144,7 +144,7 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
 
     return txs
 
-def getTransactionList(address, startDate, endDate, page_size, includedChains=constants.DFKCHAIN):
+def getTransactionList(address, startDate, endDate, txCounts, page_size, includedChains=constants.DFKCHAIN):
     hmy_txs = []
     dfk_txs = []
     ktn_txs = []
@@ -156,13 +156,13 @@ def getTransactionList(address, startDate, endDate, page_size, includedChains=co
         hmy_txs = list(dict.fromkeys(hmy_txs))
     if includedChains & constants.DFKCHAIN > 0:
         logging.info('Get DFK Chain data for {0}'.format(address))
-        dfk_txs = getCovalentTxList('53935', address, startDate, endDate, len(hmy_txs))
+        dfk_txs = getCovalentTxList('53935', address, startDate, endDate, txCounts[0])
     if includedChains & constants.KLAYTN > 0:
         logging.info('Get Klaytn data for {0}'.format(address))
-        ktn_txs = getCovalentTxList('8217', address, startDate, endDate, len(hmy_txs)+len(dfk_txs))
+        ktn_txs = getCovalentTxList('8217', address, startDate, endDate, txCounts[0]+txCounts[2])
     if includedChains & constants.AVALANCHE > 0:
         logging.info('Get Avalanche data for {0}'.format(address))
-        avx_txs += getAvalancheData(address, startDate, endDate, page_size, len(hmy_txs)+len(dfk_txs)+len(ktn_txs))
+        avx_txs += getAvalancheData(address, startDate, endDate, page_size, txCounts[0]+txCounts[2]+txCounts[3])
     return [hmy_txs, avx_txs, dfk_txs, ktn_txs]
 
 def getTransactionCount(address, includedChains=constants.DFKCHAIN):

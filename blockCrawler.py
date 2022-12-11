@@ -17,14 +17,14 @@ def handleLogs(w3, event, network):
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
     receipt = w3.eth.get_transaction_receipt(tx)
     # Heroes or Lands or Pets
-    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0', '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3', '0x49744F76caA3B63CccE9CE7de5C8282C92c891e5']:
-        if event['address'] == '0x77D991987ca85214f9686131C58c1ABE4C93E547':
+    if event['address'] in ['0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892', '0x77D991987ca85214f9686131C58c1ABE4C93E547', '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0', '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3', '0x49744F76caA3B63CccE9CE7de5C8282C92c891e5','0x7F2B66DB2D02f642a9eb8d13Bc998d441DDe17A8']:
+        if event['address'] in ['0x77D991987ca85214f9686131C58c1ABE4C93E547','0xE74D437d5F4893dB0A5758f5EaeB5B3Af6096036']:
             auctionType = 'land'
-        elif event['address'] in ['0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0x49744F76caA3B63CccE9CE7de5C8282C92c891e5']:
+        elif event['address'] in ['0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0x49744F76caA3B63CccE9CE7de5C8282C92c891e5','0x7aB1C574A8762bEde901F32670481c0427DdF626']:
             auctionType = 'pet'
         else:
             auctionType = 'hero'
-        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType)
+        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType, network)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
     else:
@@ -38,7 +38,11 @@ def parseEvents(network):
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         tavernContractAddress = '0xc390fAA4C7f66E4D62E59C231D5beD32Ff77BEf0'
         petCatalogContractAddress = '0x49744F76caA3B63CccE9CE7de5C8282C92c891e5'
-    else:
+    elif network == 'klaytn':
+        w3 = Web3(Web3.HTTPProvider(nets.klaytn_public_web3))
+        tavernContractAddress = '0x7F2B66DB2D02f642a9eb8d13Bc998d441DDe17A8'
+        petCatalogContractAddress = '0x7aB1C574A8762bEde901F32670481c0427DdF626'
+    elif network == 'harmony':
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
         tavernContractAddress = '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892'
         petCatalogContractAddress = '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3'
@@ -109,6 +113,7 @@ def main():
 
     #parseEvents('harmony')
     parseEvents('dfkchain')
+    parseEvents('klaytn')
 
 if __name__ == "__main__":
 	main()

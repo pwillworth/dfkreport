@@ -72,7 +72,7 @@ def main():
         if reportInfo != None and reportInfo[4] > page_size*50:
             page_size = min(1000, page_size*5)
         try:
-            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, page_size, includedChains)
+            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, txResult, page_size, includedChains)
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()

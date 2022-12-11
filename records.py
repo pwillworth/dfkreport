@@ -2,8 +2,9 @@
 
 # Records for Capital Gains
 class TavernTransaction:
-    def __init__(self, txHash, itemType, itemID, event, timestamp, coinType, coinCost=0, fiatType='usd', fiatAmount=0, seller='', fiatFeeValue=0):
+    def __init__(self, txHash, network, itemType, itemID, event, timestamp, coinType, coinCost=0, fiatType='usd', fiatAmount=0, seller='', fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         # hero or pet or land
         self.itemType = itemType
         self.itemID = itemID
@@ -19,8 +20,9 @@ class TavernTransaction:
         self.seller = seller
 
 class TraderTransaction:
-    def __init__(self, txHash, timestamp, swapType, receiveType, swapAmount=0, receiveAmount=0, fiatType='usd', fiatSwapValue=0, fiatReceiveValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, swapType, receiveType, swapAmount=0, receiveAmount=0, fiatType='usd', fiatSwapValue=0, fiatReceiveValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         # timestamp of block when this transaction was done
         self.timestamp = timestamp
         # token type that was traded away
@@ -39,8 +41,9 @@ class TraderTransaction:
         self.receiveAmountNotAccounted = receiveAmount
 
 class LiquidityTransaction:
-    def __init__(self, txHash, timestamp, action, poolAddress, poolAmount, coin1Type, coin1Amount, coin2Type, coin2Amount, fiatType='usd', coin1FiatValue=0, coin2FiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, action, poolAddress, poolAmount, coin1Type, coin1Amount, coin2Type, coin2Amount, fiatType='usd', coin1FiatValue=0, coin2FiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         # timestamp of block when transaction was done
         self.timestamp = timestamp
         # deposit tokens or withdraw (LP tokens)
@@ -63,8 +66,9 @@ class LiquidityTransaction:
 
 # Records for Income
 class GardenerTransaction:
-    def __init__(self, txHash, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, event, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # deposit, withdraw, staking-reward, staking-reward-locked
         self.event = event
@@ -76,8 +80,9 @@ class GardenerTransaction:
         self.amountNotAccounted = coinAmount
 
 class BankTransaction:
-    def __init__(self, txHash, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, action, xRate, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # deposit or withdraw or claim or extend or burn
         self.action = action
@@ -95,8 +100,9 @@ class BankTransaction:
             self.amountNotAccounted = coinAmount
 
 class AirdropTransaction:
-    def __init__(self, txHash, timestamp, address, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, address, tokenReceived, tokenAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         self.address = address
         self.tokenReceived = tokenReceived
@@ -108,8 +114,9 @@ class AirdropTransaction:
         self.amountNotAccounted = tokenAmount
 
 class QuestTransaction:
-    def __init__(self, txHash, timestamp, rewardType, rewardAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, rewardType, rewardAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # what did we get on the quest, address of it
         self.rewardType = rewardType
@@ -120,8 +127,9 @@ class QuestTransaction:
         self.amountNotAccounted = rewardAmount
 
 class walletActivity:
-    def __init__(self, txHash, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, action, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # deposit/payment/withdraw/bridge/donation
         self.action = action
@@ -135,8 +143,9 @@ class walletActivity:
         self.amountNotAccounted = coinAmount
 
 class AlchemistTransaction:
-    def __init__(self, txHash, timestamp, craftingType, craftingAmount=0, fiatType='usd', fiatValue=0, craftingCosts=0, costsFiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, craftingType, craftingAmount=0, fiatType='usd', fiatValue=0, craftingCosts=0, costsFiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # what did we craft with alchemist, address of it
         self.craftingType = craftingType
@@ -151,8 +160,9 @@ class AlchemistTransaction:
         self.costsFiatValue = costsFiatValue
 
 class LendingTransaction:
-    def __init__(self, txHash, timestamp, event, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
+    def __init__(self, txHash, network, timestamp, event, address, coinType, coinAmount=0, fiatType='usd', fiatValue=0, fiatFeeValue=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         # lend/redeem/borrow/repay/liquidate
         self.event = event
