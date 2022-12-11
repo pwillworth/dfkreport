@@ -26,35 +26,35 @@ class testTaxmap(unittest.TestCase):
 		self.yearStart = datetime(datetime.now().year, 1, 1).date()
 		self.yearEnd = datetime(datetime.now().year, 12, 31).date()
 
-		rw0 = records.walletActivity('0xITEST0', self.aTimestamp - 100, 'deposit', '0xCEXWALLET', 'one', 18020)
+		rw0 = records.walletActivity('0xITEST0', 'harmony', self.aTimestamp - 100, 'deposit', '0xCEXWALLET', 'one', 18020)
 		rw0.fiatValue = decimal.Decimal(180)
 		em['wallet'].append(rw0)
 
-		rt0 = records.TraderTransaction('0xTEST0', self.aTimestamp - 50, 'one', 'jewel', decimal.Decimal(9000), decimal.Decimal(98.66))
+		rt0 = records.TraderTransaction('0xTEST0', 'harmony', self.aTimestamp - 50, 'one', 'jewel', decimal.Decimal(9000), decimal.Decimal(98.66))
 		rt0.fiatSwapValue = decimal.Decimal(701.10)
 		rt0.fiatReceiveValue = decimal.Decimal(701.10)
 		em['swaps'].append(rt0)
 
-		rt1 = records.TraderTransaction('0xTEST1', self.aTimestamp, 'one', 'jewel', decimal.Decimal(9003), decimal.Decimal(50.9233))
+		rt1 = records.TraderTransaction('0xTEST1', 'harmony', self.aTimestamp, 'one', 'jewel', decimal.Decimal(9003), decimal.Decimal(50.9233))
 		rt1.fiatSwapValue = decimal.Decimal(406.67)
 		rt1.fiatReceiveValue = decimal.Decimal(406.67)
 		em['swaps'].append(rt1)
 
-		rt2 = records.TraderTransaction('0xTEST2', self.aTimestamp + 87000, 'jewel', 'USDC', decimal.Decimal(140.2), decimal.Decimal(1210.37345634))
+		rt2 = records.TraderTransaction('0xTEST2', 'harmony', self.aTimestamp + 87000, 'jewel', 'USDC', decimal.Decimal(140.2), decimal.Decimal(1210.37345634))
 		rt2.fiatSwapValue = decimal.Decimal(1210.37345634)
 		rt2.fiatReceiveValue = decimal.Decimal(1210.37345634)
 		em['swaps'].append(rt2)
 
-		rw1 = records.walletActivity('0xTEST3', self.aTimestamp + 88000, 'withdraw', '0xPURCHASE', 'jewel', 18)
+		rw1 = records.walletActivity('0xTEST3', 'harmony', self.aTimestamp + 88000, 'withdraw', '0xPURCHASE', 'jewel', 18)
 		rw1.fiatValue = decimal.Decimal(180)
 		em['wallet'].append(rw1)
 
-		rt1 = records.TavernTransaction('0xHTEST1', 'hero', 1, 'purchase', self.aTimestamp, 'jewel', decimal.Decimal(50.5))
+		rt1 = records.TavernTransaction('0xHTEST1', 'harmony', 'hero', 1, 'purchase', self.aTimestamp, 'jewel', decimal.Decimal(50.5))
 		rt1.fiatAmount = decimal.Decimal(487.3456)
 		rt1.seller = '0xSOMEONE'
 		em['tavern'].append(rt1)
 
-		rt2 = records.TavernTransaction('0xHTEST2', 'hero', 1, 'sale', self.aTimestamp, 'jewel', decimal.Decimal(44))
+		rt2 = records.TavernTransaction('0xHTEST2', 'harmony', 'hero', 1, 'sale', self.aTimestamp, 'jewel', decimal.Decimal(44))
 		rt2.fiatAmount = decimal.Decimal(403.12)
 		rt2.seller = '0xME'
 		em['tavern'].append(rt2)

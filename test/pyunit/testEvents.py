@@ -27,7 +27,7 @@ class testEvents(unittest.TestCase):
 		mockMethod.return_value = Decimal(0.01)
 
 		# act
-		result = events.extractSwapResults(self.w3, '0x2e347d595069f2f1b08f3048d03b4570519265bda0a82479f0f5e73e7aa39c9a', self.subject, 1645305183, sr)
+		result = events.extractSwapResults(self.w3, '0x2e347d595069f2f1b08f3048d03b4570519265bda0a82479f0f5e73e7aa39c9a', self.subject, '0x9014B937069918bd319f80e8B3BB4A2cf6FAA5F7', 1645305183, sr, 0, 'harmony')
 
 		# assert
 		self.assertTrue(type(result) is records.TraderTransaction, "Wrong object type returned for swap")
