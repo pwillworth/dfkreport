@@ -67,7 +67,7 @@ class testTaxmap(unittest.TestCase):
 		acbTaxRecords = taxmap.buildSwapRecords(self.acbMap['swaps'], self.yearStart, self.yearEnd, self.acbMap['wallet'], self.acbMap['airdrops'], self.acbMap['gardens'], self.acbMap['quests'], self.acbMap['tavern'], self.acbMap['lending'], 'acb', ['0xPURCHASE'])
 
 		#assert
-		self.assertTrue(len(taxRecords)==4, "Incorrect number of tax records generated")
+		self.assertTrue(len(taxRecords)==5, "Incorrect number of tax records generated")
 		oneSwap = taxmap.TaxItem('',0,'',0,'','','',None)
 		jewelSwap = taxmap.TaxItem('',0,'',0,'','','',None)
 		jewelPurchase = taxmap.TaxItem('',0,'',0,'','','',None)
