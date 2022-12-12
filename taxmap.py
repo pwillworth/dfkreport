@@ -314,6 +314,16 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             if hasattr(item, 'fiatFeeValue'):
                 si.fiatFeeValue = item.fiatFeeValue
             swapEvents.append(si)
+    # Find any hero purchases and treat them like a swap for fiat '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+    # same with any wallet donations
+    for item in tavernEvents:
+        if item.event == 'purchase':
+            si = records.TraderTransaction(item.txHash, item.network, item.timestamp, item.coinType, 'NFT {0} {1}'.format(item.itemType, item.itemID), item.coinCost, item.fiatAmount)
+            si.fiatSwapValue = item.fiatAmount
+            si.fiatReceiveValue = item.fiatAmount
+            if hasattr(item, 'fiatFeeValue'):
+                si.fiatFeeValue = item.fiatFeeValue
+            swapEvents.append(si)
     swapEvents = sorted(swapEvents, key=lambda x: x.timestamp)
 
     # Build list of token recieve events to search for cost basis that can all be sorted together
@@ -355,7 +365,6 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     cbList = costBasisSort(cbList, costBasis)
 
     #TODO consider also search bank gains income for cost basis
-    #TODO add hero purchase events as taxable sell of token for NFT
     logging.info('  build events in range')
     for event in swapEvents:
         # swapping an item for gold does not need to be on tax report (I think)
@@ -370,7 +379,9 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
             continue
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         if eventDate >= startDate and eventDate <= endDate:
-            if event.receiveType == 'fiat value':
+            if event.receiveType[0:4] == 'NFT ':
+                actionStr = 'Paid for NFT with'
+            elif event.receiveType == 'fiat value':
                 actionStr = 'Paid for goods/svcs with'
             else:
                 actionStr = 'Sold'
