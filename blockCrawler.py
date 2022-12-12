@@ -28,7 +28,7 @@ def handleLogs(w3, event, network):
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
     else:
-        logging.error('Unknown contract in filter')
+        logging.error('Unknown contract in filter: {0}'.format(event['address']))
 
 def parseEvents(network):
     # Connect to w3
