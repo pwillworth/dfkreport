@@ -77,11 +77,17 @@ def parseEvents(network):
         if endBlock > toBlock:
             endBlock = toBlock
         tavernFilter = tavernContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
-        tavernChanges = tavernFilter.get_all_entries()
+        try:
+            tavernChanges = tavernFilter.get_all_entries()
+        except ValueError as err:
+            logging.warning('got expected error meaning no events getting entries for {0}: {1}'.format(network, str(err)))
         w3.eth.uninstall_filter(tavernFilter.filter_id)
 
         petSalesFilter = petCatalogContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
-        petSaleChanges = petSalesFilter.get_all_entries()
+        try:
+            petSaleChanges = petSalesFilter.get_all_entries()
+        except ValueError as err:
+            logging.warning('got expected error meaning no events getting entries for {0}: {1}'.format(network, str(err)))
         w3.eth.uninstall_filter(petSalesFilter.filter_id)
         allChanges = tavernChanges + petSaleChanges
 
