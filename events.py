@@ -257,7 +257,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                         db.saveTransaction(tx, timestamp, 'airdrops', jsonpickle.encode(results), recipientAccount, network, 0, 0)
             elif 'Banker' in action:
                 logging.info('Banker interaction, probably just claim which distributes to bank, no events to record. {0}'.format(tx))
-            elif result['input'] != '0x' and ('xJewels' in action or 'xCrystal' in action):
+            elif result['input'] != '0x' and ('xJewel' in action or 'xCrystal' in action):
                 results = extractBankResults(w3, tx, account, timestamp, receipt, network)
                 if results != None:
                     results.fiatFeeValue = feeValue
