@@ -777,7 +777,8 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
     gardenAmount = 0
     for log in decoded_logs:
         # Token Transfers
-        if 'to' in log['args'] and 'from' in log['args'] and log['address'] in contracts.address_map and 'LP Token' in contracts.address_map[log['address']]:
+        tName = contracts.getTokenName(log['address'], network)
+        if 'to' in log['args'] and 'from' in log['args'] and log['address'] != tName and 'LP Token' in tName:
             if log['args']['to'] == account:
                 gardenEvent = 'withdraw'
                 gardenToken = log['address']
@@ -1131,8 +1132,9 @@ def extractQuestResults(w3, txn, timestamp, receipt, address, network):
         if 'itemQuantity' in log['args'] and 'rewardItem' in log['args'] and log['args']['rewardItem'] != '0x0000000000000000000000000000000000000000':
             # Keep a running total of each unique reward item in this quest result
             rewardQuantity = contracts.valueFromWei(log['args']['itemQuantity'], log['args']['rewardItem'], network)
-            if log['args']['rewardItem'] in contracts.address_map:
-                logging.info('    Hero {2} on quest {3} got reward of {0} {1}'.format(rewardQuantity, contracts.getTokenName(log['args']['rewardItem'], network), log['args']['heroId'], log['args']['questId']))
+            rewardName = contracts.getTokenName(log['args']['rewardItem'], network)
+            if log['args']['rewardItem'] != rewardName:
+                logging.info('    Hero {2} on quest {3} got reward of {0} {1}'.format(rewardQuantity, rewardName, log['args']['heroId'], log['args']['questId']))
                 if log['args']['rewardItem'] in rewardTotals:
                     rewardTotals[log['args']['rewardItem']] += rewardQuantity
                 else:
@@ -1170,7 +1172,8 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt, network):
     ingredientList = ''
     ingredientValue = 0
     for i in range(len(sentToken)):
-        ingredientList += '{0}x{1}, '.format(contracts.address_map[sentToken[i]], sentAmount[i])
+        ingredientName = contracts.getTokenName(sentToken[i], network)
+        ingredientList += '{0}x{1}, '.format(ingredientName, sentAmount[i])
         ingredientValue += prices.priceLookup(timestamp, sentToken[i], network) * sentAmount[i]
     if len(ingredientList) > 1:
         ingredientList = ingredientList[:-2]
