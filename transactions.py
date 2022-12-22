@@ -95,14 +95,23 @@ def getCovalentTxList(chainID, address, startDate="", endDate="", alreadyFetched
                     tx_end = True
         elif r.status_code == 429:
             # rate limiting
-            logging.error('Exceeded rate limit for Covalent API')
-            raise Exception('Covalent Transactions Lookup Failure.')
+            # covalent gateway timeout
+            logging.warning("Covalent rate limit hit, wait and retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(2)
+                continue
+            else:
+                logging.error("Covalent rate limit hit too many times, exit")
+                raise Exception('Covalent Transactions Lookup Failure.')
         elif r.status_code == 504:
             # covalent gateway timeout
             logging.warning("Covalent gateway timeout getting Txs, retrying")
             if retryCount < 3:
                 retryCount += 1
                 time.sleep(13)
+                # reduce range a bit to see if that helps
+                blockSpan = int(blockSpan*0.9)
                 continue
             else:
                 logging.error("Covalent timeout too many times, exit")
