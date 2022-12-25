@@ -6,6 +6,7 @@ import records
 import settings
 import jsonpickle
 import datetime
+import time
 import os
 
 def ReportOptions():
@@ -262,12 +263,39 @@ def getRunningReports():
     con.close()
     return row[0]
 
+# look up a session id and see if it is valid
+def getSession(sid):
+	con = aConn()
+	cursor = con.cursor()
+	cursor.execute('SELECT account, expires FROM sessions WHERE sid=%s', (sid))
+	row = cursor.fetchone()
+	if row == None:
+		# no record
+		result = ""
+	else:
+		if time.time() > row[1]:
+			# session is expired, delete it
+			result = ""
+			tempSQL = "DELETE FROM tSessions WHERE sid='" + sid + "'"
+			cursor.execute(tempSQL)
+		else:
+			# good session, return userid
+			result = row[0]
+
+	cursor.close()
+	con.close()
+	return result
+
 def createDatabase():
     con = aConn()
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
     cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), network VARCHAR(31), fee DOUBLE, feeValue DOUBLE, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
     cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets LONGTEXT, generatedTimestamp INTEGER, PRIMARY KEY (account, groupName))')
+    cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
+    cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp INTEGER, txHash VARCHAR(127), token VARCHAR(63), amount INTEGER, previousExpires INTEGER, newExpires INTEGER)')
+    cur.execute('CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(40) NOT NULL PRIMARY KEY, account VARCHAR(63) NOT NULL, expires FLOAT, INDEX IX_session_account (account))')
     con.commit()
     con.close()
 
@@ -276,10 +304,10 @@ def main():
     createDatabase()
     con = aConn()
     cur = con.cursor()
-    cur.execute("DELETE FROM reports")
+    #cur.execute("DELETE FROM reports")
     #cur.execute("DELETE FROM prices")
-    cur.execute("DELETE FROM transactions")
-    con.commit()
+    #cur.execute("DELETE FROM transactions")
+    #con.commit()
     con.close()
 
 

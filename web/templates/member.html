@@ -1,0 +1,165 @@
+<html lang="en">
+<head>
+  <title>Members Page</title>
+  <meta property="og:title" content="Lila's Ledger Member Page">
+  <meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
+  <meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
+  <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
+  <script src="/static/dfktax.js" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.4-rc.1/web3.min.js"></script>
+</head>
+<body>
+<script>
+var sid='';
+window.onload = (event) => {
+  if (isConnected()) {
+    connect();
+  }
+};
+async function isConnected() {
+  const accounts = await ethereum.request({method: 'eth_accounts'});       
+  if (accounts.length) {
+    console.log(`You're connected to: ${accounts[0]}`);
+    return true;
+  } else {
+    console.log("Metamask is not connected");
+    return false;
+  }
+}
+/* To connect using MetaMask */
+async function connect() {
+  if (window.ethereum) {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    window.web3 = new Web3(window.ethereum);
+    const account = web3.eth.accounts;
+    //Get the current MetaMask selected/active wallet
+    const walletAddress = account.givenProvider.selectedAddress;
+    console.log(`Wallet: ${walletAddress}`);
+    document.getElementById("member").innerHTML = '0x...'+walletAddress.substring(38, 42);
+    document.getElementById('connectWallet').style.display = 'none';
+    loadReports();
+  } else {
+    console.log("No wallet");
+  }
+}
+function handleAuth(wAddress, signature) {
+  var request = new XMLHttpRequest();
+  request.open('GET', `{{ BASE_SCRIPT_URL }}auth.py?account=${wAddress}&signature=${signature}`, true);
+  console.log(`loading {{ BASE_SCRIPT_URL }}auth.py?account=${wAddress}&signature=${signature}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('authentication failed.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      console.log('loaded session '+resp['sid']);
+      sid = resp['sid'];
+      loadReports();
+    }
+  };
+  request.send();
+}
+function handleLoginSignature(nonce) {
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  web3.eth.personal.sign(
+    web3.utils.utf8ToHex(`Click Sign to verify you own this wallet and login.  nonce: ${nonce}`),
+    wAddress,
+    (err, signature) => {
+      if (err) return reject(err);
+      return handleAuth(wAddress, signature);
+    }
+  );
+}
+async function login() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `{{ BASE_SCRIPT_URL }}login.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}login.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to login.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('sid' in resp) {
+        sid = resp['sid']
+        console.log(`loaded sid ${resp['sid']}`);
+        loadReports();
+        return;
+      }
+      if ('nonce' in resp) {
+        console.log(`loaded nonce ${resp['nonce']}`);
+        handleLoginSignature(resp['nonce']);
+      }
+      if ('error' in resp) {
+        alert(resp['error']);
+      }
+    }
+  };
+  request.send();
+}
+function loadReports() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `{{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to load reports.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('error' in resp) {
+        document.getElementById('reportList').innerHTML = resp['error'];
+      } else {
+        reportTable(resp);
+        console.log('loaded');
+      }
+    }
+  };
+  request.send();
+  //setTimeout('loadReports()', 2000);
+}
+function reportTable(data) {
+  const reportStatus = ['Created','Processing','Complete'];
+  var listElm = document.getElementById('reportList');
+  var newRow = document.createElement('tr');
+  listElm.innerHTML = '';
+  newRow.innerHTML = '<th>Wallet</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th>';
+  listElm.appendChild(newRow);
+  data['reports'].forEach((report) => {
+    var addr = report[0].substring(38, 42);
+    var status = reportStatus[report[4]];
+    var percentFetched = report[6]/report[5]*100;
+    var percentComplete = report[7]/report[5]*100;
+    var newRow = document.createElement('tr');
+    newRow.innerHTML = `<td>0x...${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td>`;
+    listElm.appendChild(newRow);
+  });
+}
+</script>
+<div style="height: 100px;">
+  <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span><div style="float:right;" id="loginBlock"><input id="loginButton" type="button" value="Login" onclick="login();"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();"><span id="member"></span></div></h1>
+</div>
+<div class="reportPage" id="helpPage">
+  <h2 style="text-align: center;">My Tax Reports</h2>
+    
+  <table id="reportList" class="statusList"></table>
+</div>
+<div class="footer">
+	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
+	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
+</div>
+</body>
+</html>
