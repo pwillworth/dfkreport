@@ -11,11 +11,18 @@
 <body>
 <script>
 var sid='';
+var selectedAccount='';
 window.onload = (event) => {
+  sid = getCookie('sid', '');
   if (isConnected()) {
     connect();
   }
+  setTimeout('refreshLists', 120000);
 };
+function refreshLists() {
+  loadGroups();
+  loadReports();
+}
 async function isConnected() {
   const accounts = await ethereum.request({method: 'eth_accounts'});       
   if (accounts.length) {
@@ -34,10 +41,14 @@ async function connect() {
     const account = web3.eth.accounts;
     //Get the current MetaMask selected/active wallet
     const walletAddress = account.givenProvider.selectedAddress;
+    selectedAccount = walletAddress;
     console.log(`Wallet: ${walletAddress}`);
     document.getElementById("member").innerHTML = '0x...'+walletAddress.substring(38, 42);
     document.getElementById('connectWallet').style.display = 'none';
-    loadReports();
+    if (sid != '') {
+      login();
+    }
+    refreshLists();
   } else {
     console.log("No wallet");
   }
@@ -54,7 +65,10 @@ function handleAuth(wAddress, signature) {
       var resp = JSON.parse(request.responseText);
       console.log('loaded session '+resp['sid']);
       sid = resp['sid'];
-      loadReports();
+      setCookie('sid', sid, 92);
+      document.getElementById('loginButton').style.display = 'none';
+      document.getElementById('logoutButton').style.display = 'block';
+      refreshLists();
     }
   };
   request.send();
@@ -89,8 +103,11 @@ async function login() {
       var resp = JSON.parse(request.responseText);
       if ('sid' in resp) {
         sid = resp['sid']
+        setCookie('sid', sid, 92);
         console.log(`loaded sid ${resp['sid']}`);
-        loadReports();
+        document.getElementById('loginButton').style.display = 'none';
+        document.getElementById('logoutButton').style.display = 'block';
+        refreshLists();
         return;
       }
       if ('nonce' in resp) {
@@ -99,6 +116,35 @@ async function login() {
       }
       if ('error' in resp) {
         alert(resp['error']);
+      }
+    }
+  };
+  request.send();
+}
+async function logout() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `{{ BASE_SCRIPT_URL }}logout.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}logout.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to logout, server error.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if (resp['result'].indexOf("Error:") == -1) {
+        alert(resp['result']);
+      } else {
+        sid = '';
+        setCookie('sid','',-1);
+        document.getElementById('loginButton').style.display = 'block';
+        document.getElementById('logoutButton').style.display = 'none';
+        refreshLists();
       }
     }
   };
@@ -131,6 +177,32 @@ function loadReports() {
   request.send();
   //setTimeout('loadReports()', 2000);
 }
+function loadGroups() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `{{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to load wallet groups.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('error' in resp) {
+        document.getElementById('groupList').innerHTML = resp['error'];
+      } else {
+        groupTable(resp);
+        console.log('loaded');
+      }
+    }
+  };
+  request.send();
+}
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete'];
   var listElm = document.getElementById('reportList');
@@ -148,11 +220,77 @@ function reportTable(data) {
     listElm.appendChild(newRow);
   });
 }
+function groupTable(data) {
+  var listElm = document.getElementById('groupList');
+  var newRow = document.createElement('tr');
+  listElm.innerHTML = '';
+  newRow.innerHTML = '<th>Group Name</th><th>Wallets</th>';
+  listElm.appendChild(newRow);
+  data['groups'].forEach((report) => {
+    var gName = report[1];
+    var gWallets = JSON.parse(report[2]);
+    var walletList = '';
+    for (let i=0; i < gWallets.length; i++) {
+      walletList = walletList + gWallets[i] + ','
+    }
+    var newRow = document.createElement('tr');
+    newRow.innerHTML = `<td>${gName}</td><td>${walletList}</td>`;
+    newRow.addEventListener('click', function() {
+      editGroup(report[1], gWallets);
+    });
+    newRow.style.cursor = 'pointer';
+    listElm.appendChild(newRow);
+  });
+}
+function createGroup(groupName, walletList) {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  var wallets = encodeURIComponent(walletList);
+  request.open('POST', `{{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to add wallet group due to server error.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('error' in resp) {
+        alert(resp['error']);
+      } else {
+        loadGroups();
+        console.log('loaded');
+      }
+    }
+  };
+  request.send();
+}
+function addGroup() {
+  document.getElementById('walletList').value = selectedAccount;
+  document.getElementById('groupName').value = '';
+  document.getElementById('createGroup').value = 'Create';
+  showWindow('groupDialog');
+}
+function editGroup(currentName, currentList) {
+  document.getElementById('walletList').value = currentList;
+  document.getElementById('groupName').value = currentName;
+  document.getElementById('createGroup').value = 'Update';
+  showWindow('groupDialog');
+}
 </script>
 <div style="height: 100px;">
-  <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span><div style="float:right;" id="loginBlock"><input id="loginButton" type="button" value="Login" onclick="login();"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();"><span id="member"></span></div></h1>
+  <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span><div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login();" class="lButton"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div></h1>
 </div>
-<div class="reportPage" id="helpPage">
+<div class="reportPage" id="groupPage">
+  <h2 style="text-align: center;">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></h2>
+    
+  <table id="groupList" class="statusList"></table>
+</div>
+<div class="reportPage" id="reportPage">
   <h2 style="text-align: center;">My Tax Reports</h2>
     
   <table id="reportList" class="statusList"></table>
@@ -161,5 +299,15 @@ function reportTable(data) {
 	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
 	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
+<div id="groupDialog" class="window">
+  <h2 style="display: inline;">New Wallet Group</h2><div style="float: right;position: relative;top:0px;"><a href="#" class="close" onclick="hideWindow('groupDialog')">Close</a></div>
+  <div class="searchInput"><label for="groupName">Group Name:</label><br /><input type="text" id="groupName" size="44" maxlength="255" value="" /></div>
+  <div class="searchInput"><label for="walletList">Wallets:</label><br /><textarea id="walletList" name="walletList" rows="4" cols="42" maxlength="2000"></textarea></div>
+  
+  <div id="busyImgAdd" style="display:none;float:right;"><div class="lds-ripple"><div></div><div></div></div></div>
+  <span id="addInfo"></span>
+  <div style="float:right;margin:6px;padding-top:40px;"><input type="button" class="lButton" value="Create" id="createGroup" onclick="createGroup(document.getElementById('groupName').value, document.getElementById('walletList').value);" /></div>
+</div>
+<div id="mask" onclick="hideWindow('groupDialog')"></div>
 </body>
 </html>

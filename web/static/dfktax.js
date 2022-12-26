@@ -1197,7 +1197,40 @@ function loadWalletEvents(walletEvents) {
   }
   $("#smy_wallet_data").html(walletTable + '</table>');
 }
+function docHeight() {
+  var body = document.body,
+  html = document.documentElement;
 
+  return Math.max( body.scrollHeight, body.offsetHeight, 
+    html.clientHeight, html.scrollHeight, html.offsetHeight );
+}
+function docWidth() {
+  var body = document.body,
+  html = document.documentElement;
+
+  return Math.max( body.scrollWidth, body.offsetWidth, 
+    html.clientWidth, html.scrollWidth, html.offsetWidth );
+}
+function showWindow(winId) {
+  var maskHeight = docHeight();
+  var maskWidth = docWidth();
+  var maskElm = document.getElementById('mask');
+  maskElm.style.width = maskWidth;
+  maskElm.style.height = maskHeight;
+  maskElm.style.display = 'block';
+  winElm = document.getElementById(winId);
+  let winH = window.innerHeight;
+  let winW = window.innerWidth;
+  winElm.style.top = (winH/2-winElm.offsetHeight/2) + window.scrollY;
+  winElm.style.left = winW/2-winElm.offsetWidth/2;
+  winElm.style.display = 'block';
+}
+function hideWindow(winId) {
+  maskElm = document.getElementById('mask');
+  maskElm.style.display = 'none';
+  winElm = document.getElementById(winId);
+  winElm.style.display = 'none';
+}
 function getQueryVar(qsvar) {
   var query = window.location.search.substring(1);
   var vars = query.split("&");
@@ -1208,4 +1241,24 @@ function getQueryVar(qsvar) {
     }
   }
   return -1;
+}
+function getCookie(cName, defaultValue) {
+  if (document.cookie.length>0) {
+    let dc = decodeURIComponent(document.cookie);
+    cStart = dc.indexOf(cName + "=");
+    if (cStart != -1) {
+        cStart = cStart + cName.length+1;
+        cEnd = dc.indexOf(";",cStart);
+        if (cEnd == -1) cEnd = dc.length;
+        return dc.substring(cStart,cEnd);
+    } else {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+}
+function setCookie(cName, value, expireDays) {
+    var exdate = new Date();
+    exdate.setDate(exdate.getDate()+expireDays);
+    document.cookie=cName + "=" + value+((expireDays==null) ? "" : ";expires="+exdate.toUTCString()) + ";path=/";
 }
