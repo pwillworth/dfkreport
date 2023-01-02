@@ -36,6 +36,45 @@ $(document).ready(function() {
         $( this ).find('img.txIndicator').attr('src', '{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png');
       }
     });
+    if ('{{ contentFile }}' != '') {
+      $('#ethAddress').val('{{ account }}');
+      if ({{ includedChains }} & 1) {
+        $("#optHarmony").prop('checked', true);
+      }
+      if ({{ includedChains }} & 4) {
+        $("#optDFKChain").prop('checked', true);
+      }
+      if ({{ includedChains }} & 8) {
+        $("optKlaytn").prop('checked', true);
+      }
+      if ({{ includedChains }} & 2) {
+        $("#optAvalanche").prop('checked', false);
+      }
+      $("#startDate").val('{{ startDate }}');
+      $("#endDate").val('{{ endDate }}');
+      switch ('{{ costBasis }}') {
+        case 'fifo':
+          $("#fifo").attr('checked', 'checked');
+          break;
+        case 'lifo':
+          $("#lifo").attr('checked', 'checked');
+          break;
+        case 'hifo':
+          $("#hifo").attr('checked', 'checked');
+          break;
+        case 'acb':
+          $("#acb").attr('checked', 'checked');
+          break;
+        default:
+          console.log('invalid cost basis detected')
+      }
+
+      if ( '{{ purchaseAddresses }}' != '' && '{{ purchaseAddresses }}' != '[]') {
+        $("#purchaseAddresses").val('{{ purchaseAddresses }}');
+        $('#addressEntry').show();
+      }
+      viewReport('{{ account }}', '{{ contentFile }}', 'tax');
+    }
 });
 var usdFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -105,6 +144,39 @@ function txGroupReset(value) {
   $('#tx_' + value + '_data').html('');
   $('#tx_' + value + '_count').html('');
   $('#smy_' + value + '_data').html('');
+}
+// Load the old report in two steps after it is done, first tax report, then events
+function viewReport(account, contentFile, contentType, eventGroup='all') {
+  $.post(BASE_SCRIPT_URL + "view.py",{
+        account: account,
+        contentFile: contentFile,
+        contentType: contentType,
+        eventGroup: eventGroup}, function( data ) {
+          if (contentType == 'tax') {
+            reportRecords = data.response.tax_records;
+            loadReport(data.response, contentType);
+            $("#exportContainer").show(500);
+            $("#loadingSection").css("display","none");
+            $("#loadingMessage").html('Lila: I can help you.');
+            $("#reportProgress").progressbar( "option", "value", false);
+            $("#reportPercent").html("");
+            for (let i = 0; i < event_groups.length; i++) {
+              setTimeout(`viewReport("${account}","${contentFile}","transaction","${event_groups[i]}")`, 500);
+            }
+          } else {
+            reportRecords = data.response.event_records;
+            if (reportRecords != 'undefined') {
+              loadReport(data.response, contentType, eventGroup);
+              if (eventGroup == event_groups[event_groups.length-1]) {
+                $("#mappingSection").css("display","none");
+                $("#mappingProgress").progressbar( "option", "value", false);
+                $("#mappingMessage").html("Loading Transactions...");
+              }
+            }
+          }
+        }, "json"
+    );
+    return false;
 }
 // Load the report in two steps after it is done, first tax report, then events
 function completeReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche, contentType, eventGroup='all') {
@@ -219,16 +291,7 @@ function downloadDone() {
 <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
   <button id="goFilter" type="button" class="ui-button" style="float: right;margin-top: 8px;" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));">Generate!</button>
   <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
-  <fieldset class="chainSelect">
-    <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
-    <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
-    <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked"/>
-    <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
-    <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
-    <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
-    <input type="checkbox" id="optAvalanche" name="optAvalanche"/>
-    <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" class="chainButton"/></label>
-  </fieldset>
+  <a href="{{ BASE_SCRIPT_URL }}members.py" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;float:right;margin-right:4px;"/></a>
 </h1>
 
 </div>
@@ -251,7 +314,18 @@ function downloadDone() {
         <div class="sectionHead"></div>
       </fieldset>
       <div class="sectionHead"></div>
-      <div style="padding: 4px;">
+      <fieldset class="chainSelect">
+        <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
+        <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
+        <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked"/>
+        <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
+        <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
+        <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
+        <input type="checkbox" id="optAvalanche" name="optAvalanche"/>
+        <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" class="chainButton"/></label>
+      </fieldset>
+      <div class="sectionHead"></div>
+      <div style="padding: 4px;margin-top:56px;">
       <fieldset id="costBasisSet" class="multiToggle">
         <legend style="font-weight: bold;">Cost Basis:</legend>
         <input type="radio" name="cbs" id="fifo" value="fifo">
@@ -324,7 +398,7 @@ function downloadDone() {
     <div id="reportContainer" class="ghWidgetBox ui-widget-content">
     <div class="boxHeader ui-widget-header" style="height:24px;"><div id="results_title" style="float:left;">Report Results
       <div style="float:right;position:relative;top:-2px;display: none;" id="exportContainer">
-        <button type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;">Export CSV</button>
+        <button type=button value="Export CSV" class="orphanButton" onclick="exportData('csv');" style="margin-left:20px;top: -2px;">Export CSV</button>
       </div>
     </div>
       <div style="float:right;position:relative;top:0px;">

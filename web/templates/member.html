@@ -203,12 +203,15 @@ function loadGroups() {
   };
   request.send();
 }
+function viewReport(contentFile) {
+  document.location=`{{ BASE_SCRIPT_URL }}/home.py?contentFile=${contentFile}`
+}
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete'];
   var listElm = document.getElementById('reportList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
-  newRow.innerHTML = '<th>Wallet</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th>';
+  newRow.innerHTML = '<th>Wallet</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th><th>View</th>';
   listElm.appendChild(newRow);
   data['reports'].forEach((report) => {
     var addr = report[0].substring(38, 42);
@@ -216,7 +219,11 @@ function reportTable(data) {
     var percentFetched = report[6]/report[5]*100;
     var percentComplete = report[7]/report[5]*100;
     var newRow = document.createElement('tr');
-    newRow.innerHTML = `<td>0x...${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td>`;
+    var actionColumn = '';
+    if (status == 'Complete') {
+      actionColumn = `<input type="button" value="View" onclick="viewReport('${report[8]}');" class="lButton" />`;
+    }
+    newRow.innerHTML = `<td>0x...${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td><td>${actionColumn}</td>`;
     listElm.appendChild(newRow);
   });
 }
@@ -254,7 +261,6 @@ function createGroup(groupName, walletList) {
   request.open('POST', `{{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
   console.log(`loading: {{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
   request.onload = function() {
-    console.log('load completed');
     if (!request.status || (request.status >= 400)) {
       alert('Failed to add wallet group due to server error.');
     } else {
@@ -263,7 +269,6 @@ function createGroup(groupName, walletList) {
         alert(resp['error']);
       } else {
         loadGroups();
-        console.log('loaded');
       }
     }
   };
