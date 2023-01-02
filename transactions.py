@@ -69,6 +69,7 @@ def getCovalentTxList(chainID, address, startDate="", endDate="", alreadyFetched
             raise Exception('DFK Chain Transactions Lookup Failure.')
         if r.status_code == 200:
             retryCount = 0
+            blockSpan = 86400
             results = r.json()
             if blockLimit == None:
                 # blockLimit not set means we are looking up the first transaction for this account to start
@@ -104,14 +105,14 @@ def getCovalentTxList(chainID, address, startDate="", endDate="", alreadyFetched
             else:
                 logging.error("Covalent rate limit hit too many times, exit")
                 raise Exception('Covalent Transactions Lookup Failure.')
-        elif r.status_code == 504:
+        elif r.status_code in [504,524]:
             # covalent gateway timeout
             logging.warning("Covalent gateway timeout getting Txs, retrying")
             if retryCount < 3:
                 retryCount += 1
-                time.sleep(13)
+                time.sleep(8)
                 # reduce range a bit to see if that helps
-                blockSpan = int(blockSpan*0.9)
+                blockSpan = int(blockSpan*0.95)
                 continue
             else:
                 logging.error("Covalent timeout too many times, exit")
