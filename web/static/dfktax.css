@@ -300,7 +300,6 @@ input[disabled] {
 	border-radius: 8px;
 	margin-top: 8px;
 	margin-right: 8px;
-	float: right;
 }
 .dateBox {
 	font-size: 16px;
@@ -363,7 +362,13 @@ input[disabled] {
 .multiToggle input[type="radio"]:hover + label {
     border-color: #4c4;
 }
-
+.popSel {
+	font-size: 24px;
+	border-style: inset;
+	border-radius: 8px;
+	margin-top: 8px;
+	margin-right: 8px;
+}
 .taxTable, .transactionTable {
 	width: 100%;
 	border-collapse: collapse;
@@ -406,6 +411,7 @@ input[disabled] {
 .sectionHead {
 	margin-top: 6px;
 	text-align: center;
+	font-weight: bold;
 }
 
 .lds-ripple {

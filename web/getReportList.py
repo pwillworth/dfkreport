@@ -17,7 +17,7 @@ def getReportList(account):
     result = ''
     con = db.aConn()
     cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE proc=0 and account = %s ORDER BY generatedTimestamp DESC", (account,))
+    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE proc=0 and user = %s ORDER BY generatedTimestamp DESC", (account,))
     row = cur.fetchone()
     while row != None:
         result += '["{0}","{1}","{2}",{3},{4},{5},{6},{7},"{8}"],'.format(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])

@@ -36,12 +36,14 @@ def main():
     page_size = settings.TX_PAGE_SIZE
     txResult = []
     txData = []
+    wallets = [args.wallet]
     moreOptions = db.ReportOptions()
 
     # list of transactions if loaded from file if available, otherwise fetched
     reportInfo = db.findReport(args.wallet, args.startDate, args.endDate)
     if reportInfo != None and reportInfo[5] > 0 and len(reportInfo[8]) > 0:
         includedChains = reportInfo[12]
+        wallets = reportInfo[15]
         with open('../transactions/{0}'.format(reportInfo[8]), 'rb') as file:
             txData = pickle.load(file)
     else:
@@ -54,10 +56,11 @@ def main():
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
             txTotal = txResult[0] + txResult[1] + txResult[2] + txResult[3]
-            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, 1)
+            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, jsonpickle.encode([args.wallet]), 'system', 1, None, jsonpickle.encode(txResult))
         else:
             includedChains = reportInfo[12]
-            txResult = transactions.getTransactionCount(args.wallet, includedChains)
+            wallets = jsonpickle.decode(reportInfo[15])
+            txResult = jsonpickle.decode(reportInfo[14])
             if len(txResult) != 4:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(str(txResult)))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
@@ -72,7 +75,7 @@ def main():
         if reportInfo != None and reportInfo[4] > page_size*50:
             page_size = min(1000, page_size*5)
         try:
-            txData = transactions.getTransactionList(args.wallet, args.startDate, args.endDate, txResult, page_size, includedChains)
+            txData = transactions.getTransactionList(wallets, args.startDate, args.endDate, txResult, page_size, includedChains)
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()
@@ -89,7 +92,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(txData, txResult, args.wallet, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
+        reportData = taxmap.buildTaxMap(txData, txResult, wallets, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()

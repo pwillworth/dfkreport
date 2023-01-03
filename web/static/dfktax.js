@@ -495,6 +495,8 @@ crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C26051
 event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
 paymentsTotalValue = 0;
+var sid='';
+var selectedAccount='';
 
 function getTokenName(address, network) {
   result = address;
@@ -1261,4 +1263,139 @@ function setCookie(cName, value, expireDays) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate()+expireDays);
     document.cookie=cName + "=" + value+((expireDays==null) ? "" : ";expires="+exdate.toUTCString()) + ";path=/";
+}
+async function isConnected() {
+  const accounts = await ethereum.request({method: 'eth_accounts'});
+  if (accounts.length) {
+    console.log(`You're connected to: ${accounts[0]}`);
+    return true;
+  } else {
+    console.log("Metamask is not connected");
+    return false;
+  }
+}
+/* To connect using MetaMask */
+async function connect() {
+  if (window.ethereum) {
+    console.log("requesting wallet connection");
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    window.web3 = new Web3(window.ethereum);
+    const account = web3.eth.accounts;
+    //Get the current MetaMask selected/active wallet
+    const walletAddress = account.givenProvider.selectedAddress;
+    selectedAccount = walletAddress;
+    console.log(`Wallet: ${walletAddress}`);
+    document.getElementById("member").innerHTML = '0x...'+walletAddress.substring(38, 42);
+    document.getElementById('connectWallet').style.display = 'none';
+    document.getElementById('loginButton').style.display = 'block';
+    if (sid != '') {
+      login();
+    }
+    refreshLists();
+  } else {
+    console.log("No wallet");
+  }
+}
+function handleAuth(wAddress, signature) {
+  var request = new XMLHttpRequest();
+  request.open('GET', `${BASE_SCRIPT_URL}auth.py?account=${wAddress}&signature=${signature}`, true);
+  console.log(`loading ${BASE_SCRIPT_URL}auth.py?account=${wAddress}&signature=${signature}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('authentication failed.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      console.log('loaded session '+resp['sid']);
+      sid = resp['sid'];
+      setCookie('sid', sid, 92);
+      document.getElementById('loginButton').style.display = 'none';
+      document.getElementById('logoutButton').style.display = 'block';
+      refreshLists();
+    }
+  };
+  request.send();
+}
+function handleLoginSignature(nonce) {
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  web3.eth.personal.sign(
+    web3.utils.utf8ToHex(`Click Sign to verify you own this wallet and login.  nonce: ${nonce}`),
+    wAddress,
+    (err, signature) => {
+      if (err) return reject(err);
+      return handleAuth(wAddress, signature);
+    }
+  );
+}
+async function login() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to login.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('sid' in resp) {
+        sid = resp['sid']
+        setCookie('sid', sid, 92);
+        console.log(`loaded sid ${resp['sid']}`);
+        document.getElementById('loginButton').style.display = 'none';
+        document.getElementById('logoutButton').style.display = 'block';
+        refreshLists();
+        return;
+      }
+      if ('nonce' in resp) {
+        console.log(`loaded nonce ${resp['nonce']}`);
+        handleLoginSignature(resp['nonce']);
+      }
+      if ('error' in resp) {
+        alert(resp['error']);
+      }
+    }
+  };
+  request.send();
+}
+async function logout() {
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  request.open('GET', `${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`);
+  request.onload = function() {
+    console.log('load completed');
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to logout, server error.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if (resp['result'].indexOf("Error:") == -1) {
+        alert(resp['result']);
+      } else {
+        sid = '';
+        setCookie('sid','',-1);
+        document.getElementById('loginButton').style.display = 'block';
+        document.getElementById('logoutButton').style.display = 'none';
+        refreshLists();
+      }
+    }
+  };
+  request.send();
+}
+function resetConnection() {
+  document.getElementById("member").innerHTML = '';
+  document.getElementById('connectWallet').style.display = 'block';
+  document.getElementById('loginButton').style.display = 'none';
+  document.getElementById('logoutButton').style.display = 'none';
 }

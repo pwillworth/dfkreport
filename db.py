@@ -174,12 +174,12 @@ def getWalletPayments(wallet):
 def findReport(wallet, startDate, endDate):
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT * FROM reports WHERE account=%s AND startDate=%s AND endDate=%s", (wallet, startDate, endDate))
+    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, user FROM reports WHERE account=%s AND startDate=%s AND endDate=%s", (wallet, startDate, endDate))
     row = cur.fetchone()
     # Make sure they don't already have a report running for other range
     existRow = None
     if not settings.CONCURRENT_REPORTS:
-        cur.execute("SELECT * FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
+        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, user FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
         existRow = cur.fetchone()
     con.close()
     if existRow != None:
@@ -187,17 +187,17 @@ def findReport(wallet, startDate, endDate):
     else:
         return row
 
-def createReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, proc=None, moreOptions=None):
+def createReport(account, startDate, endDate, now, txCount, costBasis, includedChains, wallets, user, proc=None, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()
-    cur.execute("INSERT INTO reports VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (wallet, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions))
+    cur.execute("INSERT INTO reports VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, wallets, user))
     con.commit()
     con.close()
 
-def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, moreOptions=None):
+def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL WHERE account=%s AND startDate=%s AND endDate=%s", (now, txCount, costBasis, includedChains, moreOptions, wallet, startDate, endDate))
+    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL, txCounts=%s WHERE account=%s AND startDate=%s AND endDate=%s", (now, txCount, costBasis, includedChains, moreOptions, txCounts, wallet, startDate, endDate))
     con.commit()
     con.close()
     try:
@@ -263,6 +263,18 @@ def getRunningReports():
     con.close()
     return row[0]
 
+def getWalletGroup(account, group):
+    results = []
+    con = aConn()
+    cur = con.cursor()
+    cur.execute("SELECT wallets FROM groups WHERE account=%s AND groupName=%s", (account,group))
+    row = cur.fetchone()
+    if row != None:
+        results = jsonpickle.decode(row[0])
+    con.close()
+
+    return results
+
 # look up a session id and see if it is valid
 def getSession(sid):
 	con = aConn()
@@ -291,7 +303,7 @@ def createDatabase():
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
     cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), network VARCHAR(31), fee DOUBLE, feeValue DOUBLE, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
-    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
+    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, txCounts VARCHAR(255), wallets LONGTEXT, user VARCHAR(63), PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
     cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets LONGTEXT, generatedTimestamp TIMESTAMP NOT NULL DEFAULT UTC_TIMESTAMP, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
     cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
     cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp INTEGER, txHash VARCHAR(127), token VARCHAR(63), amount INTEGER, previousExpires INTEGER, newExpires INTEGER)')

@@ -154,28 +154,31 @@ def getAvalancheData(address, startDate="", endDate="", page_size=settings.TX_PA
 
     return txs
 
-def getTransactionList(address, startDate, endDate, txCounts, page_size, includedChains=constants.DFKCHAIN):
-    hmy_txs = []
-    dfk_txs = []
-    ktn_txs = []
-    avx_txs = []
-    if includedChains & constants.HARMONY > 0:
-        logging.info('Get Harmony data for {0}'.format(address))
-        hmy_txs = getHarmonyData(address, startDate, endDate, page_size)
-        # Sometimes the paged return tx lookup can result in duplicate txs in the list
-        hmy_txs = list(dict.fromkeys(hmy_txs))
-    if includedChains & constants.DFKCHAIN > 0:
-        logging.info('Get DFK Chain data for {0}'.format(address))
-        dfk_txs = getCovalentTxList('53935', address, startDate, endDate, txCounts[0])
-    if includedChains & constants.KLAYTN > 0:
-        logging.info('Get Klaytn data for {0}'.format(address))
-        ktn_txs = getCovalentTxList('8217', address, startDate, endDate, txCounts[0]+txCounts[2])
-    if includedChains & constants.AVALANCHE > 0:
-        logging.info('Get Avalanche data for {0}'.format(address))
-        avx_txs += getAvalancheData(address, startDate, endDate, page_size, txCounts[0]+txCounts[2]+txCounts[3])
-    return [hmy_txs, avx_txs, dfk_txs, ktn_txs]
+def getTransactionList(wallets, startDate, endDate, txCounts, page_size, includedChains):
+    result = {}
+    for wallet in wallets:
+        hmy_txs = []
+        dfk_txs = []
+        ktn_txs = []
+        avx_txs = []
+        if includedChains & constants.HARMONY > 0:
+            logging.info('Get Harmony data for {0}'.format(wallet))
+            hmy_txs = getHarmonyData(wallet, startDate, endDate, page_size)
+            # Sometimes the paged return tx lookup can result in duplicate txs in the list
+            hmy_txs = list(dict.fromkeys(hmy_txs))
+        if includedChains & constants.DFKCHAIN > 0:
+            logging.info('Get DFK Chain data for {0}'.format(wallet))
+            dfk_txs = getCovalentTxList('53935', wallet, startDate, endDate, txCounts[0])
+        if includedChains & constants.KLAYTN > 0:
+            logging.info('Get Klaytn data for {0}'.format(wallet))
+            ktn_txs = getCovalentTxList('8217', wallet, startDate, endDate, txCounts[0]+txCounts[2])
+        if includedChains & constants.AVALANCHE > 0:
+            logging.info('Get Avalanche data for {0}'.format(wallet))
+            avx_txs += getAvalancheData(wallet, startDate, endDate, page_size, txCounts[0]+txCounts[2]+txCounts[3])
+        result[wallet] = [hmy_txs, avx_txs, dfk_txs, ktn_txs]
+    return result
 
-def getTransactionCount(address, includedChains=constants.DFKCHAIN):
+def getTransactionCount(wallets, includedChains):
     result = ""
     hmy_result = 0
     avx_result = 0
@@ -184,7 +187,8 @@ def getTransactionCount(address, includedChains=constants.DFKCHAIN):
 
     if includedChains & constants.HARMONY > 0:
         try:
-            hmy_result = account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
+            for address in wallets:
+                hmy_result += account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
         except ConnectionError:
             result = 'Error: Failed to connect to Harmony API'
             logging.error("connection to harmony api failed")
@@ -195,7 +199,8 @@ def getTransactionCount(address, includedChains=constants.DFKCHAIN):
             logging.error('Error: Critical w3 connection failure for dfk chain')
             result = 'Error: Blockchain connection failure.'
         else:
-            dfk_result = w3.eth.get_transaction_count(address)
+            for address in wallets:
+                dfk_result += w3.eth.get_transaction_count(address)
 
     if includedChains & constants.KLAYTN > 0:
         w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
@@ -203,25 +208,27 @@ def getTransactionCount(address, includedChains=constants.DFKCHAIN):
             logging.error('Error: Critical w3 connection failure for Klaytn')
             result = 'Error: Blockchain connection failure.'
         else:
-            ktn_result = w3.eth.get_transaction_count(address)
+            for address in wallets:
+                ktn_result += w3.eth.get_transaction_count(address)
 
     if includedChains & constants.AVALANCHE > 0:
-        try:
-            r = requests.get("{1}/api?module=proxy&action=eth_getTransactionCount&address={0}&tag=latest&apikey={2}".format(address, nets.avax_main, nets.avax_key))
-        except ConnectionError:
-            logging.error("connection to AVAX api failed")
-
-        if r.status_code == 200:
-            results = r.json()
+        for address in wallets:
             try:
-                avx_result = int(results['result'], base=16)
-                logging.info("got {0} transactions".format(avx_result))
-            except Exception as err:
-                result = 'Error: invalid response from Avalanche Snowtrace API - {0}'.format(str(err))
+                r = requests.get("{1}/api?module=proxy&action=eth_getTransactionCount&address={0}&tag=latest&apikey={2}".format(address, nets.avax_main, nets.avax_key))
+            except ConnectionError:
+                logging.error("connection to AVAX api failed")
+
+            if r.status_code == 200:
+                results = r.json()
+                try:
+                    avx_result += int(results['result'], base=16)
+                    logging.info("got {0} transactions".format(avx_result))
+                except Exception as err:
+                    result = 'Error: invalid response from Avalanche Snowtrace API - {0}'.format(str(err))
+                    logging.error(result)
+            else:
+                result = 'Error: Failed to connect to Avalanche Snowtrace API'
                 logging.error(result)
-        else:
-            result = 'Error: Failed to connect to Avalanche Snowtrace API'
-            logging.error(result)
 
     if result != "":
         return result

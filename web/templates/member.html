@@ -10,8 +10,6 @@
 </head>
 <body>
 <script>
-var sid='';
-var selectedAccount='';
 window.onload = (event) => {
   sid = getCookie('sid', '');
   if (isConnected()) {
@@ -19,136 +17,16 @@ window.onload = (event) => {
   }
   setTimeout('refreshLists', 120000);
 };
+window.ethereum.on('accountsChanged', function (accounts) {
+  console.log(`wallet changed to ${accounts[0]}!`);
+  resetConnection();
+  if (isConnected()) {
+    connect();
+  }
+});
 function refreshLists() {
   loadGroups();
   loadReports();
-}
-async function isConnected() {
-  const accounts = await ethereum.request({method: 'eth_accounts'});       
-  if (accounts.length) {
-    console.log(`You're connected to: ${accounts[0]}`);
-    return true;
-  } else {
-    console.log("Metamask is not connected");
-    return false;
-  }
-}
-/* To connect using MetaMask */
-async function connect() {
-  if (window.ethereum) {
-    await window.ethereum.request({ method: "eth_requestAccounts" });
-    window.web3 = new Web3(window.ethereum);
-    const account = web3.eth.accounts;
-    //Get the current MetaMask selected/active wallet
-    const walletAddress = account.givenProvider.selectedAddress;
-    selectedAccount = walletAddress;
-    console.log(`Wallet: ${walletAddress}`);
-    document.getElementById("member").innerHTML = '0x...'+walletAddress.substring(38, 42);
-    document.getElementById('connectWallet').style.display = 'none';
-    if (sid != '') {
-      login();
-    }
-    refreshLists();
-  } else {
-    console.log("No wallet");
-  }
-}
-function handleAuth(wAddress, signature) {
-  var request = new XMLHttpRequest();
-  request.open('GET', `{{ BASE_SCRIPT_URL }}auth.py?account=${wAddress}&signature=${signature}`, true);
-  console.log(`loading {{ BASE_SCRIPT_URL }}auth.py?account=${wAddress}&signature=${signature}`);
-  request.onload = function() {
-    console.log('load completed');
-    if (!request.status || (request.status >= 400)) {
-      alert('authentication failed.');
-    } else {
-      var resp = JSON.parse(request.responseText);
-      console.log('loaded session '+resp['sid']);
-      sid = resp['sid'];
-      setCookie('sid', sid, 92);
-      document.getElementById('loginButton').style.display = 'none';
-      document.getElementById('logoutButton').style.display = 'block';
-      refreshLists();
-    }
-  };
-  request.send();
-}
-function handleLoginSignature(nonce) {
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
-  web3.eth.personal.sign(
-    web3.utils.utf8ToHex(`Click Sign to verify you own this wallet and login.  nonce: ${nonce}`),
-    wAddress,
-    (err, signature) => {
-      if (err) return reject(err);
-      return handleAuth(wAddress, signature);
-    }
-  );
-}
-async function login() {
-  if (!isConnected()) {
-    alert('you need to connect a wallet first!');
-    return;
-  }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
-  var request = new XMLHttpRequest();
-  request.open('GET', `{{ BASE_SCRIPT_URL }}login.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}login.py?account=${wAddress}&sid=${sid}`);
-  request.onload = function() {
-    console.log('load completed');
-    if (!request.status || (request.status >= 400)) {
-      alert('Failed to login.');
-    } else {
-      var resp = JSON.parse(request.responseText);
-      if ('sid' in resp) {
-        sid = resp['sid']
-        setCookie('sid', sid, 92);
-        console.log(`loaded sid ${resp['sid']}`);
-        document.getElementById('loginButton').style.display = 'none';
-        document.getElementById('logoutButton').style.display = 'block';
-        refreshLists();
-        return;
-      }
-      if ('nonce' in resp) {
-        console.log(`loaded nonce ${resp['nonce']}`);
-        handleLoginSignature(resp['nonce']);
-      }
-      if ('error' in resp) {
-        alert(resp['error']);
-      }
-    }
-  };
-  request.send();
-}
-async function logout() {
-  if (!isConnected()) {
-    alert('you need to connect a wallet first!');
-    return;
-  }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
-  var request = new XMLHttpRequest();
-  request.open('GET', `{{ BASE_SCRIPT_URL }}logout.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}logout.py?account=${wAddress}&sid=${sid}`);
-  request.onload = function() {
-    console.log('load completed');
-    if (!request.status || (request.status >= 400)) {
-      alert('Failed to logout, server error.');
-    } else {
-      var resp = JSON.parse(request.responseText);
-      if (resp['result'].indexOf("Error:") == -1) {
-        alert(resp['result']);
-      } else {
-        sid = '';
-        setCookie('sid','',-1);
-        document.getElementById('loginButton').style.display = 'block';
-        document.getElementById('logoutButton').style.display = 'none';
-        refreshLists();
-      }
-    }
-  };
-  request.send();
 }
 function loadReports() {
   if (!isConnected()) {
@@ -188,7 +66,6 @@ function loadGroups() {
   request.open('GET', `{{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
   console.log(`loading: {{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`);
   request.onload = function() {
-    console.log('load completed');
     if (!request.status || (request.status >= 400)) {
       alert('Failed to load wallet groups.');
     } else {
@@ -204,7 +81,7 @@ function loadGroups() {
   request.send();
 }
 function viewReport(contentFile) {
-  document.location=`{{ BASE_SCRIPT_URL }}/home.py?contentFile=${contentFile}`
+  window.open(`{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}`);
 }
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete'];
@@ -214,7 +91,11 @@ function reportTable(data) {
   newRow.innerHTML = '<th>Wallet</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th><th>View</th>';
   listElm.appendChild(newRow);
   data['reports'].forEach((report) => {
-    var addr = report[0].substring(38, 42);
+    if ( report[0].substring(0, 2) == '0x' ) {
+      var addr = report[0].substring(0, 6) + '...' + report[0].substring(38, 42);
+    } else {
+      var addr = report[0];
+    }
     var status = reportStatus[report[4]];
     var percentFetched = report[6]/report[5]*100;
     var percentComplete = report[7]/report[5]*100;
@@ -223,7 +104,7 @@ function reportTable(data) {
     if (status == 'Complete') {
       actionColumn = `<input type="button" value="View" onclick="viewReport('${report[8]}');" class="lButton" />`;
     }
-    newRow.innerHTML = `<td>0x...${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td><td>${actionColumn}</td>`;
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td><td>${actionColumn}</td>`;
     listElm.appendChild(newRow);
   });
 }
@@ -288,7 +169,9 @@ function editGroup(currentName, currentList) {
 }
 </script>
 <div style="height: 100px;">
-  <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span><div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login();" class="lButton"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div></h1>
+  <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
+    <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login();" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
+  </h1>
 </div>
 <div class="reportPage" id="groupPage">
   <h2 style="text-align: center;">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></h2>
@@ -306,7 +189,7 @@ function editGroup(currentName, currentList) {
 </div>
 <div id="groupDialog" class="window">
   <h2 style="display: inline;">New Wallet Group</h2><div style="float: right;position: relative;top:0px;"><a href="#" class="close" onclick="hideWindow('groupDialog')">Close</a></div>
-  <div class="searchInput"><label for="groupName">Group Name:</label><br /><input type="text" id="groupName" size="44" maxlength="255" value="" /></div>
+  <div class="searchInput"><label for="groupName">Group Name:</label><br /><input type="text" id="groupName" size="44" maxlength="60" value="" /></div>
   <div class="searchInput"><label for="walletList">Wallets:</label><br /><textarea id="walletList" name="walletList" rows="4" cols="42" maxlength="2000"></textarea></div>
   
   <div id="busyImgAdd" style="display:none;float:right;"><div class="lds-ripple"><div></div><div></div></div></div>

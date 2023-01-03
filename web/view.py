@@ -7,12 +7,10 @@
 
 import sys
 import cgi
-from web3 import Web3
 import pickle
 import jsonpickle
 import logging
 sys.path.append("../")
-import contracts
 import db
 import csvFormats
 
@@ -69,18 +67,15 @@ def getResponseJSON(results, contentType, eventGroup='all'):
 logging.basicConfig(filename='../view.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Extract query parameters
 form = cgi.FieldStorage()
-
-account = form.getfirst('account', '')
 contentFile = form.getfirst('contentFile', '')
 # can be set to csv, otherwise json response is returned
 formatType = form.getfirst('formatType', '')
 # can be tax or transaction, only used for CSV
 contentType = form.getfirst('contentType', '')
-# can by koinlyuniversal or anything else for default
+# can be koinlyuniversal or anything else for default
 csvFormat = form.getfirst('csvFormat', 'manual')
 # can be any event group to return only that group of events instead of all
 eventGroup = form.getfirst('eventGroup', 'all')
-
 contentFile = db.dbInsertSafe(contentFile)
 
 failure = False
@@ -91,15 +86,6 @@ if formatType == 'csv':
 else:
     print('Content-type: text/json\n')
 
-if not Web3.isAddress(account):
-    response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
-    failure = True
-else:
-    # Ensure consistent checksum version of address incase they enter lower case
-    wallet = Web3.toChecksumAddress(account)
-    if wallet in contracts.address_map:
-        response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
-        failure = True
 if contentFile == '':
     response = '{ "response" : "Error: content file id in contentFile parameter is required to view a report" }'
     failure = True

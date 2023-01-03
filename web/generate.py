@@ -14,64 +14,14 @@ sys.path.append("../")
 import transactions
 import contracts
 import db
-import csvFormats
 import pymysql
-import pickle
 import jsonpickle
 import logging
 
 
-def getResponseJSON(results, contentType, eventGroup='all'):
-    taxRecords = results['taxes']
-    eventRecords = results['events']
-    response = '{ "response" : {\n'
-    response += '  "status" : "complete",\n   '
-    if contentType == 'transaction':
-        response += '  "event_records" : \n   '
-        if eventGroup != 'all':
-            response += '  {"' + eventGroup + '" : \n'
-            response += jsonpickle.encode(eventRecords[eventGroup], make_refs=False)
-            response += '  }'
-        else:
-            response += jsonpickle.encode(eventRecords, make_refs=False)
-    else:
-        response += '  "tax_records" : [\n   '
-        for record in taxRecords:
-            acquiredDateStr = ''
-            soldDateStr = ''
-            if record.acquiredDate != None:
-                acquiredDateStr = record.acquiredDate.strftime('%Y-%m-%d')
-            if record.soldDate != None:
-                soldDateStr = record.soldDate.strftime('%Y-%m-%d')
-
-            response += '  {\n'
-            response += '  "category" : "{0}",\n'.format(record.category)
-            response += '  "description" : "{0}",\n'.format(record.description)
-            response += '  "acquiredDate" : "{0}",\n'.format(acquiredDateStr)
-            response += '  "soldDate" : "{0}",\n'.format(soldDateStr)
-            response += '  "proceeds" : "{0}",\n'.format(record.proceeds)
-            response += '  "costs" : "{0}",\n'.format(record.costs)
-            response += '  "gains" : "{0}",\n'.format(record.get_gains())
-            response += '  "term"  : "{0}",\n'.format(record.term)
-            if hasattr(record, 'txFees'):
-                response += '  "txFees" : "{0}",\n'.format(record.txFees)
-            response += '  "amountNotAccounted"  : "{0}"\n'.format(record.amountNotAccounted)
-            response += '  }, \n'
-
-        # trim off extra comma
-        response = response[:-3]
-        response += '  ],\n'
-        response += '  "gasValue" : "{0}"\n'.format(results['events']['gas'])
-    response += '  }\n}'
-
-    if len(eventRecords) == 0:
-        response = '{ "response" : "Error: No events found for that wallet and date range." }'
-
-    return response
-
 # Get an existing report record or create a new one and return it
-def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions):
-    reportRow = db.findReport(wallet, startDate, endDate)
+def getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, user):
+    reportRow = db.findReport(account, startDate, endDate)
     if reportRow != None:
         if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
             # if cost basis same or its different but report still running, just return existing
@@ -79,22 +29,22 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
         else:
             # wipe the old report and re-map for new options or transactions
             logging.debug('updating existing report row to regenerate')
-            result = transactions.getTransactionCount(wallet)
+            result = transactions.getTransactionCount(wallets, includedChains)
             if len(result) == 4:
                 generateTime = datetime.now(timezone.utc)
                 totalTx = result[0] + result[1] + result[2] + result[3]
-                db.resetReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9])
+                db.resetReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9], jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
                 return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), totalTx]
             else:
                 return 'Error: No Transactions for that wallet found'
     else:
         logging.debug('start new report row')
-        result = transactions.getTransactionCount(wallet, includedChains)
+        result = transactions.getTransactionCount(wallets, includedChains)
         if len(result) == 4:
             generateTime = datetime.now(timezone.utc)
             totalTx = result[0] + result[1] + result[2] + result[3]
-            db.createReport(wallet, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, None, jsonpickle.dumps(otherOptions))
-            report = db.findReport(wallet, startDate, endDate)
+            db.createReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, jsonpickle.dumps(wallets), user, None, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
+            report = db.findReport(account, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
         else:
@@ -103,7 +53,8 @@ def getReportStatus(wallet, startDate, endDate, costBasis, includedChains, other
 logging.basicConfig(filename='../generate.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Extract query parameters
 form = cgi.FieldStorage()
-
+sid = form.getfirst('sid', '')
+account = form.getfirst('account', '')
 wallet = form.getfirst('walletAddress', '')
 startDate = form.getfirst('startDate', '')
 endDate = form.getfirst('endDate', '')
@@ -112,25 +63,24 @@ includeDFKChain = form.getfirst('includeDFKChain', 'on')
 includeAvalanche = form.getfirst('includeAvalanche', 'false')
 includeKlaytn = form.getfirst('includeKlaytn', 'on')
 costBasis = form.getfirst('costBasis', 'fifo')
-# can be set to csv, otherwise json response is returned
-formatType = form.getfirst('formatType', '')
-# can be tax or transaction, only used for CSV
-contentType = form.getfirst('contentType', '')
-# can by koinlyuniversal or anything else for default
-csvFormat = form.getfirst('csvFormat', 'manual')
 # can be any event group to return only that group of events instead of all
 eventGroup = form.getfirst('eventGroup', 'all')
 # Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
 purchaseAddresses = form.getfirst('purchaseAddresses', '')
-
+sid = db.dbInsertSafe(sid)
+loginState = 0
 failure = False
 includedChains = 0
+multiWallet = False
+wallets = []
 
-if formatType == 'csv':
-	print('Content-type: text/csv')
-	print('Content-disposition: attachment; filename="dfk-report.csv"\n')
-else:
-    print('Content-type: text/json\n')
+if sid != '' and Web3.isAddress(account):
+    account = Web3.toChecksumAddress(account)
+    sess = db.getSession(sid)
+    if sess == account:
+        loginState = 1
+
+print('Content-type: text/json\n')
 
 try:
     tmpStart = datetime.strptime(startDate, '%Y-%m-%d').date()
@@ -146,11 +96,18 @@ except ValueError:
     failure = True
 
 if not Web3.isAddress(wallet):
-    response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
-    failure = True
+    # If address not passed, check if it is one of users multi wallet groups
+    if loginState > 0:
+        wallets = db.getWalletGroup(account, wallet)
+    if type(wallets) is list and len(wallets) > 0:
+        multiWallet = True
+    else:
+        response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
+        failure = True
 else:
     # Ensure consistent checksum version of address incase they enter lower case
     wallet = Web3.toChecksumAddress(wallet)
+    wallets = [wallet]
     if wallet in contracts.address_map:
         response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
         failure = True
@@ -194,27 +151,18 @@ if purchaseAddresses != '':
 
 if not failure:
     try:
-        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions)
-    except pymysql.err.OperationalError:
-        logging.error('Responding DB unavailable report error.')
+        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions, wallets, account)
+    except pymysql.err.OperationalError as err:
+        logging.error('Responding DB unavailable report error. {0}'.format(str(err)))
         status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."
     except Exception as err:
         # Failure can happen here if api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
         status = "Generation failed!  Blockchain API could not be contacted!."
-    if len(status) == 14:
+    if len(status) == 17:
         if status[5] == 2:
             # report is ready
-            if contentType == '':
-                response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
-            else:
-                with open('../reports/{0}'.format(status[9]), 'rb') as file:
-                    results = pickle.load(file)
-                if formatType == 'csv':
-                    logging.info('Getting response CSV')
-                    response = csvFormats.getResponseCSV(results, contentType, csvFormat)
-                else:
-                    response = getResponseJSON(results, contentType, eventGroup)
+            response = ''.join(('{ "response" : {\n  "contentFile" : "', status[9], '",\n  "status" : "complete",\n  "message" : "Report ready post to view.py with contentFile and send contentType parameter as tax or transaction to get results."\n  }\n}'))
         elif status[5] == 7:
             # too busy right now
             logging.warning('responding report too busy for {0}'.format(str(status)))
@@ -273,8 +221,3 @@ if not failure:
         failure = True
 
 print(response)
-
-if failure:
-    sys.exit(500)
-else:
-    sys.exit(200)
