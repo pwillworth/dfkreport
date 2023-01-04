@@ -111,7 +111,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             var contentFile = data.response.contentFile;
             var reportWin = window.open(`{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}`);
             if (!reportWin || reportWin.closed || typeof reportWin.closed=='undefined') {
-              $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <span class="orphanBox"><a target="_blank" href="{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}">here</a></span> to open it.`);
+              $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}">here</a> to open it.`);
             }
           } else if (reportStatus == 'generating') {
             $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );

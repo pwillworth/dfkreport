@@ -35,10 +35,13 @@ purchaseAddresses = ''
 if contentFile != '':
 	con = db.aConn()
 	with con.cursor() as cur:
-		cur.execute('SELECT account, startDate, endDate, costBasis, includedChains, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
+		cur.execute('SELECT account, startDate, endDate, costBasis, includedChains, moreOptions, walletGroup FROM reports WHERE reportContent=%s', (contentFile,))
 		row = cur.fetchone()
 		if row != None:
-			account = row[0]
+			if row[6] != '':
+				account = row[6]
+			else:
+				account = row[0]
 			startDate = row[1]
 			endDate = row[2]
 			costBasis = row[3]

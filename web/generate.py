@@ -20,7 +20,7 @@ import logging
 
 
 # Get an existing report record or create a new one and return it
-def getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, user):
+def getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, group):
     reportRow = db.findReport(account, startDate, endDate)
     if reportRow != None:
         if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
@@ -30,25 +30,25 @@ def getReportStatus(account, startDate, endDate, costBasis, includedChains, othe
             # wipe the old report and re-map for new options or transactions
             logging.debug('updating existing report row to regenerate')
             result = transactions.getTransactionCount(wallets, includedChains)
-            if len(result) == 4:
+            if type(result) is dict:
                 generateTime = datetime.now(timezone.utc)
-                totalTx = result[0] + result[1] + result[2] + result[3]
+                totalTx = transactions.getTotalCount(result)
                 db.resetReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9], jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
                 return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), totalTx]
             else:
-                return 'Error: No Transactions for that wallet found'
+                return result
     else:
         logging.debug('start new report row')
         result = transactions.getTransactionCount(wallets, includedChains)
-        if len(result) == 4:
+        if type(result) is dict:
             generateTime = datetime.now(timezone.utc)
-            totalTx = result[0] + result[1] + result[2] + result[3]
-            db.createReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, jsonpickle.dumps(wallets), user, None, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
+            totalTx = transactions.getTotalCount(result)
+            db.createReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, jsonpickle.dumps(wallets), group, None, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
             report = db.findReport(account, startDate, endDate)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
         else:
-            return 'Error: No Transactions for that wallet found'
+            return result
 
 logging.basicConfig(filename='../generate.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Extract query parameters
@@ -71,7 +71,7 @@ sid = db.dbInsertSafe(sid)
 loginState = 0
 failure = False
 includedChains = 0
-multiWallet = False
+walletGroup = ''
 wallets = []
 
 if sid != '' and Web3.isAddress(account):
@@ -100,7 +100,7 @@ if not Web3.isAddress(wallet):
     if loginState > 0:
         wallets = db.getWalletGroup(account, wallet)
     if type(wallets) is list and len(wallets) > 0:
-        multiWallet = True
+        walletGroup = wallet
     else:
         response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
         failure = True
@@ -151,7 +151,7 @@ if purchaseAddresses != '':
 
 if not failure:
     try:
-        status = getReportStatus(wallet, startDate, endDate, costBasis, includedChains, otherOptions, wallets, account)
+        status = getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, walletGroup)
     except pymysql.err.OperationalError as err:
         logging.error('Responding DB unavailable report error. {0}'.format(str(err)))
         status = "Site backend has become unavailable, but report should still be generating.  Click generate again in a minute to pick up where you left off."
@@ -210,6 +210,7 @@ if not failure:
             response += '  "transactionsTotal" : {0},\n '.format(status[4])
             response += '  "startedOn" : {0}\n   '.format(status[3])
             response += '  }\n}'
+            logging.info(str(status))
     elif len(status) == 5:
         logging.info('Waiting for initiated report to be picked up by main.')
         response = '{ "response" : {\n'

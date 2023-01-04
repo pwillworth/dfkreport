@@ -51,17 +51,17 @@ def main():
         if reportInfo == None:
             generateTime = datetime.datetime.now()
             txResult = transactions.getTransactionCount(args.wallet, includedChains)
-            if len(txResult) != 4:
+            if type(txResult) is not dict:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
-            txTotal = txResult[0] + txResult[1] + txResult[2] + txResult[3]
+            txTotal = transactions.getTotalCount(txResult)
             db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, jsonpickle.encode([args.wallet]), 'system', 1, None, jsonpickle.encode(txResult))
         else:
             includedChains = reportInfo[12]
             wallets = jsonpickle.decode(reportInfo[15])
             txResult = jsonpickle.decode(reportInfo[14])
-            if len(txResult) != 4:
+            if type(txResult) is not dict:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(str(txResult)))
                 db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
                 return 1
@@ -75,7 +75,7 @@ def main():
         if reportInfo != None and reportInfo[4] > page_size*50:
             page_size = min(1000, page_size*5)
         try:
-            txData = transactions.getTransactionList(wallets, args.startDate, args.endDate, txResult, page_size, includedChains)
+            txData = transactions.getTransactionList(args.wallet, wallets, args.startDate, args.endDate, txResult, page_size, includedChains)
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()

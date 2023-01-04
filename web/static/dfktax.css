@@ -289,6 +289,13 @@ input[disabled] {
 	height: 300px;
 	width: 100%;
 }
+.loadingMessage a, .loadingMessage a:visited, .loadingMessage a:link, .loadingMessage a:active {
+	color:#125a9b;
+}
+.loadingMessage a:hover {
+	background: #125a9b;
+	color: #d9f1f7;
+}
 #barMessage {
 	text-align: center;
 	vertical-align: middle;
