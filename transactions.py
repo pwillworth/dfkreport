@@ -13,7 +13,7 @@ import settings
 import constants
 
 # Return array of transactions on Harmony for the address
-def getHarmonyData(account, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+def getHarmonyData(acct, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     offset = 0
     txs = []
@@ -36,7 +36,7 @@ def getHarmonyData(account, address, startDate="", endDate="", alreadyFetched=0,
             tx_end = True
         
         if startDate != "" and endDate != "":
-            db.updateReport(account, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+            db.updateReport(acct, startDate, endDate, 'fetched', alreadyFetched + len(txs))
 
     return txs
 
