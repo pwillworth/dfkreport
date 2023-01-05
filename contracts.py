@@ -162,6 +162,8 @@ address_map = {
     '0xC6a2Ad8cC6e4A7E08FC37cC5954be07d499E7654': 'Uniswap Klayswap',
     '0xEf71750C100f7918d6Ded239Ff1CF09E81dEA92D': 'Uniswap Claimswap',
     '0x8dc58d6327E1f65b18B82EDFb01A361f3AAEf624': 'QuestCore Serendale',
+    '0xF719C12a5A7C0f13F3c1B71074960A25E2f9Aa9e': 'DFKDuelSD2',
+    '0xb0f423BCB1F4396781e21ad9E0BC151d29Ac020C': 'Airdrop DFKDuelSD2',
     '0xdbEE8C336B06f2d30a6d2bB3817a3Ae0E34f4900': 'MeditationCircleKlay',
     '0x7F2B66DB2D02f642a9eb8d13Bc998d441DDe17A8': 'AuctionHouse Serendale',
     '0xA2cef1763e59198025259d76Ce8F9E60d27B17B5': 'AuctionHouseKlayRental',

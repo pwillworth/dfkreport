@@ -1317,11 +1317,18 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs, network)
 
     ABI = contracts.getABI('DFKDuel')
     contract = w3.eth.contract(address='0xE97196f4011dc9DA0829dd8E151EcFc0f37EE3c7', abi=ABI)
-    input_data = contract.decode_function_input(inputs)
+    duelId = -1
+    try:
+        input_data = contract.decode_function_input(inputs)
+        logging.info(input_data)
+        if '_duelId' in input_data[1]:
+            duelId = input_data[1]['_duelId']
+    except Exception as err:
+        logging.error('Failed to decode DFKDuel input data tx {0}: {1}'.format(txn, err))
     # TODO maybe account for the gold too, seems minimal as winner gets it back anyway
     # if received items, it was pvp complete rewards, otherwise initiation costs/fees
     if len(rcvdToken) > 0:
-        r = records.TavernTransaction(txn, network, 'hero', input_data[1]['_duelId'], 'pvpreward', timestamp, rcvdToken[0], rcvdAmount[0])
+        r = records.TavernTransaction(txn, network, 'hero', duelId, 'pvpreward', timestamp, rcvdToken[0], rcvdAmount[0])
         r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0], network)
     elif len(sentToken) > 0:
         decoded_logs = contract.events.DuelEntryCreated().processReceipt(receipt, errors=DISCARD)
