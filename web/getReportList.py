@@ -7,6 +7,7 @@
 
 import sys
 import cgi
+import json
 from web3 import Web3
 sys.path.append("../")
 import db
@@ -14,17 +15,17 @@ import db
 #
 
 def getReportList(account):
-    result = ''
+    result = []
     con = db.aConn()
     cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE proc=0 and user = %s ORDER BY generatedTimestamp DESC", (account,))
+    cur.execute("SELECT CASE WHEN walletGroup = '' THEN account ELSE walletGroup END, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE proc=0 and account = %s ORDER BY generatedTimestamp DESC", (account,))
     row = cur.fetchone()
     while row != None:
-        result += '["{0}","{1}","{2}",{3},{4},{5},{6},{7},"{8}"],'.format(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
+        result.append([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]])
         row = cur.fetchone()
     con.close()
 
-    return result[:-1]
+    return result
 
 # Main program
 form = cgi.FieldStorage()
@@ -51,7 +52,8 @@ else:
     else:
         listResult = 'Error: Login first to view reports'
 
-if (listResult.find("Error:") > -1):
+if type(listResult) is not list and (listResult.find("Error:") > -1):
     print('{ "error" : "'+listResult+'"}')
 else:
-    print('{ "reports" : ['+listResult+']}')
+    reportData = { "reports" : listResult }
+    print(json.dumps(reportData))
