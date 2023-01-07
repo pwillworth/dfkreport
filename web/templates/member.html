@@ -112,7 +112,7 @@ function groupTable(data) {
   var listElm = document.getElementById('groupList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
-  newRow.innerHTML = '<th>Group Name</th><th>Wallets</th>';
+  newRow.innerHTML = '<th>Group Name</th><th>Wallets</th><th>Remove</th>';
   listElm.appendChild(newRow);
   data['groups'].forEach((report) => {
     var gName = report[1];
@@ -122,7 +122,7 @@ function groupTable(data) {
       walletList = walletList + gWallets[i] + ','
     }
     var newRow = document.createElement('tr');
-    newRow.innerHTML = `<td>${gName}</td><td>${walletList}</td>`;
+    newRow.innerHTML = `<td>${gName}</td><td>${walletList}</td><td><input type="button" value="Delete" onclick="removeGroup(event, '${gName}');" class="lButton" />`;
     newRow.addEventListener('click', function() {
       editGroup(report[1], gWallets);
     });
@@ -144,6 +144,33 @@ function createGroup(groupName, walletList) {
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to add wallet group due to server error.');
+    } else {
+      var resp = JSON.parse(request.responseText);
+      if ('error' in resp) {
+        alert(resp['error']);
+      } else {
+        hideWindow('groupDialog');
+        loadGroups();
+      }
+    }
+  };
+  request.send();
+}
+function removeGroup(event, groupName) {
+  event.stopPropagation();
+  if (!isConnected()) {
+    alert('you need to connect a wallet first!');
+    return;
+  }
+  const account = web3.eth.accounts;
+  const wAddress = account.givenProvider.selectedAddress;
+  var request = new XMLHttpRequest();
+  var wallets = encodeURIComponent(walletList);
+  request.open('POST', `{{ BASE_SCRIPT_URL }}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`, true);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`);
+  request.onload = function() {
+    if (!request.status || (request.status >= 400)) {
+      alert('Failed to remove wallet group due to server error.');
     } else {
       var resp = JSON.parse(request.responseText);
       if ('error' in resp) {

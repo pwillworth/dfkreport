@@ -19,9 +19,13 @@ def addGroupList(account, groupName, addressList):
     result = 0
     con = db.aConn()
     with con.cursor() as cur:
-        cur.execute("SELECT account, groupName, wallets FROM groups WHERE account = %s AND groupName=%s", (account,groupName))
+        cur.execute("SELECT account, groupName, wallets FROM groups WHERE account = %s AND wallets=%s", (account,jsonpickle.encode(addressList)))
         row = cur.fetchone()
+        cur.execute("SELECT account, groupName, wallets FROM groups WHERE account = %s AND groupName=%s", (account,groupName))
+        row2 = cur.fetchone()
         if row != None and row[0] != None:
+            cur.execute("UPDATE groups SET groupName=%s, updatedTimestamp=UTC_TIMESTAMP() WHERE account=%s AND wallets=%s", (groupName, account, jsonpickle.encode(addressList)))
+        elif row2 != None and row2[0] != None:
             cur.execute("UPDATE groups SET wallets=%s, updatedTimestamp=UTC_TIMESTAMP() WHERE account=%s AND groupName=%s", (jsonpickle.encode(addressList), account, groupName))
         else:
             cur.execute("INSERT INTO groups (account, groupName, wallets) VALUES (%s, %s, %s)", (account, groupName, jsonpickle.encode(addressList)))
