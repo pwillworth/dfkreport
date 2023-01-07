@@ -1268,6 +1268,7 @@ async function isConnected() {
   const accounts = await ethereum.request({method: 'eth_accounts'});
   if (accounts.length) {
     console.log(`You're connected to: ${accounts[0]}`);
+    handleAccountsChanged(accounts);
     return true;
   } else {
     console.log("Metamask is not connected");
@@ -1278,22 +1279,34 @@ async function isConnected() {
 async function connect() {
   if (window.ethereum) {
     console.log("requesting wallet connection");
-    await window.ethereum.request({ method: "eth_requestAccounts" });
-    window.web3 = new Web3(window.ethereum);
-    const account = web3.eth.accounts;
-    //Get the current MetaMask selected/active wallet
-    const walletAddress = account.givenProvider.selectedAddress;
-    selectedAccount = walletAddress;
-    console.log(`Wallet: ${walletAddress}`);
-    document.getElementById("member").innerHTML = '0x...'+walletAddress.substring(38, 42);
+    ethereum
+      .request({ method: 'eth_requestAccounts' })
+      .then(handleAccountsChanged)
+      .catch((err) => {
+        if (err.code === 4001) {
+          console.log('connection rejected');
+        } else {
+          console.error(err);
+        }
+      });
+  }
+}
+
+function handleAccountsChanged(accounts) {
+  if (accounts.length === 0) {
+    console.log('unlock and/or connect wallet');
+  } else if (accounts[0] !== selectedAccount) {
+    selectedAccount = accounts[0];
+    sid = getCookie(`sid-${selectedAccount}`, '');
+    console.log(`Wallet: ${selectedAccount}`);
+    var addr = selectedAccount.substring(0, 6) + '...' + selectedAccount.substring(38, 42);
+    document.getElementById("member").innerHTML = addr;
     document.getElementById('connectWallet').style.display = 'none';
     document.getElementById('loginButton').style.display = 'block';
     if (sid != '') {
       login();
     }
     refreshLists();
-  } else {
-    console.log("No wallet");
   }
 }
 function handleAuth(wAddress, signature) {
@@ -1308,7 +1321,7 @@ function handleAuth(wAddress, signature) {
       var resp = JSON.parse(request.responseText);
       console.log('loaded session '+resp['sid']);
       sid = resp['sid'];
-      setCookie('sid', sid, 92);
+      setCookie(`sid-${selectedAccount}`, sid, 180);
       document.getElementById('loginButton').style.display = 'none';
       document.getElementById('logoutButton').style.display = 'block';
       refreshLists();
@@ -1317,24 +1330,26 @@ function handleAuth(wAddress, signature) {
   request.send();
 }
 function handleLoginSignature(nonce) {
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
+  window.web3 = new Web3(window.ethereum);
+  const wAddress = selectedAccount;
   web3.eth.personal.sign(
-    web3.utils.utf8ToHex(`Click Sign to verify you own this wallet and login.  nonce: ${nonce}`),
+    web3.utils.utf8ToHex(`Lilas Ledger login uses no transaction or gas fees.\n\nClick Sign to verify you own this wallet and login.\n\nIf you have cookies enabled, your session can persist for up to 6 months or until you logout.\n\nnonce: ${nonce}`),
     wAddress,
     (err, signature) => {
-      if (err) return reject(err);
+      if (err) {
+        console.log(`error: ${err.message}`);
+        return;
+      }
       return handleAuth(wAddress, signature);
     }
   );
 }
-async function login() {
+async function login(sign=false) {
   if (!isConnected()) {
     alert('you need to connect a wallet first!');
     return;
   }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
+  const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
   request.open('GET', `${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`, true);
   console.log(`loading: ${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`);
@@ -1346,14 +1361,12 @@ async function login() {
       var resp = JSON.parse(request.responseText);
       if ('sid' in resp) {
         sid = resp['sid']
-        setCookie('sid', sid, 92);
-        console.log(`loaded sid ${resp['sid']}`);
         document.getElementById('loginButton').style.display = 'none';
         document.getElementById('logoutButton').style.display = 'block';
         refreshLists();
         return;
       }
-      if ('nonce' in resp) {
+      if ('nonce' in resp && sign) {
         console.log(`loaded nonce ${resp['nonce']}`);
         handleLoginSignature(resp['nonce']);
       }
@@ -1369,8 +1382,7 @@ async function logout() {
     alert('you need to connect a wallet first!');
     return;
   }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
+  const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
   request.open('GET', `${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`, true);
   console.log(`loading: ${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`);
@@ -1380,11 +1392,11 @@ async function logout() {
       alert('Failed to logout, server error.');
     } else {
       var resp = JSON.parse(request.responseText);
-      if (resp['result'].indexOf("Error:") == -1) {
+      if (resp['result'].indexOf("Error:") > -1) {
         alert(resp['result']);
       } else {
         sid = '';
-        setCookie('sid','',-1);
+        setCookie(`sid-${selectedAccount}`,'',-1);
         document.getElementById('loginButton').style.display = 'block';
         document.getElementById('logoutButton').style.display = 'none';
         refreshLists();

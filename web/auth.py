@@ -31,7 +31,7 @@ def getSession(account, signature):
         con.close()
         return 'Error: account does not exist'
 
-    msg = 'Click Sign to verify you own this wallet and login.  nonce: {0}'.format(result)
+    msg = 'Lilas Ledger login uses no transaction or gas fees.\n\nClick Sign to verify you own this wallet and login.\n\nIf you have cookies enabled, your session can persist for up to 6 months or until you logout.\n\nnonce: {0}'.format(result)
     w3 = Web3(Web3.HTTPProvider(""))
     message = encode_defunct(text=msg)
     address = w3.eth.account.recover_message(message, signature=HexBytes(signature))

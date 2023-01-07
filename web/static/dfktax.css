@@ -284,7 +284,9 @@ input[disabled] {
 .goldBorder {
 	border: solid yellow 2px;
 }
-
+#member {
+	font-size: 16px;
+}
 #loadingSection {
 	height: 300px;
 	width: 100%;

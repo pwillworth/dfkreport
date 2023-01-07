@@ -11,18 +11,13 @@
 <body>
 <script>
 window.onload = (event) => {
-  sid = getCookie('sid', '');
-  if (isConnected()) {
-    connect();
-  }
+  isConnected()
   setTimeout('refreshLists', 120000);
 };
 window.ethereum.on('accountsChanged', function (accounts) {
   console.log(`wallet changed to ${accounts[0]}!`);
   resetConnection();
-  if (isConnected()) {
-    connect();
-  }
+  handleAccountsChanged(accounts);
 });
 function refreshLists() {
   loadGroups();
@@ -33,8 +28,7 @@ function loadReports() {
     alert('you need to connect a wallet first!');
     return;
   }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
+  const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
   request.open('GET', `{{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`, true);
   console.log(`loading: {{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`);
@@ -60,8 +54,7 @@ function loadGroups() {
     alert('you need to connect a wallet first!');
     return;
   }
-  const account = web3.eth.accounts;
-  const wAddress = account.givenProvider.selectedAddress;
+  const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
   request.open('GET', `{{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
   console.log(`loading: {{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`);
@@ -197,7 +190,7 @@ function editGroup(currentName, currentList) {
 </script>
 <div style="height: 100px;">
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
-    <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login();" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
+    <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
   </h1>
 </div>
 <div class="reportPage" id="groupPage">
