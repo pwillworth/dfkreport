@@ -17,14 +17,7 @@
 var transactionWeight = 18;
 
 $(document).ready(function() {
-    sid = getCookie('sid', '');
-    walletConnected = isConnected();
-    if (walletConnected) {
-      connect();
-    }
-    if (sid != '') {
-      $('#multiWalletSelect').show();
-    }
+    isConnected()
     $("#busyImg").css("display","none");
     $( ".dateBox" ).datepicker({
       dateFormat: "yy-mm-dd"
@@ -34,9 +27,7 @@ $(document).ready(function() {
 window.ethereum.on('accountsChanged', function (accounts) {
   console.log(`wallet changed to ${accounts[0]}!`);
   resetConnection();
-  if (isConnected()) {
-    connect();
-  }
+  handleAccountsChanged(accounts);
 });
 $( function() {
     $( "#reportProgress, #mappingProgress" ).progressbar({
@@ -65,6 +56,11 @@ function optionsReset() {
 }
 function refreshLists() {
   loadGroupSel();
+  if (sid != '') {
+    $('#multiWalletSelect').show();
+  } else {
+    $('#multiWalletSelect').hide();
+  }
 }
 function loadGroupSel() {
   $.get(BASE_SCRIPT_URL + "getGroupList.py", {
@@ -155,8 +151,8 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
 <body>
 <div>
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
-    <a href="{{ BASE_SCRIPT_URL }}members.py" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;float:right;margin-right:4px;"/></a>
-    <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
+    <div style="float:right;margin-top:-16px;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
+    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}members.py" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">
