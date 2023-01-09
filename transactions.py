@@ -126,6 +126,83 @@ def getCovalentTxList(chainID, account, address, startDate="", endDate="", alrea
 
     return txs
 
+# Return array of transactions on DFK Chain for the address
+def getBitqueryTxList(network, account, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+    tx_end = False
+    startKey = 0
+    retryCount = 0
+    txs = []
+    lowerBound = db.getLastTransactionTimestamp(address, network)
+    sinceDateTime = datetime.datetime.fromtimestamp(lowerBound)
+    sinceDateTime.replace(tzinfo=timezone.utc)
+    sinceDateTimeStr = sinceDateTime.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    while tx_end == False:
+        query = """query MyQuery {
+                ethereum(network: %s) {
+                    transactions(
+                        txSender: {is: "%s"}
+                        options: {limit: %s, offset: %s}
+                        time: {since: "%s"}
+                    ) {
+                    hash
+                    block {
+                        timestamp {
+                        unixtime
+                        }
+                    }
+                    }
+                }
+                }
+        """
+        data = query % (network, address, page_size, startKey, sinceDateTimeStr)
+        logging.info(data)
+        try:
+            r = requests.post(nets.bitquery, headers={'X-API-KEY': dfkInfo.BTQ_KEY}, json={'query': data})
+        except ConnectionError:
+            logging.error("connection to Bitquery api failed")
+            raise Exception('{0} Transactions Lookup Failure.'.format(network))
+        if r.status_code == 200:
+            retryCount = 0
+            results = r.json()
+
+            if 'ethereum' in results['data'] and 'transactions' in results['data']['ethereum'] and type(results['data']['ethereum']['transactions']) is list and len(results['data']['ethereum']['transactions']) > 0:
+                firstTime = results['data']['ethereum']['transactions'][0]['block']['timestamp']['unixtime']
+                lastTime = results['data']['ethereum']['transactions'][len(results['data']['ethereum']['transactions'])-1]['block']['timestamp']['unixtime']
+                logging.info("got {0} transactions {1} through {2}".format(len(results['data']['ethereum']['transactions']), firstTime, lastTime))
+                txs = txs + results['data']['ethereum']['transactions']
+                startKey += page_size
+            else:
+                tx_end = True
+        elif r.status_code == 429:
+            # rate limiting
+            logging.warning("Bitquery rate limit hit, wait and retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(2)
+                continue
+            else:
+                logging.error("Bitquery rate limit hit too many times, exit")
+                raise Exception('Bitquery Transactions Lookup Failure.')
+        elif r.status_code in [504,524]:
+            # provider gateway timeout
+            logging.warning("Bitquery gateway timeout getting Txs, retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(8)
+                continue
+            else:
+                logging.error("Bitquery timeout too many times, exit")
+                raise Exception('Bitquery Transactions Lookup Failure.')
+        else:
+            logging.error('{0}: {1}'.format(r.status_code, r.text))
+            raise Exception('Bitquery Transactions Lookup Failure.')
+
+        if startDate != "" and endDate != "":
+            db.updateReport(account, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+
+    return txs
+
 # Return array of transactions on Avalanche for the address
 def getAvalancheData(account, address, startDate="", endDate="", page_size=settings.TX_PAGE_SIZE, alreadyFetched=0):
     tx_end = False
@@ -174,7 +251,7 @@ def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size
             totalTx += txCounts[wallet][2]
         if includedChains & constants.KLAYTN > 0:
             logging.info('Get Klaytn data for {0}'.format(wallet))
-            ktn_txs = getCovalentTxList('8217', account, wallet, startDate, endDate, totalTx)
+            ktn_txs = getBitqueryTxList('klaytn', account, wallet, startDate, endDate, totalTx)
             totalTx += txCounts[wallet][3]
         if includedChains & constants.AVALANCHE > 0:
             logging.info('Get Avalanche data for {0}'.format(wallet))
