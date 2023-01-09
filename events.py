@@ -63,11 +63,14 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         if network == 'avalanche':
             tx = txn['hash']
             timestamp = int(txn['timeStamp'])
-        elif network in ['dfkchain', 'klaytn']:
+        elif network == 'dfkchain':
             tx = txn['tx_hash']
             blockDate = datetime.datetime.strptime(txn['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
             blockDate = blockDate.replace(tzinfo=timezone.utc)
             timestamp = blockDate.timestamp()
+        elif network == 'klaytn':
+            tx = txn['hash']
+            timestamp = txn['block']['timestamp']['unixtime']
         else:
             tx = txn
         txList.append(tx)
