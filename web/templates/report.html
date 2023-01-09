@@ -39,13 +39,11 @@ $(document).ready(function() {
       }
     });
     if ('{{ contentFile }}' != '') {
-      if ( '{{ account }}'.substring(0, 2) == '0x' ) {
+      var addrDisplay = `{{ wallets }}
+      `;
+      if ( '{{ walletGroup }}' == '' ) {
         var addr = '{{ account }}';
-        var addrDisplay = '{{ account }}'.substring(0, 6) + '...' + '{{ account }}'.substring(38, 42);
         viewReport(addr, '{{ contentFile }}', 'tax');
-      } else {
-        var addr = selectedAccount;
-        var addrDisplay = '{{ account }}';
       }
       $('#accountAddress').html(addrDisplay);
       if ({{ includedChains }} & 1) {
@@ -146,7 +144,7 @@ function switchView(view) {
 }
 function refreshLists() {
   // triggered by ethereum connection completing for multiwallet reports by logged in users
-  if ( '{{ account }}'.substring(0, 2) != '0x' ) {
+  if ( '{{ walletGroup }}' != '' ) {
     viewReport(selectedAccount, '{{ contentFile }}', 'tax');
   }
 }

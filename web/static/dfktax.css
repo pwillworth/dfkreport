@@ -18,6 +18,9 @@ body {
 h1 {
 	color: #f9dd34;
 	margin: 12px;
+	-webkit-text-fill-color: #f9dd34;
+	-webkit-text-stroke-color: black;
+	-webkit-text-stroke-width: 1.00px;
 }
 
 h2 {

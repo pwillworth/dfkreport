@@ -212,7 +212,9 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
       </form>
       <div style="display: flex; align-items: center; justify-content: center;height: 100%;"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 128px;position: relative;bottom: -4px;" /></div>
     </div>
-    <div id="supportBox" class="orphanBox">
+    <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
+      <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage }}</h3>
+      <h1 title="Total amount of donations received this month." style="margin-bottom: 60px;">{{ bankProgress }}</h1>
       <img src="{{ BASE_SCRIPT_URL }}static/images/jewel.png" style="max-width:32px;"/>
       <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about.py" target="_blank">Support This Tool</a></div>
       <img src="{{ BASE_SCRIPT_URL }}static/images/crystal.png" style="max-width:32px;"/>
