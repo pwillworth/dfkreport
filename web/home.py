@@ -9,10 +9,14 @@ import os
 import sys
 import cgi
 import jsonpickle
+import pickle
+import decimal
+import logging
 from jinja2 import Environment, FileSystemLoader
 sys.path.append("../")
 import db
 
+logging.basicConfig(filename='../home.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Get current url
 try:
 	url = os.environ['SCRIPT_NAME']
@@ -26,7 +30,7 @@ sid = form.getfirst('sid', '')
 # escape input to prevent sql injection
 contentFile = db.dbInsertSafe(contentFile)
 sid = db.dbInsertSafe(sid)
-
+results = {}
 account = ''
 startDate = ''
 endDate = ''
@@ -35,9 +39,19 @@ includedChains = 5
 purchaseAddresses = ''
 bankState = 'ragmanEmpty'
 bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-# TODO lookup balance
-balance = 12
-bankProgress = '${0}'.format(balance)
+try:
+	with open('../balances.dat', 'rb') as file:
+		results = pickle.load(file)
+except Exception as err:
+	logging.error('Balances lookup failure!: {0}'.format(str(err)))
+balance = 0
+if 'tokens' in results:
+	for k, v in results['tokens'].items():
+		balance += decimal.Decimal(v[1])
+if 'updatedAt' in results:
+	updatedAt = results['updatedAt']
+
+bankProgress = '${0:.2f}'.format(balance)
 if balance >= 30:
 	bankState = 'ragman'
 	bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'

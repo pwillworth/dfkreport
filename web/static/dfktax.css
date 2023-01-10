@@ -18,9 +18,6 @@ body {
 h1 {
 	color: #f9dd34;
 	margin: 12px;
-	-webkit-text-fill-color: #f9dd34;
-	-webkit-text-stroke-color: black;
-	-webkit-text-stroke-width: 1.00px;
 }
 
 h2 {
@@ -115,7 +112,13 @@ input[disabled] {
 #reportInfo {
 	margin-top: 4px;
 }
-
+#opaqueIcon {
+	position: absolute;
+	height: 64px;
+	bottom: 0px;
+	left: 0px;
+	z-index: 100;
+}
 .reportPage {
 	background-image: url(images/parchment.jpg);
 	background-repeat: repeat;
@@ -256,11 +259,11 @@ input[disabled] {
 	padding: 4px;
 	text-align: center;
 }
-.orphanBox a, .orphanBox a:visited, .orphanBox a:link, .orphanBox a:active {
+#supportBox a, .orphanBox a:visited, .orphanBox a:link, .orphanBox a:active {
 	background: #29af58;
 	color:#feee04;
 }
-.orphanBox a:hover {
+#supportBox a:hover {
 	background: #125a9b;
 	color: #d9f1f7;
 }
@@ -276,7 +279,9 @@ input[disabled] {
   font-size: 18px;
   text-decoration: none;
 }
-
+#bankProgress {
+	text-shadow: 2px 2px 4px black;
+}
 .boxHeader {
 	font-size: 20px;
 	font-weight: bold;
