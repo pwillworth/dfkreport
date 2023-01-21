@@ -497,6 +497,50 @@ paymentsTotal = 0;
 paymentsTotalValue = 0;
 var sid='';
 var selectedAccount='';
+const balanceOfABI = [
+  {
+      "constant": true,
+      "inputs": [
+          {
+              "name": "_owner",
+              "type": "address"
+          }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+          {
+              "name": "balance",
+              "type": "uint256"
+          }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+  },
+];
+let transferABI = [
+   {
+       'constant': false,
+       'inputs': [
+           {
+               'name': '_to',
+               'type': 'address'
+           },
+           {
+               'name': '_value',
+               'type': 'uint256'
+           }
+       ],
+       'name': 'transfer',
+       'outputs': [
+           {
+               'name': '',
+               'type': 'bool'
+           }
+       ],
+       'type': 'function'
+   }
+]
 
 function getTokenName(address, network) {
   result = address;
@@ -1298,6 +1342,7 @@ function handleAccountsChanged(accounts) {
   } else if (accounts[0] !== selectedAccount) {
     selectedAccount = accounts[0];
     sid = getCookie(`sid-${selectedAccount}`, '');
+    setCookie('selectedAccount', selectedAccount, 180);
     console.log(`Wallet: ${selectedAccount}`);
     var addr = selectedAccount.substring(0, 6) + '...' + selectedAccount.substring(38, 42);
     document.getElementById("member").innerHTML = addr;
@@ -1322,6 +1367,7 @@ function handleAuth(wAddress, signature) {
       console.log('loaded session '+resp['sid']);
       sid = resp['sid'];
       setCookie(`sid-${selectedAccount}`, sid, 180);
+      setCookie('selectedAccount', selectedAccount, 180);
       document.getElementById('loginButton').style.display = 'none';
       document.getElementById('logoutButton').style.display = 'block';
       refreshLists();

@@ -124,6 +124,31 @@ input[disabled] {
 	background-repeat: repeat;
 	color: #181717;
 }
+#accountExpiration {
+	text-align: center;
+}
+#benefitsPage {
+	margin: 8px;
+	padding: 24px;
+	border: 1px solid #285c00;
+	border-radius: 8px;
+	background-color: #ccc;
+	color:rgb(24, 23, 23);
+}
+#paymentTable {
+	width: 100%;
+	padding: 12px;
+	border: 1px solid #285c00;
+	border-radius: 8px;
+	background-color: #ccc;
+}
+#paymentTable td {
+	padding-top: 8px;
+}
+#tokenSelect {
+	font-size: 18px;
+	font-weight: bold;
+}
 
 #helpPage {
 	margin: 20px;
@@ -206,6 +231,13 @@ input[disabled] {
 
 .statusList tr:nth-child(odd){background-color: #f2f2f2; opacity: 75%;}
 
+.checkList li {
+	font-size: 1.4em;
+	list-style-image: url(images/checkGreen24.png);
+}
+.checkList {
+	padding: 8px;
+}
 .inlineBlock {
 	display: inline-block;
 	zoom:1;
@@ -430,7 +462,19 @@ input[disabled] {
 	text-align: center;
 	font-weight: bold;
 }
-
+.tableTop {
+	padding: 4px 6px;
+	transition: 0.3s;
+	text-align: center;
+	font-size: 1.4em;
+	font-weight: bold;
+	background-color: #91ca82;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	border-top: 1px solid #ccc;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+}
 .lds-ripple {
 	display: inline-block;
 	position: relative;

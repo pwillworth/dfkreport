@@ -5,20 +5,70 @@
   <meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
   <meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
   <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="/static/jquery-ui.theme.min.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
   <script src="/static/dfktax.js" type="text/javascript"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.4-rc.1/web3.min.js"></script>
 </head>
 <body>
 <script>
 window.onload = (event) => {
+  sid = getCookie('sid', '');
   isConnected()
+  window.web3 = new Web3(window.ethereum);
   setTimeout('refreshLists', 120000);
+  switchView('{{ memberState }}');
+  // keep the footer at the bottom
+  if (window.innerHeight > 200) {
+    document.getElementById('accountDetails').style.height = window.innerHeight - 130;
+  }
 };
 window.ethereum.on('accountsChanged', function (accounts) {
   console.log(`wallet changed to ${accounts[0]}!`);
   resetConnection();
   handleAccountsChanged(accounts);
 });
+function switchView(memberState) {
+  //0=not loggged in, 1=inactive, 2=active
+  switch (memberState) {
+    case '2':
+      document.getElementById('groupPage').style.display = 'block';
+      document.getElementById('reportPage').style.display = 'block';
+      document.getElementById('subscribePage').style.display = 'none';
+      document.getElementById('connectPage').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('benefitsPage').style.display = 'none';
+      document.getElementById('benefitsHeader').style.display = 'none';
+      break;
+    case '1':
+      document.getElementById('groupPage').style.display = 'none';
+      document.getElementById('reportPage').style.display = 'none';
+      document.getElementById('subscribePage').style.display = 'block';
+      document.getElementById('connectPage').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('benefitsPage').style.display = 'block';
+      document.getElementById('benefitsHeader').style.display = 'block';
+      break;
+    case '0':
+      document.getElementById('groupPage').style.display = 'none';
+      document.getElementById('reportPage').style.display = 'none';
+      document.getElementById('subscribePage').style.display = 'none';
+      if (isConnected()) {
+        document.getElementById('connectPage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'block';
+      } else {
+        document.getElementById('connectPage').style.display = 'block';
+        document.getElementById('loginPage').style.display = 'none';
+      }
+      document.getElementById('benefitsPage').style.display = 'block';
+      document.getElementById('benefitsHeader').style.display = 'block';
+      break;
+    default:
+      //nada
+  }
+}
 function refreshLists() {
   loadGroups();
   loadReports();
@@ -31,7 +81,7 @@ function loadReports() {
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
   request.open('GET', `{{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`);
+  console.log(`loading: {{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=sid${sid}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {
@@ -187,21 +237,175 @@ function editGroup(currentName, currentList) {
   document.getElementById('createGroup').value = 'Update';
   showWindow('groupDialog');
 }
+// preview balance of selected token
+async function updateBalanceInfo() {
+  var tokenElm = document.getElementById('tokenSelect');
+  var availableElm = document.getElementById('tokenAvailable');
+  availableElm.innerHTML = '-';
+  token = tokenElm.value;
+  if (token == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260') {
+    let result = await web3.eth.getBalance(selectedAccount);
+    availableElm.innerHTML = Number(web3.utils.fromWei(result.toString(), 'ether')).toFixed(2);
+  } else {
+    const contract = new web3.eth.Contract(balanceOfABI, token)
+    let result = await contract.methods.balanceOf(selectedAccount).call();
+    availableElm.innerHTML = Number(web3.utils.fromWei(result.toString(), 'ether')).toFixed(2);
+  }
+}
+// preview amount of time that will be added to subscription
+function calcTimeToAdd() {
+  var timeElm = document.getElementById('subTimeToAdd');
+  var tokenElm = document.getElementById('tokenSelect');
+  var amountElm = document.getElementById('tokenAmount');
+  var usdValue = getUSD(tokenElm.value);
+  var totalValue = amountElm.value * usdValue;
+  var secondsToAdd = totalValue * 86400 * 4;
+  timeElm.innerHTML = timeDescription(secondsToAdd);
+}
+function getUSD(token) {
+  const valsUSD = {
+    '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 1.00,
+    '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260': 0.50,
+    '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 0.10
+  }
+  return valsUSD[token];
+}
+function timeDescription(seconds) {
+  if (seconds > 0) {
+		tmpDays = Math.floor(seconds / 86400)
+		tmpStr = ''
+		if (tmpDays > 0) {
+			if (tmpDays > 365) {
+				tmpStr = Math.floor(tmpDays / 365).toString() + " years, "
+				tmpDays = tmpDays % 365
+      }
+			tmpStr = tmpStr + tmpDays.toString() + " days"
+    } else if (seconds / 3600 >= 1) {
+			tmpStr = Math.floor(seconds/3600).toString() + " hours"
+    } else if (seconds / 60 >= 1) {
+			tmpStr = Math.floor(seconds/60).toString() + " minutes"
+    } else {
+			tmpStr = "less than a minute"
+    }
+		return tmpStr
+  } else {
+    return '-';
+  }
+}
+// Initiate payment tx for subscription8
+async function paySubscription() {
+  const donationAccount = '0x15Ca8d8d7048F694980C717369C55b53e4FbCAEe';
+  var tokenElm = document.getElementById('tokenSelect');
+  var amountElm = document.getElementById('tokenAmount');
+  var sendElm = document.getElementById('tokenSend');
+  let txValue = '0x00';
+  let data = '0x00';
+  sendElm.attributes.disabled = 'disabled';
+  if ( tokenElm.value == '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260') {
+    txValue = web3.utils.toWei(amountElm.value);
+    //console.log('set value');
+  } else {
+    let contract = new web3.eth.Contract(transferABI, tokenElm.value, { from: selectedAccount });
+    let amount = web3.utils.toHex(web3.utils.toWei(amountElm.value));
+    data = contract.methods.transfer(donationAccount, amount).encodeABI();
+    //console.log('set data');
+  }
+  var transactionParameters = {
+    nonce: '0x00', // ignored by MetaMask
+    gasPrice: '0x09184e72a000', // customizable by user during MetaMask confirmation.
+    gas: '0x2710', // customizable by user during MetaMask confirmation.
+    to: donationAccount, // Required except during contract publications.
+    from: ethereum.selectedAddress, // must match user's active address.
+    value: txValue, // Only required to send ether to the recipient from the initiating external account.
+    data: data, // Optional, but used for defining smart contract creation and interaction.
+    chainId: '0x3', // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
+  };
+  //console.log(transactionParameters);
+  var statusElm = document.getElementById('paymentStatus');
+  statusElm.innerHTML = 'Transaction Pending...';
+  statusElm.style.display = 'block';
+  // txHash is a hex string
+  // As with any RPC call, it may throw an error
+  var txHash = await ethereum.request({
+    method: 'eth_sendTransaction',
+    params: [transactionParameters],
+  });
+}
+function paymentComplete(e) {
+  var statusElm = document.getElementById('paymentStatus');
+  statusElm.innerHTML = 'Updating account...';
+  txHash = e.txHash;
+  // add payments db record
+  // update members record expires time
+  // reload page
+}
 </script>
 <div style="height: 100px;">
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
   </h1>
 </div>
-<div class="reportPage" id="groupPage">
-  <h2 style="text-align: center;">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></h2>
-    
-  <table id="groupList" class="statusList"></table>
-</div>
-<div class="reportPage" id="reportPage">
-  <h2 style="text-align: center;">My Tax Reports</h2>
-    
-  <table id="reportList" class="statusList"></table>
+<div id="mainContent" class="wrapper">
+  <div id="leftNavContent" class="ghCol">
+    <div id="accountDetails" class="ghWidgetBox ui-widget-content">
+    {% if memberState > 0 %}
+      <div class="sectionHead"></div>
+      <h3>Your Account:</h3>
+      {% if secondsLeft < 0 %}
+      <div id="accountExpiration">Subscription Expired: <span style="font-weight:bold;">{{ expiryDescription }}</span></div>
+      {% elif secondsLeft > 0 %}
+      <div id="accountExpiration">Subscription Expires: <span style="font-weight:bold;">{{ expiryDescription }}</span></div>
+      {% else %}
+      <div id="accountExpiration">Not Subscribed</div>
+      {% endif %}
+      <div class="sectionHead"></div>
+      <h4 style="margin-top:24px;">Add time to your subscription:</h4>
+      <form>
+        <table id="paymentTable">
+          <tr><td><select id="tokenSelect" onchange="updateBalanceInfo();calcTimeToAdd();"><option value="0">Select token...</option><option value="0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a">USDC</option><option value="0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260">Jewel</option><option value="0x04b9dA42306B023f3572e106B11D82aAd9D32EBb">Crystal</option></select></td><td><span id="tokenAvailable" style="color:green;">-</span><span> Available</span></td></tr>
+          <tr><td><h4>Amount:</h4></td><td><input type="text" id="tokenAmount" size="10" onkeyup="calcTimeToAdd();" /></td></tr>
+          <tr><td><h4>Time to be Added:</h4></td><td><span id="subTimeToAdd"></span></td></tr>
+          <tr><td colspan="2" style="text-align:center;"><input id="tokenSend" type="button" value="Add" class="ui-button" onclick="paySubscription();" /></tr>
+        </table>
+      </form>
+      <div id="paymentStatus" style="display:none;" class="lds-ripple"></div>
+    {% else %}
+      <div id="accountExpiration">Login first to access your settings.</div>
+    {% endif %}
+    </div>
+  </div>
+  <div id="rightMainContent" class="ghCol">
+    <div id="accountReports" class="ghWidgetBox ui-widget-content">
+      <div class="reportPage" id="connectPage">
+        <h2 style="text-align: center;cursor: pointer;" onclick="connect();">Connect your wallet to get started.</h2>
+      </div>
+      <div class="reportPage" id="loginPage">
+        <h2 style="text-align: center;cursor: pointer;" onclick="login(true);">Login to activate your subscription.</h2>
+      </div>
+      <div class="reportPage" id="subscribePage">
+        <h2 style="text-align: center;">Subscribe Now</h2>
+      </div>
+      <div class="sectionHead"></div>
+      <h3 id="benefitsHeader">Connect and subscribe to enjoy these benefits:</h3>
+      <div id="benefitsPage">
+        <ul class="checkList">
+          <li>Run reports for multiple wallets combined</li>
+          <li>View and launch past reports</li>
+          <li>Cached transactions and saved reports not removed after 60 days</li>
+          <li>Manage multiple pre-defined wallet groups for reports</li>
+        </ul>
+      </div>
+      <div class="reportPage" id="groupPage">
+        <div class="tableTop">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></div>
+        <table id="groupList" class="statusList"></table>
+      </div>
+      <div class="sectionHead"></div>
+      <div class="reportPage" id="reportPage">
+        <div class="tableTop">My Tax Reports</div>
+        <table id="reportList" class="statusList"></table>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="footer">
 	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
