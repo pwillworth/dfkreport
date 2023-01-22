@@ -1370,7 +1370,7 @@ function handleAuth(wAddress, signature) {
       setCookie('selectedAccount', selectedAccount, 180);
       document.getElementById('loginButton').style.display = 'none';
       document.getElementById('logoutButton').style.display = 'block';
-      refreshLists();
+      location.reload();
     }
   };
   request.send();
@@ -1445,7 +1445,7 @@ async function logout() {
         setCookie(`sid-${selectedAccount}`,'',-1);
         document.getElementById('loginButton').style.display = 'block';
         document.getElementById('logoutButton').style.display = 'none';
-        refreshLists();
+        location.reload();
       }
     }
   };

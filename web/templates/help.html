@@ -4,6 +4,7 @@
 <meta property="og:title" content="Lila's Ledger Help">
 <meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
 <meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
+<link rel="shortcut icon" href="{{ BASE_SCRIPT_URL }}static/images/favicon.png" />
 <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
@@ -25,8 +26,7 @@
     <h3 class="helpTopic">General Usage</h3>
     <ul>
         <li>Just put in your wallet address at the top on the homepage, click Generate, and wait to get your report.</li>
-        <li>You can click the blockchain icons next to the wallet entry field to include/exclude data from that chain before you generate.</li>
-        <li>After your report is generated, it will appear on three tabs.  Default view is Tax Report, but you can click on the Transactions tab to see the detailed transaction data or Summary tab to see other stats about transactions.</li>
+        <li>After your report is generated, it will launch in a new window with three tabs.  Default view is Tax Report, but you can click on the Transactions tab to see the detailed transaction data or Summary tab to see other stats about transactions.</li>
         <li>An Export CSV button will also appear after generation, clicking it will send you a comma separated data file of the data for the tab you are viewing.</li>
         <li>Change the report options on the left to customize how the report is generated.</li>
         <li>If you have a lot of transactions, it can take a long time to generate your report, but later reports you run after the first one should run quicker.  At least tax time only comes once a year!</li>
@@ -34,6 +34,7 @@
     <h3 class="helpTopic">Report Options</h3>
     <ul>
         <li>Date Range: Only events in this range will be included in the report.  Older transactions will still be searched to look for cost basis.</li>
+        <li>Blockchain icons: click to include/exclude data from that chain before you generate.</li>
         <li>Cost Basis: Three options are provided to adjust how cost basis is discovered.  If you are not familiar with these tax accounting related terms, the default choice of First in - First out is most commonly used. <br/><span style="font-style: italic;">Note: For Canadian Adjusted Cost Basis option, superficial capital loss rules are not applied automatically so it is up to you to decide how these apply.</span></li>
         <li>CSV Format: Manual option is best if you plan to put the data directly into your tax forms.  Other available formats in this option may be better for input to another tax event aggregation tool like Koinly.  NOTE: It is recommended to use CSV export from detailed transactions tab when exporting for tax aggregation tools.</li>
         <li>Add Wallet Purchase Addresses: This button allows you to enter one or more addresses separated by a comma or line.  When generating your report, withdrawals from your wallet to any of those addresses will be counted as a taxable event and be recorded in the gains section of the tax report.  This option can be useful if you make purchases by sending to certain addresses.</li>
@@ -76,6 +77,12 @@
         <li>Fiat Values are calculated based on token price at the end of day when the event happened.</li>
         <li>Prices are sourced from Coin Gecko first if available, otherwise they are looked up from DexScreener and if all else fails, the current price of the item is looked up from the Serendale Dex Contract on chain if available.</li>
         <li>Take prices of non-denominational items like eggs and stones with a grain of salt as dex prices for them can be weird in low liquidity situations so automated pricing is often not feasible.</li>
+    </ul>
+    <h3 class="helpTopic">Membership</h3>
+    <ul>
+        <li>On the <a href="{{ BASE_SCRIPT_URL }}/members.py">Members</a> page, you can define wallet groups and find and view past reports you have run.</li>
+        <li>You can only use features on the members page if you are currently subscribed.  After connecting your wallet and logging in, you can purchase a subscription.</li>
+        <li>The left pane of the members page shows you how much time is left in your subscription, and provides tools to help you make a payment to add time.</li>
     </ul>
 </div>
 <div class="footer">

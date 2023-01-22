@@ -77,7 +77,7 @@ if sid != '' and Web3.isAddress(account):
     sess = db.getSession(sid)
     if sess == account:
         loginState = 1
-sys.stderr.write('account: {0} sid: {1} loginstate: {2}'.format(account, sid, loginState))
+
 walletGroup = ''
 requestTime = datetime.now(timezone.utc).timestamp()
 # get subscription status
