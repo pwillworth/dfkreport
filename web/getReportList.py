@@ -18,7 +18,7 @@ def getReportList(account):
     result = []
     con = db.aConn()
     cur = con.cursor()
-    cur.execute("SELECT CASE WHEN walletGroup = '' THEN account ELSE walletGroup END, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE proc=0 and account = %s ORDER BY generatedTimestamp DESC", (account,))
+    cur.execute("SELECT CASE WHEN walletGroup = '' THEN account ELSE walletGroup END, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE account = %s ORDER BY generatedTimestamp DESC", (account,))
     row = cur.fetchone()
     while row != None:
         result.append([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]])

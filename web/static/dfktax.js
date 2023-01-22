@@ -497,6 +497,7 @@ paymentsTotal = 0;
 paymentsTotalValue = 0;
 var sid='';
 var selectedAccount='';
+const transactionWeight = 18;
 const balanceOfABI = [
   {
       "constant": true,
@@ -518,7 +519,7 @@ const balanceOfABI = [
       "type": "function"
   },
 ];
-let transferABI = [
+const transferABI = [
    {
        'constant': false,
        'inputs': [
@@ -570,6 +571,14 @@ function getLendingName(address) {
     return LENDING_ADDRESSES[address];
   } else {
     return address;
+  }
+}
+// base progress displayed incorporating the fetching and processing activities with different weights
+function getProgress(stage, fetched, complete, total) {
+  if ( stage == 'fetchingtx' ) {
+    return fetched / ( total + (total * transactionWeight ) );
+  } else if ( stage == 'generating' ) {
+    return ( total + (complete * transactionWeight ) ) / ( total + (total * transactionWeight ) );
   }
 }
 

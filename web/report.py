@@ -8,11 +8,16 @@
 import os
 import sys
 import cgi
+import pickle
 import jsonpickle
+import decimal
+import logging
 from jinja2 import Environment, FileSystemLoader
 sys.path.append("../")
 import db
+import balances
 
+logging.basicConfig(filename='../report.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Get current url
 try:
 	url = os.environ['SCRIPT_NAME']
@@ -31,6 +36,13 @@ endDate = ''
 costBasis = ''
 includedChains = 5
 purchaseAddresses = ''
+bankState = 'ragmanEmpty'
+bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
+balance = balances.readCurrent()
+bankProgress = '${0:.2f}'.format(balance)
+if balance >= 30:
+	bankState = 'ragman'
+	bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
 walletGroup = ''
 # When content file is passed, viewing a pregenerated report and we look up its options to preset the form
 if contentFile != '':
@@ -60,4 +72,4 @@ print('Content-type: text/html\n')
 env = Environment(loader=FileSystemLoader('templates'))
 
 template = env.get_template('report.html')
-print(template.render(url=url, contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts))
+print(template.render(url=url, contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage))

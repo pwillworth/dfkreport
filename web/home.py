@@ -15,6 +15,7 @@ import logging
 from jinja2 import Environment, FileSystemLoader
 sys.path.append("../")
 import db
+import balances
 
 logging.basicConfig(filename='../home.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 # Get current url
@@ -39,18 +40,7 @@ includedChains = 5
 purchaseAddresses = ''
 bankState = 'ragmanEmpty'
 bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-try:
-	with open('../balances.dat', 'rb') as file:
-		results = pickle.load(file)
-except Exception as err:
-	logging.error('Balances lookup failure!: {0}'.format(str(err)))
-balance = 0
-if 'tokens' in results:
-	for k, v in results['tokens'].items():
-		balance += decimal.Decimal(v[1])
-if 'updatedAt' in results:
-	updatedAt = results['updatedAt']
-
+balance = balances.readCurrent()
 bankProgress = '${0:.2f}'.format(balance)
 if balance >= 30:
 	bankState = 'ragman'

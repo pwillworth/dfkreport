@@ -35,7 +35,9 @@ window.onload = (event) => {
   sid = getCookie('sid', '');
   isConnected()
   window.web3 = new Web3(window.ethereum);
-  setTimeout('refreshLists', 120000);
+  let interval = setInterval(() => {
+      refreshLists();
+  }, 60000);
   switchView('{{ memberState }}');
   // keep the footer at the bottom
   if (window.innerHeight > 200) {
@@ -171,7 +173,7 @@ function viewReport(contentFile) {
   window.open(`{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}`);
 }
 function reportTable(data) {
-  const reportStatus = ['Created','Processing','Complete'];
+  const reportStatus = ['Created','Processing','Complete','unknown','unknown','unknown','unknown','unknonw','Blockchain Error', 'Site Error'];
   var listElm = document.getElementById('reportList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
@@ -183,15 +185,21 @@ function reportTable(data) {
     } else {
       var addr = report[0];
     }
+    var progress = 0;
     var status = reportStatus[report[4]];
-    var percentFetched = report[6]/report[5]*100;
-    var percentComplete = report[7]/report[5]*100;
+    if (report[7] == 0) {
+      progress = Math.min(getProgress('fetchingtx', report[6], report[7], report[5])*100, 100);
+    } else if ( report[4] == 2 ) {
+      progress = 100;
+    } else {
+      progress = Math.min(getProgress('generating', report[6], report[7], report[5])*100, 100);
+    }
     var newRow = document.createElement('tr');
     var actionColumn = '';
     if (status == 'Complete') {
       actionColumn = `<input type="button" value="View" onclick="viewReport('${report[8]}');" class="lButton" />`;
     }
-    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${percentComplete.toFixed(0)}%</td><td>${actionColumn}</td>`;
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${progress.toFixed(0)}%</td><td>${actionColumn}</td>`;
     listElm.appendChild(newRow);
   });
 }

@@ -16,7 +16,6 @@
 <script type="text/javascript">
 
 var currentView = 'tax';
-var transactionWeight = 18;
 
 $(document).ready(function() {
     sid = getCookie('sid', '');
@@ -243,9 +242,11 @@ function downloadDone() {
       <div class="sectionHead"></div>
       <button type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;top: -2px;">Export CSV</button>
     </div>
-    <div id="supportBox" class="orphanBox">
+    <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
+      <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage }}</h3>
+      <h1 id="bankProgress" title="Total amount of donations received this month." style="margin-bottom: 60px;">{{ bankProgress }}</h1>
       <img src="{{ BASE_SCRIPT_URL }}static/images/jewel.png" style="max-width:32px;"/>
-      <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about.py" target="_blank">Support This Tool</a></div>
+      <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about.py" target="_blank">Donate Now</a></div>
       <img src="{{ BASE_SCRIPT_URL }}static/images/crystal.png" style="max-width:32px;"/>
     </div>
   </div>

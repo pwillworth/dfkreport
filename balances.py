@@ -2,6 +2,7 @@
 import nets
 import logging
 import decimal
+import os
 from web3 import Web3
 from datetime import timezone, datetime
 import pickle
@@ -12,6 +13,22 @@ COGNIFACT_WALLET = '0x15Ca8d8d7048F694980C717369C55b53e4FbCAEe'
 JEWEL_DFKCHAIN = '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260'
 CRYSTAL_DFKCHAIN = '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'
 USDC_DFKCHAIN = '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a'
+
+def readCurrent():
+    # check right spot so file can be accessed relatively regardles of execution source
+    location = os.path.abspath(__file__)
+    try:
+        with open('{0}/balances.dat'.format('/'.join(location.split('/')[0:-1])), 'rb') as file:
+            results = pickle.load(file)
+    except Exception as err:
+        logging.error('Balances lookup failure!: {0}'.format(str(err)))
+    balance = 0
+    if 'tokens' in results:
+        for k, v in results['tokens'].items():
+            balance += decimal.Decimal(v[1])
+    if 'updatedAt' in results:
+        updatedAt = results['updatedAt']
+    return balance
 
 # Return array of transactions on DFK Chain for the address
 def getBalances(wallet):
@@ -53,10 +70,12 @@ def getBalances(wallet):
 
     return result
 
-
-if __name__ == "__main__":
-    logging.basicConfig(filename='balances.log', level=logging.INFO)
+def updateBalances():
     snapTime = datetime.now(timezone.utc)
     result = getBalances(COGNIFACT_WALLET)
     with open('balances.dat', 'wb') as f:
         pickle.dump({ 'updatedAt': snapTime, 'tokens': result }, f)
+
+if __name__ == "__main__":
+    logging.basicConfig(filename='balances.log', level=logging.INFO)
+    updateBalances()

@@ -15,8 +15,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.4-rc.1/web3.min.js"></script>
 <script type="text/javascript">
 
-var transactionWeight = 18;
-
 $(document).ready(function() {
     isConnected()
     $("#busyImg").css("display","none");
@@ -111,21 +109,23 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
               $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}">here</a> to open it.`);
             }
           } else if (reportStatus == 'generating') {
-            $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
-            $("#reportProgress").progressbar( "option", "value", data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) );
-            if ( (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) == 100 ) {
+            var progress = getProgress(reportStatus, data.response.transactionsTotal, data.response.transactionsComplete, data.response.transactionsTotal);
+            $("#reportProgress").progressbar( "option", "max", 1 );
+            $("#reportProgress").progressbar( "option", "value", progress );
+            if ( (progress * 100).toFixed(0) == 100 ) {
               $( "#loadingMessage").html('Lila: I have that report almost ready now, I will have it up in just a minute or two...');
             } else {
               $("#loadingMessage").html('Lila: I\'m putting that report together now, maybe you should come back later.  Don\'t you have some quests to do?')
             }
-            $("#reportPercent").html('.:' + (( data.response.transactionsTotal + (data.response.transactionsComplete * transactionWeight ) ) / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
+            $("#reportPercent").html('.:' + (progress * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 4000));
             generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
           } else if (reportStatus == 'fetchingtx') {
-            $("#reportProgress").progressbar( "option", "max", data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) );
-            $("#reportProgress").progressbar( "option", "value", data.response.transactionsFetched );
+            var progress = getProgress(reportStatus, data.response.transactionsFetched, 0, data.response.transactionsTotal);
+            $("#reportProgress").progressbar( "option", "max", 1 );
+            $("#reportProgress").progressbar( "option", "value", progress );
             $("#loadingMessage").html('Lila: Oh, I know I have that info here somewhere, looking for your records now.')
-            $("#reportPercent").html('.:' + (data.response.transactionsFetched / ( data.response.transactionsTotal + (data.response.transactionsTotal * transactionWeight ) ) * 100).toFixed(0) + '%:.')
+            $("#reportPercent").html('.:' + (progress * 100).toFixed(0) + '%:.')
             await new Promise(r => setTimeout(r, 2000));
             generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
           } else if (reportStatus == 'initiated') {
