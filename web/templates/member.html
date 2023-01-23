@@ -177,7 +177,7 @@ function reportTable(data) {
   var listElm = document.getElementById('reportList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
-  newRow.innerHTML = '<th>Wallet</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th><th>View</th>';
+  newRow.innerHTML = '<th>Wallet/Group</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th><th>View</th>';
   listElm.appendChild(newRow);
   data['reports'].forEach((report) => {
     if ( report[0].substring(0, 2) == '0x' ) {
@@ -513,13 +513,13 @@ function paymentComplete(txHash) {
           <li>Manage multiple pre-defined wallet groups for reports</li>
         </ul>
       </div>
-      <div class="reportPage" id="groupPage">
-        <div class="tableTop">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></div>
+      <div id="groupPage" style="margin: 12px;">
+        <div class="tableTop ui-widget-header">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></div>
         <table id="groupList" class="statusList"></table>
       </div>
       <div class="sectionHead"></div>
-      <div class="reportPage" id="reportPage">
-        <div class="tableTop">My Tax Reports</div>
+      <div id="reportPage" style="margin: 12px;">
+        <div class="tableTop ui-widget-header">My Tax Reports</div>
         <table id="reportList" class="statusList"></table>
       </div>
     </div>
