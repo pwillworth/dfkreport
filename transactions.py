@@ -13,7 +13,7 @@ import settings
 import constants
 
 # Return array of transactions on Harmony for the address
-def getHarmonyData(acct, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+def getHarmonyData(acct, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     offset = 0
     txs = []
@@ -35,13 +35,12 @@ def getHarmonyData(acct, address, startDate="", endDate="", alreadyFetched=0, pa
         else:
             tx_end = True
         
-        if startDate != "" and endDate != "":
-            db.updateReport(acct, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+        db.updateReport(acct, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
 
     return txs
 
 # Return array of transactions on DFK Chain for the address
-def getCovalentTxList(chainID, account, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+def getCovalentTxList(chainID, account, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     startKey = 0
     blockLimit = None
@@ -121,13 +120,12 @@ def getCovalentTxList(chainID, account, address, startDate="", endDate="", alrea
             logging.error('{0}: {1}'.format(r.status_code, r.text))
             raise Exception('Covalent Transactions Lookup Failure.')
 
-        if startDate != "" and endDate != "":
-            db.updateReport(account, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+        db.updateReport(account, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
 
     return txs
 
 # Return array of transactions on DFK Chain for the address
-def getBitqueryTxList(network, account, address, startDate="", endDate="", alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+def getBitqueryTxList(network, account, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     startKey = 0
     retryCount = 0
@@ -156,7 +154,7 @@ def getBitqueryTxList(network, account, address, startDate="", endDate="", alrea
                 }
         """
         data = query % (network, address, page_size, startKey, sinceDateTimeStr)
-        logging.info(data)
+
         try:
             r = requests.post(nets.bitquery, headers={'X-API-KEY': dfkInfo.BTQ_KEY}, json={'query': data})
         except ConnectionError:
@@ -198,13 +196,12 @@ def getBitqueryTxList(network, account, address, startDate="", endDate="", alrea
             logging.error('{0}: {1}'.format(r.status_code, r.text))
             raise Exception('Bitquery Transactions Lookup Failure.')
 
-        if startDate != "" and endDate != "":
-            db.updateReport(account, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+        db.updateReport(account, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
 
     return txs
 
 # Return array of transactions on Avalanche for the address
-def getAvalancheData(account, address, startDate="", endDate="", page_size=settings.TX_PAGE_SIZE, alreadyFetched=0):
+def getAvalancheData(account, address, startDate, endDate, walletHash, page_size=settings.TX_PAGE_SIZE, alreadyFetched=0):
     tx_end = False
     offset = 0
     txs = []
@@ -226,14 +223,14 @@ def getAvalancheData(account, address, startDate="", endDate="", page_size=setti
             logging.error(r.text)
             raise Exception('Avalanche Transactions Lookup Failure.')
 
-        if startDate != "" and endDate != "":
-            db.updateReport(account, startDate, endDate, 'fetched', alreadyFetched + len(txs))
+        db.updateReport(account, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
 
     return txs
 
 def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size, includedChains):
     result = {}
     totalTx = 0
+    walletHash = db.getWalletHash(wallets)
     for wallet in wallets:
         hmy_txs = []
         dfk_txs = []
@@ -241,21 +238,21 @@ def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size
         avx_txs = []
         if includedChains & constants.HARMONY > 0:
             logging.info('Get Harmony data for {0}'.format(wallet))
-            hmy_txs = getHarmonyData(account, wallet, startDate, endDate, totalTx, page_size)
+            hmy_txs = getHarmonyData(account, wallet, startDate, endDate, walletHash, totalTx, page_size)
             # Sometimes the paged return tx lookup can result in duplicate txs in the list
             hmy_txs = list(dict.fromkeys(hmy_txs))
             totalTx += txCounts[wallet][0]
         if includedChains & constants.DFKCHAIN > 0:
             logging.info('Get DFK Chain data for {0}'.format(wallet))
-            dfk_txs = getCovalentTxList('53935', account, wallet, startDate, endDate, totalTx)
+            dfk_txs = getCovalentTxList('53935', account, wallet, startDate, endDate, walletHash, totalTx)
             totalTx += txCounts[wallet][2]
         if includedChains & constants.KLAYTN > 0:
             logging.info('Get Klaytn data for {0}'.format(wallet))
-            ktn_txs = getBitqueryTxList('klaytn', account, wallet, startDate, endDate, totalTx)
+            ktn_txs = getBitqueryTxList('klaytn', account, wallet, startDate, endDate, walletHash, totalTx)
             totalTx += txCounts[wallet][3]
         if includedChains & constants.AVALANCHE > 0:
             logging.info('Get Avalanche data for {0}'.format(wallet))
-            avx_txs += getAvalancheData(account, wallet, startDate, endDate, page_size, totalTx)
+            avx_txs += getAvalancheData(account, wallet, startDate, endDate, walletHash, page_size, totalTx)
             totalTx += txCounts[wallet][1]
         result[wallet] = [hmy_txs, avx_txs, dfk_txs, ktn_txs]
     return result

@@ -189,6 +189,9 @@ function reportTable(data) {
     var status = reportStatus[report[4]];
     if (report[7] == 0) {
       progress = Math.min(getProgress('fetchingtx', report[6], report[7], report[5])*100, 100);
+      if ( report[6] > 0 ) {
+        status = 'Finding Transactions';
+      }
     } else if ( report[4] == 2 ) {
       progress = 100;
     } else {
@@ -199,7 +202,11 @@ function reportTable(data) {
     if (status == 'Complete') {
       actionColumn = `<input type="button" value="View" onclick="viewReport('${report[8]}');" class="lButton" />`;
     }
-    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}</td><td>${report[5]}</td><td>${progress.toFixed(0)}%</td><td>${actionColumn}</td>`;
+    var pAnimate = '';
+    if (report[4] < 2) {
+      pAnimate = '<div class="lds-ripple"><div></div><div></div></div>';
+    }
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}${pAnimate}</td><td>${report[5]}</td><td>${progress.toFixed(0)}%</td><td>${actionColumn}</td>`;
     listElm.appendChild(newRow);
   });
 }
@@ -444,6 +451,7 @@ function paymentComplete(txHash) {
 <div style="height: 100px;">
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
+    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}home.py" title="go to home page"><img src="{{ BASE_SCRIPT_URL }}static/images/home.png" style="max-width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">

@@ -71,7 +71,6 @@ function loadGroupSel() {
         var groupSel = document.getElementById('groupSel');
         groupSel.innerHTML = '';
         data['groups'].forEach(item => {
-          console.log(item[1]);
           var opt = document.createElement("option");
           opt.text = item[1];
           groupSel.add(opt);

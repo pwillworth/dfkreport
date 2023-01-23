@@ -21,7 +21,8 @@ import logging
 
 # Get an existing report record or create a new one and return it
 def getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, group):
-    reportRow = db.findReport(account, startDate, endDate)
+    walletHash = db.getWalletHash(wallets)
+    reportRow = db.findReport(account, startDate, endDate, walletHash)
     if reportRow != None:
         if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
             # if cost basis same or its different but report still running, just return existing
@@ -33,7 +34,7 @@ def getReportStatus(account, startDate, endDate, costBasis, includedChains, othe
             if type(result) is dict:
                 generateTime = datetime.now(timezone.utc)
                 totalTx = transactions.getTotalCount(result)
-                db.resetReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9], jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
+                db.resetReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, reportRow[8], reportRow[9], walletHash, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
                 return [reportRow[0], reportRow[1], reportRow[2], int(datetime.timestamp(generateTime)), totalTx]
             else:
                 return result
@@ -43,8 +44,8 @@ def getReportStatus(account, startDate, endDate, costBasis, includedChains, othe
         if type(result) is dict:
             generateTime = datetime.now(timezone.utc)
             totalTx = transactions.getTotalCount(result)
-            db.createReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, jsonpickle.dumps(wallets), group, None, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
-            report = db.findReport(account, startDate, endDate)
+            db.createReport(account, startDate, endDate, int(datetime.timestamp(generateTime)), totalTx, costBasis, includedChains, wallets, group, walletHash, None, jsonpickle.dumps(otherOptions), jsonpickle.dumps(result))
+            report = db.findReport(account, startDate, endDate, walletHash)
             logging.debug(str([report[0], report[1], report[2], report[3], report[4]]))
             return [report[0], report[1], report[2], report[3], report[4]]
         else:
@@ -159,28 +160,29 @@ if not failure:
         # Failure can happen here if api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
         status = "Generation failed!  Blockchain API could not be contacted!."
-    if len(status) == 17:
+
+    if len(status) == 18:
         if status[5] == 2:
             # report is ready
             response = ''.join(('{ "response" : {\n  "contentFile" : "', status[9], '",\n  "status" : "complete",\n  "message" : "Report ready post to view.py with contentFile and send contentType parameter as tax or transaction to get results."\n  }\n}'))
         elif status[5] == 7:
             # too busy right now
             logging.warning('responding report too busy for {0}'.format(str(status)))
-            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
+            db.deleteReport(status[0], status[1], status[2], status[17], status[8], status[9])
             response = ''.join(('{ \n', '  "response" : "Unfortunately too many people are generating reports right now.  Please try again later!"\n', '}'))
             logging.warning(response)
             failure = True
         elif status[5] == 8:
             # report has encountered some rpc failure
             logging.warning('responding report failure for {0}'.format(str(status)))
-            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
+            db.deleteReport(status[0], status[1], status[2], status[17], status[8], status[9])
             response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed due to Blockchain API or RPC network congestion.  Please try again later and the report will continue where it left off in generation.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True
         elif status[5] == 9:
             # report has encountered some other failure
             logging.warning('responding report failure for {0}'.format(str(status)))
-            db.deleteReport(status[0], status[1], status[2], status[8], status[9])
+            db.deleteReport(status[0], status[1], status[2], status[17], status[8], status[9])
             response = ''.join(('{ \n', '  "response" : "Unfortunately report generation failed.  Please report this message to the site admin.  {0}"\n'.format(str(status[3])), '}'))
             logging.warning(response)
             failure = True

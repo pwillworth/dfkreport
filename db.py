@@ -5,6 +5,7 @@ import logging
 import records
 import settings
 import jsonpickle
+import hashlib
 import datetime
 import time
 import os
@@ -30,6 +31,13 @@ def dbInsertSafe(insertStr):
                 newStr = newStr + "'"
             newStr = newStr + str(insertStr)[i]
     return newStr
+
+# get a unique value representing wallet list that can be used in a DB key
+def getWalletHash(wallets):
+    m = hashlib.sha1()
+    for item in wallets:
+        m.update(item.encode('utf-8'))
+    return m.hexdigest()
 
 def findPriceData(date, token):
     try:
@@ -169,15 +177,15 @@ def getWalletPayments(wallet):
         logging.info('Skipping payments lookup due to db conn failure.')
     return payments
 
-def findReport(wallet, startDate, endDate):
+def findReport(account, startDate, endDate, walletHash):
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup FROM reports WHERE account=%s AND startDate=%s AND endDate=%s", (wallet, startDate, endDate))
+    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (account, startDate, endDate, walletHash))
     row = cur.fetchone()
     # Make sure they don't already have a report running for other range
     existRow = None
     if not settings.CONCURRENT_REPORTS:
-        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s)", (wallet, startDate, endDate))
+        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s OR walletHash!=%s)", (account, startDate, endDate, walletHash))
         existRow = cur.fetchone()
     con.close()
     if existRow != None:
@@ -185,41 +193,16 @@ def findReport(wallet, startDate, endDate):
     else:
         return row
 
-def createReport(account, startDate, endDate, now, txCount, costBasis, includedChains, wallets, group, proc=None, moreOptions=None, txCounts=[]):
+def createReport(account, startDate, endDate, now, txCount, costBasis, includedChains, wallets, group, walletHash, proc=None, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()
-    cur.execute("INSERT INTO reports VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, wallets, group))
+    cur.execute("INSERT INTO reports (account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, jsonpickle.encode(wallets), group, walletHash))
     con.close()
 
-def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, moreOptions=None, txCounts=[]):
+def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, walletHash, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL, txCounts=%s WHERE account=%s AND startDate=%s AND endDate=%s", (now, txCount, costBasis, includedChains, moreOptions, txCounts, wallet, startDate, endDate))
-    con.close()
-    try:
-        logging.debug('removing old report data from disk.')
-        os.remove('../transactions/{0}'.format(transactionFile))
-        os.remove('../reports/{0}'.format(reportFile))
-    except Exception as err:
-        logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
-        logging.error(err)
-
-def completeTransactions(wallet, startDate, endDate, fileName):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("UPDATE reports SET reportStatus=1, transactionsContent=%s WHERE account=%s and startDate=%s AND endDate=%s", (fileName, wallet, startDate, endDate))
-    con.close()
-
-def completeReport(wallet, startDate, endDate, fileName):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=2, reportContent=%s WHERE account=%s and startDate=%s AND endDate=%s", (fileName, wallet, startDate, endDate))
-    con.close()
-
-def deleteReport(wallet, startDate, endDate, transactionFile, reportFile):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("DELETE FROM reports WHERE account=%s and startDate=%s AND endDate=%s", (wallet, startDate, endDate))
+    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL, txCounts=%s WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (now, txCount, costBasis, includedChains, moreOptions, txCounts, wallet, startDate, endDate, jsonpickle.encode(wallets)))
     con.close()
     try:
         logging.debug('removing old report data from disk.')
@@ -229,21 +212,46 @@ def deleteReport(wallet, startDate, endDate, transactionFile, reportFile):
         logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
         logging.error(err)
 
-def updateReportError(wallet, startDate, endDate, statusCode=9):
+def completeTransactions(wallet, startDate, endDate, walletHash, fileName):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=%s WHERE account=%s and startDate=%s AND endDate=%s", (statusCode, wallet, startDate, endDate))
+    cur.execute("UPDATE reports SET reportStatus=1, transactionsContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
     con.close()
 
-def updateReport(wallet, startDate, endDate, updateType, recordCount):
+def completeReport(wallet, startDate, endDate, walletHash, fileName):
+    con = aConn()
+    cur = con.cursor()
+    cur.execute("UPDATE reports SET proc=0, reportStatus=2, reportContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
+    con.close()
+
+def deleteReport(wallet, startDate, endDate, walletHash, transactionFile, reportFile):
+    con = aConn()
+    cur = con.cursor()
+    cur.execute("DELETE FROM reports WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (wallet, startDate, endDate, walletHash))
+    con.close()
+    try:
+        logging.debug('removing old report data from disk.')
+        os.remove('../transactions/{0}'.format(transactionFile))
+        os.remove('../reports/{0}'.format(reportFile))
+    except Exception as err:
+        logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
+        logging.error(err)
+
+def updateReportError(wallet, startDate, endDate, walletHash, statusCode=9):
+    con = aConn()
+    cur = con.cursor()
+    cur.execute("UPDATE reports SET proc=0, reportStatus=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (statusCode, wallet, startDate, endDate, walletHash))
+    con.close()
+
+def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount):
     logging.info('updating report {0} records {1} {2}'.format(wallet, updateType, recordCount))
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
         # sometimes the tx count is not quite right and fetched tx ends up being more, so update if so to avoid invalid progress percentages
-        cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s, transactions=GREATEST(transactions, %s) WHERE account=%s and startDate=%s AND endDate=%s", (recordCount, recordCount, wallet, startDate, endDate))
+        cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s, transactions=GREATEST(transactions, %s) WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, recordCount, wallet, startDate, endDate, walletHash))
     else:
-        cur.execute("UPDATE reports SET reportStatus=1, transactionsComplete=%s WHERE account=%s and startDate=%s AND endDate=%s", (recordCount, wallet, startDate, endDate))
+        cur.execute("UPDATE reports SET reportStatus=1, transactionsComplete=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, wallet, startDate, endDate, walletHash))
     con.close()
 
 def getRunningReports():
@@ -294,7 +302,7 @@ def createDatabase():
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
     cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), network VARCHAR(31), fee DOUBLE, feeValue DOUBLE, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
-    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, txCounts VARCHAR(255), wallets LONGTEXT, walletGroup VARCHAR(63), PRIMARY KEY (account, startDate, endDate), INDEX IX_rpt_status (reportStatus))')
+    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, txCounts VARCHAR(255), wallets LONGTEXT, walletGroup VARCHAR(63), walletHash VARCHAR(63), PRIMARY KEY (account, startDate, endDate, walletHash), INDEX IX_rpt_status (reportStatus))')
     cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets LONGTEXT, generatedTimestamp TIMESTAMP NOT NULL DEFAULT UTC_TIMESTAMP, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
     cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
     cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL DEFAULT UTC_TIMESTAMP, txHash VARCHAR(127), token VARCHAR(63), amount DOUBLE, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')

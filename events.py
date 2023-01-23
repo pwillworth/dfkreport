@@ -30,7 +30,7 @@ def EventsMap():
         'gas': 0
     }
 
-def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete=0):
+def checkTransactions(txs, account, startDate, endDate, walletHash, network, alreadyComplete=0):
     events_map = EventsMap()
 
     # Connect to right network that txs are for
@@ -78,7 +78,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         # Update report tracking record for status every 50 txs
         if txCount % 50 == 0:
             try:
-                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
             except Exception as err:
                 logging.error('Failed to update tx count {0}'.format(str(err)))
 
@@ -604,7 +604,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
         # Update report tracking record for status every 100 txs
         if txCount % 100 == 0:
             try:
-                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
             except Exception as err:
                 logging.error('Failed to update tx count {0}'.format(str(err)))
         # load the gas
@@ -626,7 +626,7 @@ def checkTransactions(txs, account, startDate, endDate, network, alreadyComplete
                 events_map[item[2]].append(events)
         txCount += 1
 
-    db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), 'complete', alreadyComplete + txCount)
+    db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
     return events_map
 
 def lookupEvent(fm, to, account):

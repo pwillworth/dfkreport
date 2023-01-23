@@ -12,10 +12,10 @@ def cleanReports(beforeTimestamp):
     cleanCount = 0
     con = db.aConn()
     cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, transactionsContent, reportContent FROM reports WHERE proc=0 and generatedTimestamp < %s", (beforeTimestamp,))
+    cur.execute("SELECT account, startDate, endDate, transactionsContent, reportContent, walletHash FROM reports WHERE proc=0 and generatedTimestamp < %s", (beforeTimestamp,))
     row = cur.fetchone()
     while row != None:
-        db.deleteReport(row[0], row[1], row[2], row[3], row[4])
+        db.deleteReport(row[0], row[1], row[2], row[5], row[3], row[4])
         cleanCount += 1
         row = cur.fetchone()
     con.close()

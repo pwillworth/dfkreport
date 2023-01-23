@@ -22,7 +22,8 @@ def main():
     parser.add_argument("startDate", help="The starting date for the report")
     parser.add_argument("endDate", help="The ending date for the report")
     parser.add_argument("--costbasis", choices=['fifo','lifo','hifo','acb'], help="Method for mapping cost basis to gains")
-    parser.add_argument("--chains", choices=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax,4=DFKChain")
+    parser.add_argument("--chains", choices=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'], help="Bitwise integer of blockchains to include 1=Harmony,2=Avax,4=DFKChain,8=Klaytn")
+    parser.add_argument("--wallets", help="SHA1 hash of wallet address list for multi wallet report")
     args = parser.parse_args()
     if args.costbasis == None:
         costBasis = 'fifo'
@@ -37,11 +38,16 @@ def main():
     txResult = []
     txData = []
     wallets = [args.wallet]
+    if args.wallets == None:
+        walletHash = db.getWalletHash(wallets)
+    else:
+        walletHash = args.wallets
     moreOptions = db.ReportOptions()
 
     # list of transactions if loaded from file if available, otherwise fetched
-    reportInfo = db.findReport(args.wallet, args.startDate, args.endDate)
+    reportInfo = db.findReport(args.wallet, args.startDate, args.endDate, walletHash)
     if reportInfo != None and reportInfo[5] > 0 and len(reportInfo[8]) > 0:
+        logging.info('found old report with tx data, reusing for new one')
         includedChains = reportInfo[12]
         wallets = reportInfo[15]
         with open('../transactions/{0}'.format(reportInfo[8]), 'rb') as file:
@@ -53,17 +59,17 @@ def main():
             txResult = transactions.getTransactionCount(args.wallet, includedChains)
             if type(txResult) is not dict:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(err))
-                db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+                db.updateReportError(args.wallet, args.startDate, args.endDate, walletHash, 8)
                 return 1
             txTotal = transactions.getTotalCount(txResult)
-            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, jsonpickle.encode([args.wallet]), 'system', 1, None, jsonpickle.encode(txResult))
+            db.createReport(args.wallet, args.startDate, args.endDate, int(datetime.datetime.timestamp(generateTime)), txTotal, costBasis, includedChains, [args.wallet], 'system', walletHash, 1, None, jsonpickle.encode(txResult))
         else:
             includedChains = reportInfo[12]
             wallets = jsonpickle.decode(reportInfo[15])
             txResult = jsonpickle.decode(reportInfo[14])
             if type(txResult) is not dict:
                 logging.error('Unexpected Error {0} fetching transaction count, setting report to failure.'.format(str(txResult)))
-                db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+                db.updateReportError(args.wallet, args.startDate, args.endDate, walletHash, 8)
                 return 1
             try:
                 moreOptions = jsonpickle.loads(reportInfo[13])
@@ -79,14 +85,14 @@ def main():
         except Exception as err:
             logging.error('Unexpected Error {0} fetching transaction list, setting report to failure.'.format(err))
             traceback.print_exc()
-            db.updateReportError(args.wallet, args.startDate, args.endDate, 8)
+            db.updateReportError(args.wallet, args.startDate, args.endDate, walletHash, 8)
             return 1
         # The transactions are written to a file and record updated indicate fetching complete
         transactionsFile = uuid.uuid4().hex
         with open('../transactions/{0}'.format(transactionsFile), 'wb') as f:
             pickle.dump(txData, f)
         try:
-            db.completeTransactions(args.wallet, args.startDate, args.endDate, transactionsFile)
+            db.completeTransactions(args.wallet, args.startDate, args.endDate, walletHash, transactionsFile)
         except Exception as err:
             logging.error('DB report update tx complete failure: {0}'.format(str(err)))
 
@@ -105,7 +111,7 @@ def main():
         else:
             statusCode = 9
         try:
-            db.updateReportError(args.wallet, args.startDate, args.endDate, statusCode)
+            db.updateReportError(args.wallet, args.startDate, args.endDate, walletHash, statusCode)
         except Exception as err:
             logging.error('DB report update error failure: {0}'.format(str(err)))
         return 1
@@ -118,7 +124,7 @@ def main():
     with open('../reports/{0}'.format(reportFile), 'wb') as f:
         pickle.dump(reportData, f)
     try:
-        db.completeReport(args.wallet, args.startDate, args.endDate, reportFile)
+        db.completeReport(args.wallet, args.startDate, args.endDate, walletHash, reportFile)
     except Exception as err:
         logging.error('DB report update complete failure: {0}'.format(str(err)))
 
