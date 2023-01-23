@@ -24,7 +24,10 @@ def getReportStatus(account, startDate, endDate, costBasis, includedChains, othe
     walletHash = db.getWalletHash(wallets)
     reportRow = db.findReport(account, startDate, endDate, walletHash)
     if reportRow != None:
-        if (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
+        if reportRow[10] == None:
+            # If watcher has not picked up report yet return partial for correct status
+            return [reportRow[0], reportRow[1], reportRow[2], reportRow[3], reportRow[4]]
+        elif (reportRow[11] == costBasis and reportRow[12] == includedChains) or reportRow[10] == 1:
             # if cost basis same or its different but report still running, just return existing
             return reportRow
         else:
