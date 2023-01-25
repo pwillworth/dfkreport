@@ -2,7 +2,7 @@
 # Maintenace module to periodically clear old generated report data
 import db
 import settings
-import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 import logging.handlers
 import os
@@ -10,9 +10,10 @@ import os
 # Delete saved reports and their data files older than a timestamp
 def cleanReports(beforeTimestamp):
     cleanCount = 0
+    nowstamp = int(datetime.now(timezone.utc).timestamp())
     con = db.aConn()
     cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, transactionsContent, reportContent, walletHash FROM reports WHERE proc=0 and generatedTimestamp < %s", (beforeTimestamp,))
+    cur.execute("SELECT reports.account, startDate, endDate, transactionsContent, reportContent, walletHash FROM reports LEFT JOIN members on reports.account = members.account WHERE proc=0 and reports.generatedTimestamp < %s AND (members.expiresTimestamp < %s OR members.expiresTimestamp IS NULL)", (beforeTimestamp,nowstamp))
     row = cur.fetchone()
     while row != None:
         db.deleteReport(row[0], row[1], row[2], row[5], row[3], row[4])
@@ -25,6 +26,7 @@ def cleanReports(beforeTimestamp):
 def cleanTransactions():
     accounts = []
     cleanAccounts = []
+    nowstamp = int(datetime.now(timezone.utc).timestamp())
     con = db.aConn()
     # Get list of accounts with active reports
     with con.cursor() as cur:
@@ -46,8 +48,11 @@ def cleanTransactions():
     # clean tx data for inactive accounts except tavern sale/hires populated by block crawler
     with con.cursor() as cur3:
         for account in cleanAccounts:
-            cur3.execute("DELETE FROM transactions WHERE account=%s and (eventType != 'tavern' or fee != 0)", (account,))
-            logging.info('Cleaned {0} transactions for account {1}'.format(cur3.rowcount, account))
+            cur3.execute("SELECT expiresTimestamp FROM members WHERE account=%s", (account,))
+            row3 = cur3.fetchone()
+            if row3 == None or row3[0] == None or row3[0] < nowstamp:
+                cur3.execute("DELETE FROM transactions WHERE account=%s and (eventType != 'tavern' or fee != 0)", (account,))
+                logging.info('Cleaned {0} transactions for account {1}'.format(cur3.rowcount, account))
     
     con.close()
 
@@ -59,9 +64,9 @@ def main():
     logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     # clean up old reports
-    maxAgeDate = datetime.datetime.now() - datetime.timedelta(days=settings.MAX_REPORT_AGE_DAYS)
+    maxAgeDate = datetime.now() - timedelta(days=settings.MAX_REPORT_AGE_DAYS)
     logging.warning('Cleaning report records older than {0}'.format(maxAgeDate.isoformat()))
-    cleanReports(datetime.datetime.timestamp(maxAgeDate))
+    cleanReports(datetime.timestamp(maxAgeDate))
     cleanTransactions()
 
 
