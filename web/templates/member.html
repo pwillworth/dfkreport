@@ -467,25 +467,27 @@ function paymentComplete(txHash) {
       {% else %}
       <div id="accountExpiration">Not Subscribed</div>
       {% endif %}
-      <div class="sectionHead"></div>
-      <h4 style="margin-top:24px;">Add time to your subscription:</h4>
-      <form>
-        <table id="paymentTable">
-          <tr><td colspan="2"><span id="chainStatus" style="color: darkred;"></span></td></tr>
-          <tr><td><select id="tokenSelect" onchange="updateBalanceInfo();calcTimeToAdd();"><option value="0">Select token...</option></select></td><td><span id="tokenAvailable" style="color:green;">-</span><span> Available</span></td></tr>
-          <tr><td><h4>Amount:</h4></td><td><input type="text" id="tokenAmount" size="10" onkeyup="calcTimeToAdd();" /></td></tr>
-          <tr><td><h4>Time to Add:</h4></td><td><span id="subTimeToAdd"></span></td></tr>
-          <tr><td colspan="2" style="text-align:center;"><input id="tokenSend" type="button" value="Add" class="ui-button" onclick="paySubscription();" /></tr>
-        </table>
-      </form>
-      <div id="paymentStatus" style="width: 100%;"></div>
-      <div class="sectionHead"></div>
-      <div class="boxHeader ui-widget-header">Validate Manual Payment
-        <img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;" title="If you have made a donation to the donation address in the past you can credit that to your subscription here by entering the transaction hash and clicking validate.  Make sure you are connected to the chain where you made the payment first."/>
+      <div style="margin:8px;">
+        <div class="boxHeader ui-widget-header" style="margin-top:24px;">Add time to your subscription</div>
+        <form>
+          <table id="paymentTable">
+            <tr><td colspan="2"><span id="chainStatus" style="color: darkred;"></span></td></tr>
+            <tr><td><select id="tokenSelect" onchange="updateBalanceInfo();calcTimeToAdd();"><option value="0">Select token...</option></select></td><td><span id="tokenAvailable" style="color:green;">-</span><span> Available</span></td></tr>
+            <tr><td><h4>Amount:</h4></td><td><input type="text" id="tokenAmount" size="10" onkeyup="calcTimeToAdd();" /></td></tr>
+            <tr><td><h4>Time to Add:</h4></td><td><span id="subTimeToAdd"></span></td></tr>
+            <tr><td colspan="2" style="text-align:center;"><input id="tokenSend" type="button" value="Add" class="ui-button" onclick="paySubscription();" /></tr>
+          </table>
+        </form>
       </div>
-      <input id="txHash" type="text" style="width:100%;" placeholder="tx hash 0x..." />
-      <div style="width: 100%;text-align:center;margin: 8px;">
-      <input id="tokenSend" type="button" value="Validate" class="ui-button" onclick="paymentComplete(document.getElementById('txHash').value);" />
+      <div id="paymentStatus" style="width: 100%;"></div>
+      <div style="margin:8px;">
+        <div class="boxHeader ui-widget-header">Validate Manual Payment
+          <img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;" title="If you have made a donation to the donation address in the past you can credit that to your subscription here by entering the transaction hash and clicking validate.  Make sure you are connected to the chain where you made the payment first."/>
+        </div>
+        <input id="txHash" type="text" style="width:100%;" placeholder="tx hash 0x..." />
+        <div style="width: 100%;text-align:center;margin: 8px;">
+        <input id="tokenSend" type="button" value="Validate" class="ui-button" onclick="paymentComplete(document.getElementById('txHash').value);" />
+        </div>
       </div>
     {% else %}
       <div id="accountExpiration">Login first to access your settings.</div>
