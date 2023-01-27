@@ -677,10 +677,10 @@ function loadTaxes(results) {
   }
 }
 
-function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount, network) {
+function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount, network, txHash) {
   $('#tx_tavern_data').show();
   $('#tx_tavern_data').append(
-    '<tr title="' + seller + '"><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + ' seller: ' + seller + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + itemType + '</td>' +
     '<td>' + itemID + '</td>' +
     '<td>' + event + '</td>' +
@@ -708,7 +708,7 @@ function loadTavernEvents(tavernEvents) {
       fiatAmount = tavernEvents[i].fiatAmount['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount, tavernEvents[i].network);
+    setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount, tavernEvents[i].network, tavernEvents[i].txHash);
 
     if ( tavernEvents[i].event in tavernTotals ) {
       tavernTotals[tavernEvents[i].event] += 1;
@@ -727,10 +727,10 @@ function loadTavernEvents(tavernEvents) {
   $("#smy_tavern_data").html(tavernTable + '</table>');
 }
 
-function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network) {
+function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network, txHash) {
   $('#tx_swaps_data').show();
   $('#tx_swaps_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + getTokenName(swapType, network) + '</td>' +
     '<td>' + Number(swapAmount).toFixed(3) + '</td>' +
     '<td>' + getTokenName(receiveType, network) + '</td>' +
@@ -756,7 +756,7 @@ function loadSwapEvents(swapEvents) {
       fiatSwapValue = swapEvents[i].fiatSwapValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addSwapRow, 50, eventDate, swapEvents[i].swapType, swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], swapEvents[i].receiveType, swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue, swapEvents[i].network);
+    setTimeout(addSwapRow, 50, eventDate, swapEvents[i].swapType, swapEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], swapEvents[i].receiveType, swapEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue, swapEvents[i].network, swapEvents[i].txHash);
 
     swapName = getTokenName(swapEvents[i].swapType, swapEvents[i].network);
     rcvdName = getTokenName(swapEvents[i].receiveType, swapEvents[i].network);
@@ -780,10 +780,10 @@ function loadSwapEvents(swapEvents) {
   $("#smy_swaps_data").html(swapTable + '</table>');
 }
 
-function addLiquidityRow(eventDate, action, poolName, poolAmount, coin1Amount, coin2Amount, coin1FiatValue, coin2FiatValue) {
+function addLiquidityRow(eventDate, action, poolName, poolAmount, coin1Amount, coin2Amount, coin1FiatValue, coin2FiatValue, network, txHash) {
   $('#tx_liquidity_data').show();
   $('#tx_liquidity_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + action + ' ' + poolName + '</td>' +
     '<td>' + Number(poolAmount).toFixed(5) + '</td>' +
     '<td>' + Number(coin1Amount).toFixed(3) + '</td>' +
@@ -809,7 +809,7 @@ function loadLiquidityEvents(liquidityEvents) {
       coin2FiatValue = Number(liquidityEvents[i].coin2FiatValue['py/reduce'][1]['py/tuple'][0]);
     }
 
-    setTimeout(addLiquidityRow, 50, eventDate, liquidityEvents[i].action, poolName, liquidityEvents[i].poolAmount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin1Amount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin2Amount['py/reduce'][1]['py/tuple'][0], coin1FiatValue, coin2FiatValue);
+    setTimeout(addLiquidityRow, 50, eventDate, liquidityEvents[i].action, poolName, liquidityEvents[i].poolAmount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin1Amount['py/reduce'][1]['py/tuple'][0], liquidityEvents[i].coin2Amount['py/reduce'][1]['py/tuple'][0], coin1FiatValue, coin2FiatValue, liquidityEvents[i].network, liquidityEvents[i].txHash);
 
     if ( poolName in liquidityTotals ) {
       if (liquidityEvents[i].action == 'withdraw') {
@@ -834,10 +834,10 @@ function loadLiquidityEvents(liquidityEvents) {
   $("#smy_liquidity_data").html(liquidityTable + '</table>');
 }
 
-function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue, network) {
+function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue, network, txHash) {
   $('#tx_gardens_data').show();
   $('#tx_gardens_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + location + '</td>' +
     '<td>' + event + '</td>' +
     '<td>' + getTokenName(coinType, network) + '</td>' +
@@ -878,7 +878,7 @@ function loadGardensEvents(gardensEvents) {
       location = 'Pangolin'
     }
 
-    setTimeout(addGardensRow, 50, eventDate, location, gardensEvents[i].event, gardensEvents[i].coinType, coinAmount, fiatValue, gardensEvents[i].network);
+    setTimeout(addGardensRow, 50, eventDate, location, gardensEvents[i].event, gardensEvents[i].coinType, coinAmount, fiatValue, gardensEvents[i].network, gardensEvents[i].txHash);
 
     if ( lpName + ' ' + gardensEvents[i].event in gardensTotals ) {
       gardensTotals[lpName + ' ' + gardensEvents[i].event] += Number(coinAmount);
@@ -899,10 +899,10 @@ function loadGardensEvents(gardensEvents) {
   $("#smy_gardens_data").html('<table>' + gardensTable + '</table>');
 }
 
-function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount, fiatValue, network) {
+function addBankRow(eventDate, bankLocation, action, xRate, coinType, coinAmount, fiatValue, network, txHash) {
   $('#tx_bank_data').show();
   $('#tx_bank_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + bankLocation + '</td>' +
     '<td>' + action + '</td>' +
     '<td>' + Number(xRate).toFixed(4) + '</td>' +
@@ -934,7 +934,7 @@ function loadBankEvents(bankEvents) {
     if (bankEvents[i].fiatValue['py/reduce'] != undefined) {
       fiatValue = bankEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
-    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, xRate, bankEvents[i].coinType, coinAmount, fiatValue, bankEvents[i].network);
+    setTimeout(addBankRow, 50, eventDate, bankLocation, bankEvents[i].action, xRate, bankEvents[i].coinType, coinAmount, fiatValue, bankEvents[i].network, bankEvents[i].txHash);
 
     coinName = getTokenName(bankEvents[i].coinType, bankEvents[i].network)
     if ( coinName in bankTotals ) {
@@ -962,10 +962,10 @@ function loadBankEvents(bankEvents) {
   $("#smy_bank_data").html(bankTable + '</table>');
 }
 
-function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue, network) {
+function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue, network, txHash) {
   $('#tx_alchemist_data').show();
   $('#tx_alchemist_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + getTokenName(craftingType, network) + 'x' + craftedAmount + '</td>' +
     '<td>' + craftingCosts + '</td>' +
     '<td>' + usdFormat.format(fiatCraftedValue) + '</td>' +
@@ -993,7 +993,7 @@ function loadAlchemistEvents(alchemistEvents) {
       fiatIngredientsValue = alchemistEvents[i].costsFiatValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addAlchemistRow, 50, eventDate, alchemistEvents[i].craftingType, craftedAmount, alchemistEvents[i].craftingCosts, fiatCraftedValue, fiatIngredientsValue, alchemistEvents[i].network);
+    setTimeout(addAlchemistRow, 50, eventDate, alchemistEvents[i].craftingType, craftedAmount, alchemistEvents[i].craftingCosts, fiatCraftedValue, fiatIngredientsValue, alchemistEvents[i].network, alchemistEvents[i].txHash);
 
     craftedName = getTokenName(alchemistEvents[i].craftingType, alchemistEvents[i].network)
     if ( craftedName in craftingTotals ) {
@@ -1013,10 +1013,10 @@ function loadAlchemistEvents(alchemistEvents) {
   $("#smy_alchemist_data").html(craftingTable + '</table>');
 }
 
-function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue, network) {
+function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue, network, txHash) {
   $('#tx_airdrops_data').show();
   $('#tx_airdrops_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + location + '</td>' +
     '<td>' + getTokenName(tokenReceived, network) + '</td>' +
     '<td>' + tokenAmount + '</td>' +
@@ -1045,7 +1045,7 @@ function loadAirdropEvents(airdropEvents) {
       location = airdropName;
     }
 
-    setTimeout(addAirdropRow, 50, eventDate, location, airdropEvents[i].tokenReceived, tokenAmount, fiatValue, airdropEvents[i].network);
+    setTimeout(addAirdropRow, 50, eventDate, location, airdropEvents[i].tokenReceived, tokenAmount, fiatValue, airdropEvents[i].network, airdropEvents[i].txHash);
 
     rcvdName = getTokenName(airdropEvents[i].tokenReceived, airdropEvents[i].network);
     if ( rcvdName in airdropTotals ) {
@@ -1072,10 +1072,10 @@ function loadAirdropEvents(airdropEvents) {
   $("#smy_airdrops_data").html(airdropTable + '</table>');
 }
 
-function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue, network) {
+function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue, network, txHash) {
   $('#tx_lending_data').show();
   $('#tx_lending_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + getLendingName(address) + '</td>' +
     '<td>' + event + '</td>' +
     '<td>' + getTokenName(coinType, network) + '</td>' +
@@ -1099,7 +1099,7 @@ function loadLendingEvents(lendingEvents) {
       fiatValue = Number(lendingEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0]);
     }
 
-    setTimeout(addLendingRow, 50, eventDate, lendingEvents[i].address, lendingEvents[i].event, lendingEvents[i].coinType, tokenAmount, fiatValue, lendingEvents[i].network);
+    setTimeout(addLendingRow, 50, eventDate, lendingEvents[i].address, lendingEvents[i].event, lendingEvents[i].coinType, tokenAmount, fiatValue, lendingEvents[i].network, lendingEvents[i].txHash);
 
     switch (lendingEvents[i].event) {
       case 'lend':
@@ -1144,10 +1144,10 @@ function loadLendingEvents(lendingEvents) {
   $("#smy_lending_data").html(lendingTable + '</table>');
 }
 
-function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue, network) {
+function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue, network, txHash) {
   $('#tx_quests_data').show();
   $('#tx_quests_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + questLocation + '</td>' +
     '<td>' + getTokenName(rewardType, network) + '</td>' +
     '<td>' + rewardAmount + '</td>' +
@@ -1174,7 +1174,7 @@ function loadQuestEvents(questEvents) {
       questLocation = 'Crystalvale';
     }
 
-    setTimeout(addQuestRow, 50, eventDate, questLocation, questEvents[i].rewardType, rewardAmount, fiatValue, questEvents[i].network);
+    setTimeout(addQuestRow, 50, eventDate, questLocation, questEvents[i].rewardType, rewardAmount, fiatValue, questEvents[i].network, questEvents[i].txHash);
 
     var rewardName = getTokenName(questEvents[i].rewardType, questEvents[i].network)
     if ( rewardName in questTotals ) {
@@ -1196,10 +1196,10 @@ function loadQuestEvents(questEvents) {
   $("#smy_quests_data").html(questTable + '</table>');
 }
 
-function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue, network) {
+function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue, network, txHash) {
   $('#tx_wallet_data').show();
   $('#tx_wallet_data').append(
-    '<tr><td>' + eventDate.toUTCString() + '</td>' +
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
     '<td>' + action + '</td>' +
     '<td>' + address + '</td>' +
     '<td>' + getTokenName(coinType, network) + '</td>' +
@@ -1223,7 +1223,7 @@ function loadWalletEvents(walletEvents) {
       fiatValue = walletEvents[i].fiatValue['py/reduce'][1]['py/tuple'][0];
     }
 
-    setTimeout(addWalletRow, 50, eventDate, walletEvents[i].action, walletEvents[i].address, walletEvents[i].coinType, coinAmount, fiatValue, walletEvents[i].network);
+    setTimeout(addWalletRow, 50, eventDate, walletEvents[i].action, walletEvents[i].address, walletEvents[i].coinType, coinAmount, fiatValue, walletEvents[i].network, walletEvents[i].txHash);
 
     var coinName = getTokenName(walletEvents[i].coinType, walletEvents[i].network);
     if ( coinName in walletTotals ) {
