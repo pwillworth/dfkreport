@@ -18,7 +18,7 @@ def valueFromWei(amount, token, network):
     else:
         goldValues = DFKCHAIN_GOLD_VALUES
     #w3.fromWei doesn't seem to have an 8 decimal option for BTC
-    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d','0x7516EB8B8Edfa420f540a162335eACF3ea05a247']:
+    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d','0x7516EB8B8Edfa420f540a162335eACF3ea05a247','0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c']:
         return amount / decimal.Decimal(100000000)
     elif token == GOLD_TOKENS[network]:
         weiConvert = 'kwei'
@@ -857,6 +857,7 @@ KLAYTN_TOKENS = {
     '0x26bdcB310313eFf8D580e43762e2020B23f3e728': 'Eternal Story Pages'
 }
 KLAYTN_GOLD_VALUES = {
+    '0x3E5081337d1a12F261b013Bc08745fB3cd756Eb3': 0, #'DFK Raffle Tix',
     '0x26bdcB310313eFf8D580e43762e2020B23f3e728': 0, #'Eternal Story Pages'
     '0xe7a1B580942148451E47b92e95aEB8d31B0acA37': 0, #DFKGold'
     '0x907a98319AEB249e387246637149f4B2e7D21dB7': 0, #'Shvas Rune', # quest items
