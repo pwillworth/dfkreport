@@ -316,10 +316,17 @@ function calcTimeToAdd() {
   var timeElm = document.getElementById('subTimeToAdd');
   var tokenElm = document.getElementById('tokenSelect');
   var amountElm = document.getElementById('tokenAmount');
+  var newExpiresElm = document.getElementById('newExpires');
   var usdValue = tokenRatios[tokenElm.value];
   var totalValue = amountElm.value * usdValue;
   var secondsToAdd = totalValue * 86400 * 4;
+  var nowTime = new Date();
+  nowTime.setSeconds(nowTime.getSeconds() + secondsToAdd);
+  if (Number("{{ secondsLeft }}") > 0) {
+    nowTime.setSeconds(nowTime.getSeconds() + Number("{{ secondsLeft }}"));
+  }
   timeElm.innerHTML = timeDescription(secondsToAdd);
+  newExpiresElm.innerHTML = nowTime.toLocaleString();
 }
 
 function timeDescription(seconds) {
@@ -475,6 +482,7 @@ function paymentComplete(txHash) {
             <tr><td><select id="tokenSelect" onchange="updateBalanceInfo();calcTimeToAdd();"><option value="0">Select token...</option></select></td><td><span id="tokenAvailable" style="color:green;">-</span><span> Available</span></td></tr>
             <tr><td><h4>Amount:</h4></td><td><input type="text" id="tokenAmount" size="10" onkeyup="calcTimeToAdd();" /></td></tr>
             <tr><td><h4>Time to Add:</h4></td><td><span id="subTimeToAdd"></span></td></tr>
+            <tr><td><h4>New Expiration:</h4></td><td><span id="newExpires"></span></td></tr>
             <tr><td colspan="2" style="text-align:center;"><input id="tokenSend" type="button" value="Add" class="ui-button" onclick="paySubscription();" /></tr>
           </table>
         </form>
