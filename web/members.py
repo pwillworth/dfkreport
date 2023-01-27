@@ -21,6 +21,7 @@ def timeDescription(seconds):
 	if seconds != 0:
 		if seconds < 0:
 			appendStr = ' ago'
+			seconds = seconds * -1
 		tmpDays = math.floor(seconds / 86400)
 		tmpStr = ''
 		if (tmpDays > 0):
@@ -36,7 +37,6 @@ def timeDescription(seconds):
 			tmpStr = "less than a minute"
 		return tmpStr + appendStr
 	else:
-	#except:
 		return "no time"
 
 # Get current url

@@ -35,6 +35,10 @@ h3 {
 ul {
 	list-style-type: square;
 	margin-left: 30px;
+	margin-top: 4px;
+}
+ul li {
+	margin-bottom: 4px;
 }
 
 #mask {

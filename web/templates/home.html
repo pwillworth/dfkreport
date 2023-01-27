@@ -87,6 +87,7 @@ function loadGroupSel() {
 function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='false', includeDFKChain='false', includeKlaytn='false', includeAvalanche='false', purchaseAddresses='') {
     $("#loadingSection").css("display","block");
     $("#mappingSection").css("display","block");
+    console.log('generate');
     $.post(BASE_SCRIPT_URL + "generate.py",{
         walletAddress: generateAddress,
         includeHarmony: includeHarmony,
@@ -102,6 +103,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
           reportStatus = data.response.status
           if (reportStatus == 'complete') {
             $("#reportProgress").progressbar( "option", "value", 1 );
+            $("#reportPercent").html('.:100%:.')
             $("#lilaImg").attr('src', '{{ BASE_SCRIPT_URL }}static/images/liladone.jpg');
             $( "#loadingMessage").html('Lila: I have that report ready now, launching on new page...');
             var contentFile = data.response.contentFile;
@@ -109,6 +111,8 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             if (!reportWin || reportWin.closed || typeof reportWin.closed=='undefined') {
               $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}">here</a> to open it.`);
             }
+            var genButton = document.getElementById('goFilter');
+            genButton.disabled = false;
           } else if (reportStatus == 'generating') {
             var progress = getProgress(reportStatus, data.response.transactionsTotal, data.response.transactionsComplete, data.response.transactionsTotal);
             $("#reportProgress").progressbar( "option", "max", 1 );
@@ -145,6 +149,8 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             $("#reportPercent").html("");
             $("#mappingProgress").progressbar( "option", "value", false);
             $("#mappingMessage").html("Loading Transactions...");
+            var genButton = document.getElementById('goFilter');
+            genButton.disabled = false;
             alert(data.response)
           }
         }, "json"
@@ -238,7 +244,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
           </div>
           <label for="ethAddress">Eth Address:</label>
           <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
-          <button id="goFilter" type="button" class="ui-button" onclick="generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));">Generate!</button>
+          <input id="goFilter" type="button" value="Generate!" class="ui-button" onclick="this.disabled=true;generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));" />
         </div>
         <div id="loadingSection" style="display: none;">
           <img src="{{ BASE_SCRIPT_URL }}static/images/gettingrecords.gif" id="lilaImg" class="goldBorder lilaBox" />
@@ -256,7 +262,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
-        <li>2023-01-28: Multiwallet release!
+        <li><span style="font-style:italic;">2023-01-28:</span> Multi-wallet release!
           <ul>
             <li>New Members page with subscription tools/status using wallet connect and sign for login.</li>
             <li>Reports now launch in a separate page after generating.</li>
@@ -265,23 +271,23 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             <li>Token Tax CSV Export format added.</li>
           </ul>
         </li>
-        <li>2022-12-11: Klaytn/Serendale 2.0 Added.</li>
-        <li>2022-11-13: Add new Jeweler (cJewel) activity</li>
-        <li>2022-11-04: Add detection for Dark Summoning</li>
-        <li>2022-10-19: Fix issue with DFKChain transaction list lookup by switching to Covalent API resource.</li>
-        <li>2022-09-11: Fix price conversion for items on Harmony to not use depegged USDC and improve lookup of cached records performance.</li>
-        <li>2022-08-01: Detect Crystalvale Alchemist events.</li>
-        <li>2022-07-16: Detect Crystalvale Meditation Circle events.</li>
-        <li>2022-07-12: Added Crystalvale quest rewards.</li>
-        <li>2022-06-17: Include Pet Trade In events and DFK Duel events under NFT section.</li>
-        <li>2022-06-11: Add CoinLedger CSV export format option.</li>
-        <li>2022-05-29: Add Pet Hatching expenses and correlate to sales for cost basis.</li>
-        <li>2022-05-25: Add Pet Buy/Sell activity.</li>
-        <li>2022-05-11: Add detection for Stone Carver crafting.</li>
-        <li>2022-05-05: Include Crystalvale Tavern and Summoning events.</li>
-        <li>2022-04-21: Include rewards from Training quests.</li>
-        <li>2022-04-09: Added Canadian Adjusted Cost Basis option. (Note: no superficial loss detection)</li>
-        <li>2022-04-06: Detect charitable donations and list under expenses section in Tax Report.</li>
+        <li><span style="font-style:italic;">2022-12-11:</span> Klaytn/Serendale 2.0 Added.</li>
+        <li><span style="font-style:italic;">2022-11-13:</span> Add new Jeweler (cJewel) activity</li>
+        <li><span style="font-style:italic;">2022-11-04:</span> Add detection for Dark Summoning</li>
+        <li><span style="font-style:italic;">2022-10-19:</span> Fix issue with DFKChain transaction list lookup by switching to Covalent API resource.</li>
+        <li><span style="font-style:italic;">2022-09-11:</span> Fix price conversion for items on Harmony to not use depegged USDC and improve lookup of cached records performance.</li>
+        <li><span style="font-style:italic;">2022-08-01:</span> Detect Crystalvale Alchemist events.</li>
+        <li><span style="font-style:italic;">2022-07-16:</span> Detect Crystalvale Meditation Circle events.</li>
+        <li><span style="font-style:italic;">2022-07-12:</span> Added Crystalvale quest rewards.</li>
+        <li><span style="font-style:italic;">2022-06-17:</span> Include Pet Trade In events and DFK Duel events under NFT section.</li>
+        <li><span style="font-style:italic;">2022-06-11:</span> Add CoinLedger CSV export format option.</li>
+        <li><span style="font-style:italic;">2022-05-29:</span> Add Pet Hatching expenses and correlate to sales for cost basis.</li>
+        <li><span style="font-style:italic;">2022-05-25:</span> Add Pet Buy/Sell activity.</li>
+        <li><span style="font-style:italic;">2022-05-11:</span> Add detection for Stone Carver crafting.</li>
+        <li><span style="font-style:italic;">2022-05-05:</span> Include Crystalvale Tavern and Summoning events.</li>
+        <li><span style="font-style:italic;">2022-04-21:</span> Include rewards from Training quests.</li>
+        <li><span style="font-style:italic;">2022-04-09:</span> Added Canadian Adjusted Cost Basis option. (Note: no superficial loss detection)</li>
+        <li><span style="font-style:italic;">2022-04-06:</span> Detect charitable donations and list under expenses section in Tax Report.</li>
       </ul>
     </div>
   </div>
