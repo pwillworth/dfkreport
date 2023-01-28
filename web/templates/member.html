@@ -311,15 +311,22 @@ async function updateBalanceInfo() {
     availableElm.innerHTML = Number(web3.utils.fromWei(result.toString(), 'ether')).toFixed(2);
   }
 }
+
 // preview amount of time that will be added to subscription
 function calcTimeToAdd() {
   var timeElm = document.getElementById('subTimeToAdd');
   var tokenElm = document.getElementById('tokenSelect');
   var amountElm = document.getElementById('tokenAmount');
   var newExpiresElm = document.getElementById('newExpires');
-  var usdValue = tokenRatios[tokenElm.value];
-  var totalValue = amountElm.value * usdValue;
+  var ratioValue = tokenRatios[tokenElm.value];
+  var totalValue = amountElm.value * ratioValue;
   var secondsToAdd = totalValue * 86400 * 4;
+  if (totalValue < 0.5) {
+    secondsToAdd = 0;
+  }
+  if (totalValue > 10) {
+    secondsToAdd = totalValue * 86400 * 6;
+  }
   var nowTime = new Date();
   nowTime.setSeconds(nowTime.getSeconds() + secondsToAdd);
   if (Number("{{ secondsLeft }}") > 0) {
@@ -327,6 +334,7 @@ function calcTimeToAdd() {
   }
   timeElm.innerHTML = timeDescription(secondsToAdd);
   newExpiresElm.innerHTML = nowTime.toLocaleString();
+  return secondsToAdd;
 }
 
 function timeDescription(seconds) {
@@ -360,6 +368,13 @@ async function paySubscription() {
   let txValue = '0';
   let txTo = donationAccount;
   let data = '0x00';
+
+  var addTime = calcTimeToAdd();
+  console.log(addTime);
+  if (addTime == 0) {
+    alert('The amount entered is below the minimum amount to add subscription time.');
+    return;
+  }
   sendElm.disabled = true;
   if ( ['0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432'].includes(tokenElm.value) ) {
     txValue = web3.utils.toWei(amountElm.value, 'ether');
@@ -519,7 +534,7 @@ function paymentComplete(txHash) {
         <ul class="checkList">
           <li>Run reports for multiple wallets combined</li>
           <li>View and launch past reports</li>
-          <li>Cached transactions and saved reports not removed after 60 days</li>
+          <li>Cached transactions and saved reports not removed after 30 days</li>
           <li>Manage multiple pre-defined wallet groups for reports</li>
         </ul>
       </div>

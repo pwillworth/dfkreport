@@ -34,9 +34,13 @@ TOKEN_SUB_VALUES = {
 def getSubscriptionTime(token, amount):
     tokenRatio = TOKEN_SUB_VALUES[token]
     tokenValue = amount * decimal.Decimal(tokenRatio)
+    if tokenValue < 0.5:
+        return 0
+    if tokenValue > 10:
+        return tokenValue * 86400 * 6
     return tokenValue * 86400 * 4
 
-def addPayment(account, txHash, token, amount, network):
+def addPayment(account, txHash, token, amount, network, purchaseTime):
     result = 0
     con = db.aConn()
     with con.cursor() as cur:
@@ -56,7 +60,6 @@ def addPayment(account, txHash, token, amount, network):
                     previousExpires = 0
                 else:
                     previousExpires = rowu[0]
-            purchaseTime = getSubscriptionTime(token, amount)
             # credit from current time if expired in past or from future if still active
             newExpires = max(generateTime, previousExpires) + int(purchaseTime)
             cur.execute("INSERT INTO payments (account, generatedTimestamp, txHash, token, amount, previousExpires, newExpires, network) VALUES (%s, UTC_TIMESTAMP(), %s, %s, %s, %s, %s, %s)", (account, txHash, token, amount, previousExpires, newExpires, network))
@@ -150,12 +153,16 @@ if failure == False:
 
 print('Content-type: text/json\n')
 if failure == False:
-    updateResult = addPayment(account, txHash, txToken, tokenAmount, network)
-    if updateResult == 0:
-        response = ''.join(('{ "error": "', 'Payment not posted, please contact site admin to ensure credit.', '" }'))
-    elif updateResult == -1:
-        response = ''.join(('{ "error": "', 'Error: that transaction has already been verified, it cannot be used again.', '" }'))
+    purchaseTime = getSubscriptionTime(txToken, tokenAmount)
+    if purchaseTime > 0:
+        updateResult = addPayment(account, txHash, txToken, tokenAmount, network, purchaseTime)
+        if updateResult == 0:
+            response = ''.join(('{ "error": "', 'Payment not posted, please contact site admin to ensure credit.', '" }'))
+        elif updateResult == -1:
+            response = ''.join(('{ "error": "', 'Error: that transaction has already been verified, it cannot be used again.', '" }'))
+        else:
+            response = ''.join(('{ "updated": "', str(updateResult), ' Payment posted" }'))
     else:
-        response = ''.join(('{ "updated": "', str(updateResult), ' Payment posted" }'))
+        response = ''.join(('{ "error": "', 'The value of that transaction is below the minimum amount to add subscription time.', '" }'))
 
 print(response)
