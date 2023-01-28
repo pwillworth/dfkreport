@@ -83,6 +83,8 @@ if sid != '' and Web3.isAddress(account):
     sess = db.getSession(sid)
     if sess == account:
         loginState = 1
+if account == '':
+    account = wallet
 
 print('Content-type: text/json\n')
 

@@ -19,9 +19,7 @@ var currentView = 'tax';
 
 $(document).ready(function() {
     sid = getCookie('sid', '');
-    if (isConnected()) {
-      connect();
-    }
+    isConnected()
     $("#busyImg").css("display","none");
     optionsReset();
     $('.txHeader').hover(function() {
