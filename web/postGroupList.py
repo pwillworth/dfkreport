@@ -28,7 +28,7 @@ def addGroupList(account, groupName, addressList):
         elif row2 != None and row2[0] != None:
             cur.execute("UPDATE groups SET wallets=%s, updatedTimestamp=UTC_TIMESTAMP() WHERE account=%s AND groupName=%s", (jsonpickle.encode(addressList), account, groupName))
         else:
-            cur.execute("INSERT INTO groups (account, groupName, wallets) VALUES (%s, %s, %s)", (account, groupName, jsonpickle.encode(addressList)))
+            cur.execute("INSERT INTO groups (account, groupName, wallets, generatedTimestamp) VALUES (%s, %s, %s, UTC_TIMESTAMP())", (account, groupName, jsonpickle.encode(addressList)))
         result = cur.rowcount
     con.close()
 
@@ -60,7 +60,7 @@ if loginState < 1:
     failure = True
     response = ''.join(('{ "error" : "Error: You need be logged in to add or update wallet groups." }'))
 else:
-    memberState = db.getMemberState(account)[0]
+    memberState = db.getMemberStatus(account)[0]
     if memberState != 2:
         failure = True
         response = ''.join(('{ "error" : "Error: Subscription not active." }'))
