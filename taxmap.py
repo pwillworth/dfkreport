@@ -552,6 +552,8 @@ def buildAirdropRecords(airdropEvents, startDate, endDate):
         eventTitle = 'Airdrop'
         if hasattr(event, 'address') and event.address in contracts.payment_wallets:
             eventTitle = 'Payment'
+        if not hasattr(event, 'network'):
+            event.network = 'dfkchain'
         # Create basic income tax record for any airdrop
         if eventDate >= startDate and eventDate <= endDate:
             if event.tokenAmount % 1 > 0:
