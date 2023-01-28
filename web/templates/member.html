@@ -124,8 +124,8 @@ function loadReports() {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('GET', `{{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}getReportList.py?account=${wAddress}&sid=sid${sid}`);
+  request.open('POST', `${BASE_SCRIPT_URL}getReportList.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}getReportList.py?account=${wAddress}&sid=sid${sid}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {
@@ -141,7 +141,6 @@ function loadReports() {
     }
   };
   request.send();
-  //setTimeout('loadReports()', 2000);
 }
 function loadGroups() {
   if (!isConnected()) {
@@ -150,8 +149,8 @@ function loadGroups() {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('GET', `{{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}getGroupList.py?account=${wAddress}&sid=${sid}`);
+  request.open('POST', `${BASE_SCRIPT_URL}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}getGroupList.py?account=${wAddress}&sid=${sid}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to load wallet groups.');
@@ -168,7 +167,7 @@ function loadGroups() {
   request.send();
 }
 function viewReport(contentFile) {
-  window.open(`{{ BASE_SCRIPT_URL }}/report.py?contentFile=${contentFile}`);
+  window.open(`${BASE_SCRIPT_URL}report.py?contentFile=${contentFile}`);
 }
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete','unknown','unknown','unknown','unknown','unknonw','Blockchain Error', 'Site Error'];
@@ -239,8 +238,8 @@ function createGroup(groupName, walletList) {
   const wAddress = account.givenProvider.selectedAddress;
   var request = new XMLHttpRequest();
   var wallets = encodeURIComponent(walletList);
-  request.open('POST', `{{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
+  request.open('POST', `${BASE_SCRIPT_URL}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to add wallet group due to server error.');
@@ -266,8 +265,8 @@ function removeGroup(event, groupName) {
   const wAddress = account.givenProvider.selectedAddress;
   var request = new XMLHttpRequest();
   var wallets = encodeURIComponent(walletList);
-  request.open('POST', `{{ BASE_SCRIPT_URL }}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`);
+  request.open('POST', `${BASE_SCRIPT_URL}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to remove wallet group due to server error.');
@@ -449,8 +448,8 @@ function paymentComplete(txHash) {
       network = '';
   }
   var request = new XMLHttpRequest();
-  request.open('POST', `{{ BASE_SCRIPT_URL }}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`, true);
-  console.log(`loading: {{ BASE_SCRIPT_URL }}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`);
+  request.open('POST', `${BASE_SCRIPT_URL}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to validate due to server error.');
