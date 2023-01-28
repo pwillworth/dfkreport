@@ -8,10 +8,9 @@
 import os
 import sys
 import cgi
-import jsonpickle
-import pickle
-import decimal
 import logging
+from http import cookies
+from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
 sys.path.append("../")
 import db
@@ -25,19 +24,37 @@ except KeyError:
 	url = ''
 
 form = cgi.FieldStorage()
-# Get form info
-contentFile = form.getfirst("contentFile", "")
-sid = form.getfirst('sid', '')
-# escape input to prevent sql injection
-contentFile = db.dbInsertSafe(contentFile)
+# Get Cookies
+useCookies = 1
+C = cookies.SimpleCookie()
+try:
+	C.load(os.environ['HTTP_COOKIE'])
+except KeyError:
+	useCookies = 0
+
+if useCookies:
+	try:
+		account = C['selectedAccount'].value
+	except KeyError:
+		account = form.getfirst('account', '')
+	try:
+		sid = C['sid-{0}'.format(account)].value
+	except KeyError:
+		sid = form.getfirst('sid', '')
+else:
+	sid = form.getfirst('sid', '')
+	account = form.getfirst('account', '')
+
 sid = db.dbInsertSafe(sid)
-results = {}
-account = ''
-startDate = ''
-endDate = ''
-costBasis = ''
-includedChains = 5
-purchaseAddresses = ''
+
+loginState = 0
+memberState = 0
+if sid != '' and Web3.isAddress(account):
+	account = Web3.toChecksumAddress(account)
+	sess = db.getSession(sid)
+	if sess == account:
+		loginState = 1
+
 bankState = 'ragmanEmpty'
 bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
 balance = balances.readCurrent()
@@ -45,24 +62,15 @@ bankProgress = '${0:.2f}'.format(balance)
 if balance >= 30:
 	bankState = 'ragman'
 	bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
-# When content file is passed, viewing a pregenerated report and we look up its options to preset the form
-if contentFile != '':
-	con = db.aConn()
-	with con.cursor() as cur:
-		cur.execute('SELECT account, startDate, endDate, costBasis, includedChains, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
-		row = cur.fetchone()
-		if row != None:
-			account = row[0]
-			startDate = row[1]
-			endDate = row[2]
-			costBasis = row[3]
-			includedChains = row[4]
-			moreOptions = jsonpickle.loads(row[5])
-			purchaseAddresses = moreOptions['purchaseAddresses']
-	con.close()
+
+# get subscription status
+if loginState > 0:
+	memberState = db.getMemberStatus(account)[0]
+else:
+	memberState = 0
 
 print('Content-type: text/html\n')
 env = Environment(loader=FileSystemLoader('templates'))
 
 template = env.get_template('home.html')
-print(template.render(url=url, contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage))
+print(template.render(url=url, memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage))

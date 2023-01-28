@@ -66,9 +66,7 @@ window.onload = (event) => {
   }
 };
 window.ethereum.on('accountsChanged', function (accounts) {
-  console.log(`wallet changed to ${accounts[0]}!`);
-  resetConnection();
-  handleAccountsChanged(accounts);
+  window.location.reload();
 });
 ethereum.on('chainChanged', (chainId) => {
   window.location.reload();

@@ -55,7 +55,7 @@ function optionsReset() {
 }
 function refreshLists() {
   loadGroupSel();
-  if (sid != '') {
+  if (sid != '' && '{{ memberState }}' == '2') {
     $('#multiWalletSelect').show();
   } else {
     $('#multiWalletSelect').hide();

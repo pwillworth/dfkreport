@@ -59,6 +59,12 @@ if sid != '' and Web3.isAddress(account):
 if loginState < 1:
     failure = True
     response = ''.join(('{ "error" : "Error: You need be logged in to add or update wallet groups." }'))
+else:
+    memberState = db.getMemberState(account)[0]
+    if memberState != 2:
+        failure = True
+        response = ''.join(('{ "error" : "Error: Subscription not active." }'))
+
 if len(groupName) > 60 or groupName[0:2] == '0x':
     failure = True
     response = ''.join(('{ "error" : "Error: Group Name must be 60 characters or less and cannot begin with 0x." }'))

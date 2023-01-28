@@ -48,7 +48,11 @@ else:
         if sess == account:
             loginState = 1
     if loginState > 0:
-        listResult = getReportList(account)
+        memberState = db.getMemberStatus(account)[0]
+        if memberState == 2:
+            listResult = getReportList(account)
+        else:
+            listResult = 'Error: Subscription not active'
     else:
         listResult = 'Error: Login first to view reports'
 

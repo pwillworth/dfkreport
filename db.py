@@ -6,7 +6,7 @@ import records
 import settings
 import jsonpickle
 import hashlib
-import datetime
+from datetime import datetime, timezone
 import time
 import os
 
@@ -127,8 +127,8 @@ def getLastTransactionTimestamp(account, network):
 # Look up and return any transaction events where wallet was the seller
 def getTavernSales(wallet, startDate, endDate):
     sales = []
-    startStamp = int(datetime.datetime(startDate.year, startDate.month, startDate.day).timestamp())
-    endStamp = int(datetime.datetime(endDate.year, endDate.month, endDate.day).timestamp() + 86400)
+    startStamp = int(datetime(startDate.year, startDate.month, startDate.day).timestamp())
+    endStamp = int(datetime(endDate.year, endDate.month, endDate.day).timestamp() + 86400)
     try:
         con = aConn()
         cur = con.cursor()
@@ -264,15 +264,38 @@ def getRunningReports():
 
 def getWalletGroup(account, group):
     results = []
+    nowStamp = int(datetime.utcnow().timestamp())
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT wallets FROM groups WHERE account=%s AND groupName=%s", (account,group))
+    cur.execute("SELECT wallets FROM groups INNER JOIN members ON groups.account = members.account WHERE members.expiresTimestamp > %s AND groups.account=%s AND groupName=%s", (nowStamp,account,group))
     row = cur.fetchone()
     if row != None:
         results = jsonpickle.decode(row[0])
     con.close()
 
     return results
+
+def getMemberStatus(account):
+    memberState = 0
+    requestTime = datetime.now(timezone.utc).timestamp()
+    expiresTimestamp = 0
+    secondsLeft = 0
+    con = aConn()
+    with con.cursor() as cur:
+        cur.execute('SELECT expiresTimestamp FROM members WHERE account=%s', (account,))
+        row = cur.fetchone()
+        if row[0] != None:
+            expiresTimestamp = row[0]
+            secondsLeft = expiresTimestamp - requestTime
+        if expiresTimestamp != None and requestTime < expiresTimestamp:
+            if secondsLeft > 0:
+                memberState = 2
+            else:
+                memberState = 1
+        else:
+            memberState = 1
+    con.close()
+    return [memberState, secondsLeft, expiresTimestamp]
 
 # look up a session id and see if it is valid
 def getSession(sid):

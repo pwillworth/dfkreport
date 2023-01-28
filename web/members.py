@@ -8,7 +8,6 @@
 import os
 import sys
 import cgi
-from datetime import timezone, datetime
 import math
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
@@ -79,24 +78,11 @@ if sid != '' and Web3.isAddress(account):
         loginState = 1
 
 walletGroup = ''
-requestTime = datetime.now(timezone.utc).timestamp()
 # get subscription status
 if loginState > 0:
-	con = db.aConn()
-	with con.cursor() as cur:
-		cur.execute('SELECT expiresTimestamp FROM members WHERE account=%s', (account,))
-		row = cur.fetchone()
-		if row[0] != None:
-			secondsLeft = row[0] - requestTime
-		if row[0] != None and requestTime < row[0]:
-			if secondsLeft > 0:
-				memberState = 2
-			else:
-				memberState = 1
-		else:
-			memberState = 1
-
-	con.close()
+	memberStatus = db.getMemberStatus(account)
+	memberState = memberStatus[0]
+	secondsLeft = memberStatus[1]
 else:
     memberState = 0
 
