@@ -25,7 +25,7 @@ def getAccountNonce(account):
     else:
         result = random.randint(1,10000000)
         generateTime = datetime.now(timezone.utc)
-        cur.execute("INSERT INTO members (account, nonce, generatedTimestamp) VALUES (%s, %s, %s)", (account, result, int(datetime.timestamp(generateTime))))
+        cur.execute("INSERT INTO members (account, nonce, generatedTimestamp, expiresTimestamp) VALUES (%s, %s, %s, %s)", (account, result, int(datetime.timestamp(generateTime)), int(datetime.timestamp(generateTime))+86400))
 
     con.close()
 
