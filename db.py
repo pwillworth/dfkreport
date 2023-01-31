@@ -264,7 +264,7 @@ def getRunningReports():
 
 def getWalletGroup(account, group):
     results = []
-    nowStamp = int(datetime.utcnow().timestamp())
+    nowStamp = datetime.now(timezone.utc).timestamp()
     con = aConn()
     cur = con.cursor()
     cur.execute("SELECT wallets FROM groups INNER JOIN members ON groups.account = members.account WHERE members.expiresTimestamp > %s AND groups.account=%s AND groupName=%s", (nowStamp,account,group))
