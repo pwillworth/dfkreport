@@ -54,8 +54,8 @@ function optionsReset() {
   $('#addressEntry').hide();
 }
 function refreshLists() {
-  loadGroupSel();
   if (sid != '' && '{{ memberState }}' == '2') {
+    loadGroupSel();
     $('#multiWalletSelect').show();
   } else {
     $('#multiWalletSelect').hide();
