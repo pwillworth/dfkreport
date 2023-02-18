@@ -359,7 +359,7 @@ var KLAYTN_TOKENS = {
   '0x50943e1E500D7D62cc4c6904FBB3957fAfaEbEd5': 'Jade LP Token Jade/oWBTC',
   '0xd08A937a67eb5613ccC8729C01605E0320f1B216': 'Jade LP Token Klay/Jade',
   '0xd3e2Fd9dB41Acea03f0E0c22d85D3076186f4f24': 'Jade LP Token Jewel/oETH',
-  '0x0d9a7780ce1d680ec32c37d815e966304b09be9b': 'Jade LP Token Jade/Gaia Tears',
+  '0x0d9a7780CE1D680eC32c37d815e966304b09bE9b': 'Jade LP Token Jade/Gaia Tears',
   '0xFab984b38039D3D4CbfeE8f274Fa6E193206a0EC': 'Jade LP Token Jewel/Gaia Tears',
   '0x0d9d200720021F9de5C8413244f81087ecB4AdcC': 'Jade LP Token Klay/Jewel',
   '0xe7a1B580942148451E47b92e95aEB8d31B0acA37': 'DFKGold',

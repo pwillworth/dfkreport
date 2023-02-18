@@ -412,7 +412,8 @@ def checkTransactions(txs, account, startDate, endDate, walletHash, network, alr
                             # events came in backwards and now we can save with pet id
                             logging.info('complete crack with incubate')
                             eggToken = contracts.EGG_TOKENS[network][results[1].itemID]
-                            results[1].itemID = petEggs[results[0]][3].itemID
+                            if petEggs[results[0]][3] != None:
+                                results[1].itemID = petEggs[results[0]][3].itemID
                             hatchCosts = 0
                             costList = 'costs'
                             for k, v in results[2].items():
@@ -1449,3 +1450,15 @@ def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent, with
         else:
             logging.info('zero value wallet transfer ignored')
     return transfers
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
+    tx = '0x168d571a6599cf28438067239ce961fbf0df1a69b758ad3a23f9310838fe0a56'
+    result = w3.eth.get_transaction(tx)
+    action = lookupEvent(result['from'], result['to'], '0xC49601fe84fA58ec4B05E5d51F9054977692cB73')
+    value = Web3.fromWei(result['value'], 'ether')
+    block = result['blockNumber']
+    receipt = w3.eth.get_transaction_receipt(tx)
+    results = extractSummonResults(w3, tx, '0xC49601fe84fA58ec4B05E5d51F9054977692cB73', 1676614935, receipt, 'dfkchain')
+    print(str(results))

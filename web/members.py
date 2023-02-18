@@ -28,9 +28,9 @@ def timeDescription(seconds):
 				tmpStr = str(math.floor(tmpDays / 365)) + " years, "
 				tmpDays = tmpDays % 365
 			tmpStr = tmpStr + str(tmpDays)+" days"
-		elif (seconds % 3600 >= 1):
+		elif (seconds / 3600 >= 1):
 			tmpStr = str(math.floor(seconds/3600))+" hours"
-		elif (seconds % 60 >= 1):
+		elif (seconds / 60 >= 1):
 			tmpStr = str(math.floor(seconds/60))+" minutes"
 		else:
 			tmpStr = "less than a minute"

@@ -19,7 +19,7 @@ def valueFromWei(amount, token, network):
         goldValues = DFKCHAIN_GOLD_VALUES
     #w3.fromWei doesn't seem to have an 8 decimal option for BTC
     if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d','0x7516EB8B8Edfa420f540a162335eACF3ea05a247','0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c']:
-        return amount / decimal.Decimal(100000000)
+        return decimal.Decimal(amount) / decimal.Decimal(100000000)
     elif token == GOLD_TOKENS[network]:
         weiConvert = 'kwei'
     elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4','0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f','0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664','0xceE8FAF64bB97a73bb51E115Aa89C17FfA8dD167','0x6270B58BE569a7c0b8f47594F191631Ae5b2C86C']: # 1USDC/1USDT
@@ -143,6 +143,7 @@ address_map = {
     '0x9AA76aE9f804E7a70bA3Fb8395D0042079238E9C': 'Pangolin LP Jewel/AVAX',
     '0xd7538cABBf8605BdE1f4901B47B8D42c61DE0367': 'Pangolin LP Pangolin/AVAX',
     '0xAf41a65F786339e7911F4acDAD6BD49426F2Dc6b': 'Synapse Bridge', # Start Crystalvale list
+    '0x75224b0f245Fe51d5bf47A898DbB6720D4150BA7': 'Synapse Bridge Tokens',
     '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystalOld',
     '0x6E7185872BCDf3F7a6cBbE81356e50DAFFB002d2': 'xCrystal',
     '0x9ed2c155632C042CB8bC20634571fF1CA26f5742': 'cJewel',
@@ -513,6 +514,7 @@ DFKCHAIN_TOKENS = {
     '0x00BD81c9bAc29a3b6aea7ABc92d2C9a3366Bb4dD': 'Crystal LP Token BTC.b/Crystal',
     '0x59D642B471dd54207Cb1CDe2e7507b0Ce1b1a6a5': 'Crystal LP Token BTC.b/USDC',
     '0xE072a18f6a8f1eD4953361972edD1Eb34f3e7c4E': 'Crystal LP Token Crystal/Tears',
+    '0x9c0788c0f36E60C33074F7498C8d83D7Dcb6D54a': 'Crystal LP Token Jewel/Tears',
     '0x75E8D8676d774C9429FbB148b30E304b5542aC3d': 'Shvas Rune',
     '0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4': 'Moksha Rune',
     '0x7E121418cC5080C96d967cf6A033B0E541935097': 'Grey Pet Egg',
@@ -747,7 +749,7 @@ KLAYTN_TOKENS = {
     '0x50943e1E500D7D62cc4c6904FBB3957fAfaEbEd5': 'Jade LP Token Jade/oWBTC',
     '0xd08A937a67eb5613ccC8729C01605E0320f1B216': 'Jade LP Token Klay/Jade',
     '0xd3e2Fd9dB41Acea03f0E0c22d85D3076186f4f24': 'Jade LP Token Jewel/oETH',
-    '0x0d9a7780ce1d680ec32c37d815e966304b09be9b': 'Jade LP Token Jade/Gaia Tears',
+    '0x0d9a7780CE1D680eC32c37d815e966304b09bE9b': 'Jade LP Token Jade/Gaia Tears',
     '0xFab984b38039D3D4CbfeE8f274Fa6E193206a0EC': 'Jade LP Token Jewel/Gaia Tears',
     '0x0d9d200720021F9de5C8413244f81087ecB4AdcC': 'Jade LP Token Klay/Jewel',
     '0x85DB3CC4BCDB8bffA073A3307D48Ed97C78Af0AE': 'Jade LP Token Jade/Jewel',
