@@ -28,13 +28,13 @@ def getHarmonyData(acct, address, startDate, endDate, walletHash, alreadyFetched
             time.sleep(2)
             continue
 
-        logging.info("got {0} transactions".format(len(results)))
+        logging.info("got {0} transactions for {1}".format(len(results), address))
         if len(results) > 0:
             offset = offset + 1
             txs = txs + results
         else:
             tx_end = True
-        
+
         db.updateReport(acct, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
 
     return txs

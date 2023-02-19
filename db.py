@@ -244,7 +244,6 @@ def updateReportError(wallet, startDate, endDate, walletHash, statusCode=9):
     con.close()
 
 def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount):
-    logging.info('updating report {0} records {1} {2}'.format(wallet, updateType, recordCount))
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
@@ -252,6 +251,7 @@ def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount
         cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s, transactions=GREATEST(transactions, %s) WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, recordCount, wallet, startDate, endDate, walletHash))
     else:
         cur.execute("UPDATE reports SET reportStatus=1, transactionsComplete=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, wallet, startDate, endDate, walletHash))
+    logging.info('updating report {0} records {1} {2} - found rpt {3}'.format(wallet, updateType, recordCount, cur.rowcount))
     con.close()
 
 def getRunningReports():

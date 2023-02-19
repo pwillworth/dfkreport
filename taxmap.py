@@ -54,7 +54,7 @@ def inReportRange(item, startDate, endDate):
     return itemDate >= startDate and itemDate <= endDate
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(txData, txCounts, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
+def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
     walletHash = db.getWalletHash(wallets)
     # Generate map of all events from transaction list
     eventMap = events.EventsMap()
@@ -62,7 +62,7 @@ def buildTaxMap(txData, txCounts, wallets, startDate, endDate, costBasis, includ
     logging.info('Start Event map build')
     for wallet in wallets:
         if includedChains & constants.HARMONY > 0:
-            eventMapHarmony = events.checkTransactions(txData[wallet][0], wallet, startDate, endDate, walletHash, 'harmony', totalTx)
+            eventMapHarmony = events.checkTransactions(account, txData[wallet][0], wallet, startDate, endDate, walletHash, 'harmony', totalTx)
             if eventMapHarmony == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
             else:
@@ -70,7 +70,7 @@ def buildTaxMap(txData, txCounts, wallets, startDate, endDate, costBasis, includ
         else:
             eventMapHarmony = events.EventsMap()
         if includedChains & constants.DFKCHAIN > 0:
-            eventMapDFK = events.checkTransactions(txData[wallet][2], wallet, startDate, endDate, walletHash, 'dfkchain', totalTx)
+            eventMapDFK = events.checkTransactions(account, txData[wallet][2], wallet, startDate, endDate, walletHash, 'dfkchain', totalTx)
             if eventMapDFK == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
             else:
@@ -78,7 +78,7 @@ def buildTaxMap(txData, txCounts, wallets, startDate, endDate, costBasis, includ
         else:
             eventMapDFK = events.EventsMap()
         if includedChains & constants.KLAYTN > 0:
-            eventMapKlay = events.checkTransactions(txData[wallet][3], wallet, startDate, endDate, walletHash, 'klaytn', totalTx)
+            eventMapKlay = events.checkTransactions(account, txData[wallet][3], wallet, startDate, endDate, walletHash, 'klaytn', totalTx)
             if eventMapKlay == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
             else:
@@ -86,7 +86,7 @@ def buildTaxMap(txData, txCounts, wallets, startDate, endDate, costBasis, includ
         else:
             eventMapKlay = events.EventsMap()
         if includedChains & constants.AVALANCHE > 0:
-            eventMapAvax = events.checkTransactions(txData[wallet][1], wallet, startDate, endDate, walletHash, 'avalanche', totalTx)
+            eventMapAvax = events.checkTransactions(account, txData[wallet][1], wallet, startDate, endDate, walletHash, 'avalanche', totalTx)
             if eventMapAvax == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
             else:

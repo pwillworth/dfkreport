@@ -98,7 +98,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(txData, txResult, wallets, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
+        reportData = taxmap.buildTaxMap(args.wallet, txData, txResult, wallets, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()
