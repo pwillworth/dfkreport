@@ -372,7 +372,7 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
                 if results != None:
                     if results[1] != None and results[1].event == 'crack':
                         eventsFound = True
-                        if results[0] in petEggs and petEggs[results[0]][2] != None:
+                        if results[0] in petEggs and petEggs[results[0]][2] != None and petEggs[results[0]][2].itemID in contracts.EGG_TOKENS[network]:
                             logging.info('complete incubate with crack')
                             # pet crack event includes the pet ID summoned so we can now add the full data
                             logging.info('egg id {0}'.format(petEggs[results[0]][2].itemID))
