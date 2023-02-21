@@ -43,25 +43,18 @@ def getHarmonyData(acct, address, startDate, endDate, walletHash, alreadyFetched
 def getCovalentTxList(chainID, account, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     startKey = 0
-    blockLimit = 0
     retryCount = 0
     txs = []
-    if chainID == '8217':
-        lowerBound = db.getLastTransactionTimestamp(address, 'klaytn')
-    else:
-        lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
-
-    if lowerBound > 1648710000:
-        blockLimit = lowerBound
 
     while tx_end == False:
-        rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={5}&page-size={3}&page-number={4}".format(chainID, address, nets.covalent, page_size, startKey, blockLimit)
+        rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&page-size={3}&page-number={4}".format(chainID, address, nets.covalent, page_size, startKey)
 
         try:
             r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
         except ConnectionError:
             logging.error("connection to Covalent api failed")
             raise Exception('DFK Chain Transactions Lookup Failure.')
+        logging.info(rURL)
         if r.status_code == 200:
             retryCount = 0
             results = r.json()
@@ -303,5 +296,6 @@ def getTransactionCount(wallets, includedChains):
 
 if __name__ == "__main__":
     logging.basicConfig(filename='transactions.log', level=logging.INFO)
-    result = getTransactionCount('0xeAaAcc98c0d582b6167054fb6017d09cA77bcfc5', 4)
+    #result = getTransactionCount('0xeAaAcc98c0d582b6167054fb6017d09cA77bcfc5', 4)
+    result = getCovalentTxList('53935', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '2022-01-01', '2022-02-01', '')
     print(str(result))
