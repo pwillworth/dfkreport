@@ -62,6 +62,7 @@ def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasi
     logging.info('Start Event map build')
     for wallet in wallets:
         if includedChains & constants.HARMONY > 0:
+            logging.info('checking {0} transactions on harmony for {1}'.format(len(txData[wallet][0]), wallet))
             eventMapHarmony = events.checkTransactions(account, txData[wallet][0], wallet, startDate, endDate, walletHash, 'harmony', totalTx)
             if eventMapHarmony == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
@@ -70,6 +71,7 @@ def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasi
         else:
             eventMapHarmony = events.EventsMap()
         if includedChains & constants.DFKCHAIN > 0:
+            logging.info('checking {0} transactions on DFKChain for {1}'.format(len(txData[wallet][2]), wallet))
             eventMapDFK = events.checkTransactions(account, txData[wallet][2], wallet, startDate, endDate, walletHash, 'dfkchain', totalTx)
             if eventMapDFK == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
@@ -78,6 +80,7 @@ def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasi
         else:
             eventMapDFK = events.EventsMap()
         if includedChains & constants.KLAYTN > 0:
+            logging.info('checking {0} transactions on klaytn for {1}'.format(len(txData[wallet][3]), wallet))
             eventMapKlay = events.checkTransactions(account, txData[wallet][3], wallet, startDate, endDate, walletHash, 'klaytn', totalTx)
             if eventMapKlay == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')
@@ -86,6 +89,7 @@ def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasi
         else:
             eventMapKlay = events.EventsMap()
         if includedChains & constants.AVALANCHE > 0:
+            logging.info('checking {0} transactions on avalanche for {1}'.format(len(txData[wallet][1]), wallet))
             eventMapAvax = events.checkTransactions(account, txData[wallet][1], wallet, startDate, endDate, walletHash, 'avalanche', totalTx)
             if eventMapAvax == 'Error: Blockchain connection failure.':
                 raise ConnectionError('Service Unavailable')

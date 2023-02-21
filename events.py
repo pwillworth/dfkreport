@@ -617,12 +617,12 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
             events = jsonpickle.decode(item[3])
             if type(events) is list:
                 for evt in events:
-                    evt.txHash = tx
+                    evt.txHash = k
                     evt.network = network
                     events_map[item[2]].append(evt)
             else:
                 # cache records saved before feb 2022 did not have txHash property
-                events.txHash = tx
+                events.txHash = k
                 # cache records saved before dec 2022 did not have network property
                 events.network = network
                 events_map[item[2]].append(events)

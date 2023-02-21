@@ -43,23 +43,19 @@ def getHarmonyData(acct, address, startDate, endDate, walletHash, alreadyFetched
 def getCovalentTxList(chainID, account, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
     tx_end = False
     startKey = 0
-    blockLimit = None
-    blockSpan = 86400
+    blockLimit = 0
     retryCount = 0
     txs = []
     if chainID == '8217':
         lowerBound = db.getLastTransactionTimestamp(address, 'klaytn')
     else:
         lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
-    upperBound = datetime.datetime.utcnow().timestamp()+86400
+
     if lowerBound > 1648710000:
         blockLimit = lowerBound
 
-    while tx_end == False or (blockLimit != None and blockLimit < upperBound):
-        if blockLimit == None:
-            rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit=0&block-signed-at-span=86400&page-size=1".format(chainID, address, nets.covalent)
-        else:
-            rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={5}&block-signed-at-span={6}&page-size={3}&page-number={4}".format(chainID, address, nets.covalent, page_size, startKey, blockLimit, blockSpan)
+    while tx_end == False:
+        rURL = "{2}/{0}/address/{1}/transactions_v2/?block-signed-at-asc=true&no-logs=true&block-signed-at-limit={5}&page-size={3}&page-number={4}".format(chainID, address, nets.covalent, page_size, startKey, blockLimit)
 
         try:
             r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
@@ -68,31 +64,19 @@ def getCovalentTxList(chainID, account, address, startDate, endDate, walletHash,
             raise Exception('DFK Chain Transactions Lookup Failure.')
         if r.status_code == 200:
             retryCount = 0
-            blockSpan = 86400
             results = r.json()
-            if blockLimit == None:
-                # blockLimit not set means we are looking up the first transaction for this account to start
-                if 'items' in results['data'] and type(results['data']['items']) is list and len(results['data']['items']) > 0:
-                    blockDate = datetime.datetime.strptime(results['data']['items'][0]['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
-                    blockDate = blockDate.replace(tzinfo=timezone.utc)
-                    blockLimit = int(blockDate.timestamp())
-                else:
-                    logging.info('No first tx for account found.')
-                    break
-            else:
-                # processing 1 day of transactions from blockLimit timestamp
-                if 'pagination' in results['data'] and results['data']['pagination']['has_more'] == True:
-                    startKey = results['data']['pagination']['page_number']+1
-                else:
-                    startKey = 0
-                    tx_end = True
-                    blockLimit += blockSpan
 
-                if 'items' in results['data'] and type(results['data']['items']) is list and len(results['data']['items']) > 0:
-                    logging.info("got {0} transactions".format(len(results['data']['items'])))
-                    txs = txs + results['data']['items']
-                else:
-                    tx_end = True
+            if 'pagination' in results['data'] and results['data']['pagination']['has_more'] == True:
+                startKey = results['data']['pagination']['page_number']+1
+            else:
+                startKey = 0
+                tx_end = True
+
+            if 'items' in results['data'] and type(results['data']['items']) is list and len(results['data']['items']) > 0:
+                logging.info("got {0} transactions".format(len(results['data']['items'])))
+                txs = txs + results['data']['items']
+            else:
+                tx_end = True
         elif r.status_code == 429:
             # rate limiting
             # covalent gateway timeout
@@ -110,8 +94,6 @@ def getCovalentTxList(chainID, account, address, startDate, endDate, walletHash,
             if retryCount < 3:
                 retryCount += 1
                 time.sleep(8)
-                # reduce range a bit to see if that helps
-                blockSpan = int(blockSpan*0.95)
                 continue
             else:
                 logging.error("Covalent timeout too many times, exit")
