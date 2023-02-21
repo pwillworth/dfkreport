@@ -231,6 +231,9 @@ input[disabled] {
 }
 .statusList {
 	width: 100%;
+	table-layout: fixed;
+	word-wrap: break-word;
+	word-break: break-all;
 	border: 1px solid #333333;
 	border-collapse: collapse;
 }

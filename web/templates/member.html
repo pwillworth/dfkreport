@@ -211,7 +211,7 @@ function groupTable(data) {
   var listElm = document.getElementById('groupList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
-  newRow.innerHTML = '<th>Group Name</th><th>Wallets</th><th>Remove</th>';
+  newRow.innerHTML = '<th style="width:10%" width="10%">Group Name</th><th style="width:80%" width="80%">Wallets</th><th style="width:10%" width="10%">Remove</th>';
   listElm.appendChild(newRow);
   data['groups'].forEach((report) => {
     var gName = report[1];
@@ -221,7 +221,7 @@ function groupTable(data) {
       walletList = walletList + gWallets[i] + ','
     }
     var newRow = document.createElement('tr');
-    newRow.innerHTML = `<td>${gName}</td><td>${walletList}</td><td><input type="button" value="Delete" onclick="removeGroup(event, '${gName}');" class="lButton" />`;
+    newRow.innerHTML = `<td style="width:10%">${gName}</td><td style="width: 80%">${walletList}</td><td style="width: 10%"><input type="button" value="Delete" onclick="removeGroup(event, '${gName}');" class="lButton" />`;
     newRow.addEventListener('click', function() {
       editGroup(report[1], gWallets);
     });
@@ -537,7 +537,7 @@ function paymentComplete(txHash) {
       </div>
       <div id="groupPage" style="margin: 12px;">
         <div class="tableTop ui-widget-header">My Wallet Groups<input id="addGroupButton" type="button" value="New Group" onclick="addGroup();" class="lButton" style="float:right;"/></div>
-        <table id="groupList" class="statusList"></table>
+        <table id="groupList" class="statusList" width="100%"></table>
       </div>
       <div class="sectionHead"></div>
       <div id="reportPage" style="margin: 12px;">
