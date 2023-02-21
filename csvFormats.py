@@ -232,6 +232,11 @@ def getResponseCSV(records, contentType, format):
                     else:
                         rcvdAmount = 0
                     rcvdType = 'xJewel'
+                elif record.action == 'claim':
+                    rcvdAmount = record.coinAmount
+                    rcvdType = contracts.getTokenName(record.coinType, record.network)
+                    sentAmount = 0
+                    sentType = ''
                 else:
                     if record.xRate > 0:
                         sentAmount = record.coinAmount / record.xRate
