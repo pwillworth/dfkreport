@@ -202,7 +202,7 @@ def createReport(account, startDate, endDate, now, txCount, costBasis, includedC
 def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, walletHash, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL, txCounts=%s WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (now, txCount, costBasis, includedChains, moreOptions, txCounts, wallet, startDate, endDate, jsonpickle.encode(wallets)))
+    cur.execute("UPDATE reports SET generatedTimestamp=%s, transactions=%s, costBasis=%s, includedChains=%s, moreOptions=%s, reportStatus=0, transactionsFetched=0, transactionsComplete=0, reportContent='', proc=NULL, txCounts=%s WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (now, txCount, costBasis, includedChains, moreOptions, txCounts, wallet, startDate, endDate, walletHash))
     con.close()
     try:
         logging.debug('removing old report data from disk.')
