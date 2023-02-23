@@ -10,13 +10,14 @@ import cgi
 import urllib.parse
 from datetime import timezone, datetime, date
 from web3 import Web3
+import pymysql
+import jsonpickle
+import logging
+import traceback
 sys.path.append("../")
 import transactions
 import contracts
 import db
-import pymysql
-import jsonpickle
-import logging
 
 
 # Get an existing report record or create a new one and return it
@@ -164,6 +165,7 @@ if not failure:
     except Exception as err:
         # Failure can happen here if api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
+        traceback.print_exc()
         status = "Generation failed!  Blockchain API could not be contacted!."
 
     if len(status) == 18:
