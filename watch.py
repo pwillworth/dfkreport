@@ -38,7 +38,6 @@ def main():
                     logging.debug('kickoff proc')
                     cmds = '../main.py {0} "{1}" "{2}" --costbasis {3} --chains {4} --wallets {5}'.format(row[0], row[1], row[2], row[4], row[5], row[7])
                     subprocess.Popen(shlex.split(cmds), start_new_session=True)
-                    logging.info('Started report generation process')
                     time.sleep(1)
                     logging.debug('done waiting 1s')
                 else:

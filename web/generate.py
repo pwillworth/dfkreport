@@ -166,7 +166,7 @@ if not failure:
         # Failure can happen here if api is completely down
         logging.error('responding report start failure for {0}'.format(str(err)))
         traceback.print_exc()
-        status = "Generation failed!  Blockchain API could not be contacted!."
+        status = "Generation failed!  System error starting report, please report issue on github site issue tracker or contact admin!."
 
     if len(status) == 18:
         if status[5] == 2:
