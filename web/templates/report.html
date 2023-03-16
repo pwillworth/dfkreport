@@ -77,8 +77,8 @@ $(document).ready(function() {
       }
       $("#costBasis").html(cbText);
 
-      if ( '{{ purchaseAddresses }}' != '' && '{{ purchaseAddresses }}' != '[]') {
-        $("#purchaseAddresses").html('{{ purchaseAddresses }}');
+      if ( "{{ purchaseAddresses }}" != "" && "{{ purchaseAddresses }}" != "[]") {
+        $("#purchaseAddresses").html("{{ purchaseAddresses }}");
         $('#addressEntry').show();
       }
     }
