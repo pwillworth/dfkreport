@@ -14,3 +14,4 @@ klaytn_public_web3 = 'https://public-node-api.klaytnapi.com/v1/cypress'
 
 covalent = 'https://api.covalenthq.com/v1'
 bitquery = 'https://graphql.bitquery.io'
+glacier = 'https://glacier-api.avax.network/v1'

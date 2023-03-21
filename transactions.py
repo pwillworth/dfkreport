@@ -202,6 +202,73 @@ def getAvalancheData(account, address, startDate, endDate, walletHash, page_size
 
     return txs
 
+# Return array of transactions on DFK Chain for the address
+def getGlacierTxList(chainID, account, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
+    tx_end = False
+    # override with glacier max
+    page_size = 100
+    nextPageToken = ''
+    retryCount = 0
+    txs = []
+
+    while tx_end == False:
+        if nextPageToken != '':
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}&pageToken={4}".format(chainID, address, nets.glacier, page_size, nextPageToken)
+        else:
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}".format(chainID, address, nets.glacier, page_size)
+
+        try:
+            r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
+        except ConnectionError:
+            logging.error("connection to Covalent api failed")
+            raise Exception('DFK Chain Transactions Lookup Failure.')
+        logging.info(rURL)
+        if r.status_code == 200:
+            retryCount = 0
+            results = r.json()
+
+            if 'nextPageToken' in results:
+                nextPageToken = results['nextPageToken']
+                logging.info('next page token {0}'.format(nextPageToken))
+                if nextPageToken == '':
+                    tx_end = True
+            else:
+                tx_end = True
+
+            if 'transactions' in results and type(results['transactions']) is list and len(results['transactions']) > 0:
+                logging.info("got {0} transactions".format(len(results['transactions'])))
+                txs = txs + results['transactions']
+            else:
+                tx_end = True
+
+        elif r.status_code == 429:
+            # rate limiting
+            logging.warning("glacier rate limit hit, wait and retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(2)
+                continue
+            else:
+                logging.error("glacier rate limit hit too many times, exit")
+                raise Exception('glacier Transactions Lookup Failure.')
+        elif r.status_code in [504,524]:
+            # glacier gateway timeout
+            logging.warning("glacier gateway timeout getting Txs, retrying")
+            if retryCount < 3:
+                retryCount += 1
+                time.sleep(8)
+                continue
+            else:
+                logging.error("glacier timeout too many times, exit")
+                raise Exception('Glacier Transactions Lookup Failure.')
+        else:
+            logging.error('{0}: {1}'.format(r.status_code, r.text))
+            raise Exception('Glacier Transactions Lookup Failure.')
+
+        db.updateReport(account, startDate, endDate, walletHash, 'fetched', alreadyFetched + len(txs))
+
+    return txs
+
 def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size, includedChains):
     result = {}
     totalTx = 0
@@ -219,7 +286,7 @@ def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size
             totalTx += txCounts[wallet][0]
         if includedChains & constants.DFKCHAIN > 0:
             logging.info('Get DFK Chain data for {0}'.format(wallet))
-            dfk_txs = getCovalentTxList('53935', account, wallet, startDate, endDate, walletHash, totalTx)
+            dfk_txs = getGlacierTxList('53935', account, wallet, startDate, endDate, walletHash, totalTx)
             totalTx += txCounts[wallet][2]
         if includedChains & constants.KLAYTN > 0:
             logging.info('Get Klaytn data for {0}'.format(wallet))

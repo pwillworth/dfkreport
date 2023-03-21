@@ -64,10 +64,8 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
             tx = txn['hash']
             timestamp = int(txn['timeStamp'])
         elif network == 'dfkchain':
-            tx = txn['tx_hash']
-            blockDate = datetime.datetime.strptime(txn['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ')
-            blockDate = blockDate.replace(tzinfo=timezone.utc)
-            timestamp = blockDate.timestamp()
+            tx = txn['nativeTransaction']['txHash']
+            timestamp = txn['nativeTransaction']['blockTimestamp']
         elif network == 'klaytn':
             tx = txn['hash']
             timestamp = txn['block']['timestamp']['unixtime']
@@ -1454,12 +1452,12 @@ def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent, with
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
-    tx = '0x168d571a6599cf28438067239ce961fbf0df1a69b758ad3a23f9310838fe0a56'
+    w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+    tx = '0x45f1d833ad24a5e8d0e76035b67e89440bac24357b3733c92e9ad38eb8f50319'
     result = w3.eth.get_transaction(tx)
     action = lookupEvent(result['from'], result['to'], '0xC49601fe84fA58ec4B05E5d51F9054977692cB73')
     value = Web3.fromWei(result['value'], 'ether')
     block = result['blockNumber']
     receipt = w3.eth.get_transaction_receipt(tx)
-    results = extractSummonResults(w3, tx, '0xC49601fe84fA58ec4B05E5d51F9054977692cB73', 1676614935, receipt, 'dfkchain')
-    print(str(results))
+    results = extractSwapResults(w3, tx, '0x6544adC57244DB0d2379400DE17b465c918c2a45', result['to'], 1676614935, receipt, value, 'harmony')
+    print(str(results.__dict__))
