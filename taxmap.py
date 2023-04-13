@@ -487,6 +487,7 @@ def buildBankRecords(bankEvents, startDate, endDate):
         # Withdrawal from Bank triggers realized xJewel rewards, make tax item and find cost basis
         if (event.action == 'claim' or (event.action == 'withdraw' and event.coinType == contracts.POWER_TOKENS[event.network])) and eventDate >= startDate and eventDate <= endDate:
             ti = TaxItem(event.txHash, 0, '', event.coinAmount, contracts.getTokenName(event.coinType, event.network), 'Bank Rewards {0}'.format(contracts.getTokenName(event.coinType, event.network)), 'income', eventDate, event.fiatType, event.fiatValue)
+            logging.info('withdraw {0} {1} rate {2}'.format(event.coinAmount, contracts.getTokenName(event.coinType, event.network), event.xRate))
             if hasattr(event, 'fiatFeeValue'):
                 ti.txFees = event.fiatFeeValue
             # Use Jewel cost at withdraw time for all calcs so we are not including Jewel price functuation in Bank Rewards
@@ -495,13 +496,15 @@ def buildBankRecords(bankEvents, startDate, endDate):
                 # Check history for deposit data so gains can be calculated for old xJewel/xCrystal style events
                 for searchEvent in bankEvents:
                     searchEventDate = datetime.date.fromtimestamp(searchEvent.timestamp)
-                    if searchEvent.action == 'deposit' and searchEvent.coinType == event.coinType and searchEvent.timestamp <= event.timestamp:
+                    if searchEvent.action == 'deposit' and searchEvent.coinType == event.coinType and searchEvent.timestamp <= event.timestamp and searchEvent.amountNotAccounted > 0:
                         # TODO: maybe only set acquiredDate if not set so it always uses the oldest date?
                         ti.acquiredDate = searchEventDate
                         if searchEvent.amountNotAccounted <= event.amountNotAccounted:
                             # deposit is smaller than this event, so use it all up as cost basis
                             if event.xRate > 0:
-                                ti.costs += (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / (searchEvent.coinAmount / searchEvent.xRate)) * (searchEvent.xRate / event.xRate)
+                                logging.info('cost basis date {0}'.format(searchEventDate))
+                                logging.info('use up deposit ({0} * {1}) * ({2} / ({3} / {4})) * ({5} / {6}) = {7}'.format(jewelPrice, searchEvent.coinAmount, searchEvent.amountNotAccounted, searchEvent.coinAmount, searchEvent.xRate, searchEvent.xRate, event.xRate, (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / (searchEvent.coinAmount / searchEvent.xRate)) * (searchEvent.xRate / event.xRate)))
+                                ti.costs += (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / (searchEvent.coinAmount / searchEvent.xRate))
                             else:
                                 ti.costs += (jewelPrice * searchEvent.coinAmount) * (searchEvent.amountNotAccounted / searchEvent.xRate)
                             event.amountNotAccounted -= searchEvent.amountNotAccounted
@@ -509,11 +512,16 @@ def buildBankRecords(bankEvents, startDate, endDate):
                         else:
                             # deposit is larger than remaining cost basis we need to find so use part of it
                             if event.xRate > 0:
-                                ti.costs += ((jewelPrice * searchEvent.coinAmount) / searchEvent.amountNotAccounted) * event.amountNotAccounted * (searchEvent.xRate / event.xRate)
+                                logging.info('cost basis date {0}'.format(searchEventDate))
+                                logging.info('use part of deposit (({0} * {1}) / {2}) * {3} * ({4} / {5}) = {6}'.format(jewelPrice, searchEvent.coinAmount, searchEvent.amountNotAccounted, event.amountNotAccounted, searchEvent.xRate, event.xRate, ((jewelPrice * searchEvent.coinAmount) / searchEvent.amountNotAccounted) * event.amountNotAccounted * (searchEvent.xRate / event.xRate)))
+                                ti.costs += ((jewelPrice * searchEvent.coinAmount) / searchEvent.amountNotAccounted) * event.amountNotAccounted
                             else:
                                 ti.costs += ((jewelPrice * searchEvent.coinAmount) / searchEvent.xRate) * event.amountNotAccounted
                             event.amountNotAccounted = 0
                             searchEvent.amountNotAccounted -= event.amountNotAccounted
+                    # can exit loop once the full cost basis is accounted
+                    if event.amountNotAccounted <= 0:
+                        break
                 # Note any amount of cost basis not found for later red flag
                 ti.amountNotAccounted = event.amountNotAccounted
 
