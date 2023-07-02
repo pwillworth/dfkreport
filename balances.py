@@ -47,6 +47,7 @@ def getBalances(wallet):
 
     jewelValue = 0.0
     crystalValue = 0.0
+    jadeValue = 0.0
     # Get balances on DFKChain
     balanceJewel = w3d.eth.get_balance(wallet)
     if balanceJewel > 1:

@@ -1321,6 +1321,7 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs, network)
     ABI = contracts.getABI('DFKDuel')
     contract = w3.eth.contract(address='0xE97196f4011dc9DA0829dd8E151EcFc0f37EE3c7', abi=ABI)
     duelId = -1
+    entryId = -1
     try:
         input_data = contract.decode_function_input(inputs)
         logging.info(input_data)

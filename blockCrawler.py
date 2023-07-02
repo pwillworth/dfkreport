@@ -70,6 +70,8 @@ def parseEvents(network):
     tavernContract = w3.eth.contract(address=tavernContractAddress, abi=ABI)
     petCatalogContract = w3.eth.contract(address=petCatalogContractAddress, abi=ABI)
 
+    tavernChanges = []
+    petSaleChanges = []
     endBlock = blockNumber
     while endBlock < toBlock:
         # DFKChain max blocks to read at a time is 2048 and harmony 1023
