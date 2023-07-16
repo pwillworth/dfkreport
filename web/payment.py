@@ -8,11 +8,11 @@
 import time
 from datetime import timezone, datetime
 from web3 import Web3
+from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import decimal
 import db
+import settings
 import nets
-import contracts
-import events
 
 #
 PAYMENT_ADDRESS = '0x15Ca8d8d7048F694980C717369C55b53e4FbCAEe'
@@ -28,6 +28,7 @@ TOKEN_SUB_VALUES = {
     '0xB3F5867E277798b50ba7A71C0b24FDcA03045eDF': 0.05, #jabe
     '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a': 1.00 #dfkUSDC
 }
+
 def getSubscriptionTime(token, amount):
     tokenRatio = TOKEN_SUB_VALUES[token]
     tokenValue = amount * decimal.Decimal(tokenRatio)
@@ -36,6 +37,37 @@ def getSubscriptionTime(token, amount):
     if tokenValue > 10:
         return tokenValue * 86400 * 6
     return tokenValue * 86400 * 4
+
+def extractTokenResults(w3, account, receipt, network):
+    contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=settings.ERC20_ABI)
+    decoded_logs = contract.events.Transfer().process_receipt(receipt, errors=DISCARD)
+    transfers = []
+    for log in decoded_logs:
+        if log['args']['from'] == account:
+            otherAddress = log['args']['to']
+        elif log['args']['to'] == account:
+            otherAddress = log['args']['from']
+        else:
+            continue
+        tokenValue = valueFromWei(log['args']['value'], log['address'], network)
+
+        if tokenValue > 0:
+            r = [otherAddress, log['address'], tokenValue]
+            transfers.append(r)
+
+    return transfers
+
+# Simple way to determine conversion, maybe change to lookup on chain later
+def valueFromWei(amount, token, network):
+    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
+    if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d','0x7516EB8B8Edfa420f540a162335eACF3ea05a247','0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c']:
+        return decimal.Decimal(amount) / decimal.Decimal(100000000)
+    elif token in ['0x985458E523dB3d53125813eD68c274899e9DfAb4','0x3C2B8Be99c50593081EAA2A724F0B8285F5aba8f','0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664','0xceE8FAF64bB97a73bb51E115Aa89C17FfA8dD167','0x6270B58BE569a7c0b8f47594F191631Ae5b2C86C']: # 1USDC/1USDT
+        weiConvert = 'mwei'
+    else:
+        weiConvert = 'ether'
+
+    return Web3.from_wei(amount, weiConvert)
 
 def addPayment(account, txHash, token, amount, network, purchaseTime):
     result = 0
@@ -125,11 +157,11 @@ def validatePayment(network, account, txHash):
     # Tx content Validation
     if failure == False:
         if txValue > 0:
-            txToken = contracts.GAS_TOKENS[network]
+            txToken = settings.GAS_TOKENS[network]
             tokenAmount = txValue
         else:
             # also check for any random token trasfers in the wallet
-            results = events.extractTokenResults(w3, txHash, account, int(datetime.now(timezone.utc).timestamp()), receipt, '', '', network)
+            results = extractTokenResults(w3, txHash, account, int(datetime.now(timezone.utc).timestamp()), receipt, '', '', network)
             for xfer in results:
                 if xfer.address == PAYMENT_ADDRESS:
                     txToken = xfer.coinType

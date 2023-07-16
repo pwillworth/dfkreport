@@ -5,8 +5,6 @@
 
 """
 
-import sys
-import cgi
 import urllib.parse
 from datetime import timezone, datetime, date
 from web3 import Web3
@@ -14,9 +12,7 @@ import pymysql
 import jsonpickle
 import logging
 import traceback
-sys.path.append("../")
 import transactions
-import contracts
 import db
 
 
@@ -89,9 +85,6 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
         # Ensure consistent checksum version of address incase they enter lower case
         wallet = Web3.toChecksumAddress(wallet)
         wallets = [wallet]
-        if wallet in contracts.address_map:
-            response = '{ "response" : "Error: That is not a valid address.  Make sure you enter the version that starts with 0x" }'
-            failure = True
 
     if costBasis not in ['fifo', 'lifo', 'hifo', 'acb']:
         response = '{ "response" : "Error: Invalid option specified for cost basis." }'

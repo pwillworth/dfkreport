@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import psycopg2
+import decimal
 import dfkInfo
 import logging
-import records
 import settings
 import jsonpickle
 import hashlib
@@ -20,7 +20,7 @@ def ReportOptions():
     }
 
 def aConn():
-    conn = psycopg2.connect("sslmode=verify-full options=--cluster=frugal-toad-1243",
+    conn = psycopg2.connect("sslmode=verify-full options=--cluster=caring-wasp-2917",
         host = dfkInfo.DB_HOST,
         port = "26257",
 	    dbname= dfkInfo.DB_NAME,
@@ -46,28 +46,20 @@ def getWalletHash(wallets):
         m.update(item.encode('utf-8'))
     return m.hexdigest()
 
-def findPriceData(date, token):
-    try:
-        con = aConn()
-        cur = con.cursor()
-        cur.execute("SELECT * FROM prices WHERE date=%s AND token=%s", (date, token))
+def readBalance():
+    con = aConn()
+    with con.cursor() as cur:
+        cur.execute('SELECT updateTime, balanceData FROM balances ORDER BY updateTime DESC LIMIT 1')
         row = cur.fetchone()
-        con.close()
-    except Exception as err:
-        logging.error('DB failure looking up prices {0}'.format(str(err)))
-        row = None
-
-    return row
-
-def savePriceData(date, token, price, liquid, volume):
-    try:
-        con = aConn()
-        cur = con.cursor()
-        cur.execute("INSERT INTO prices VALUES (%s, %s, %s, %s, %s)", (date, token, price, liquid, volume))
-        con.close()
-    except Exception as err:
-        # incase DB is down, it's ok we just wont cache
-        logging.error('db error saving price data {0}'.format(str(err)))
+    con.close()
+    balance = 0
+    results = jsonpickle.loads(row[1])
+    if 'tokens' in results:
+        for k, v in results['tokens'].items():
+            balance += decimal.Decimal(v[1])
+    if 'updatedAt' in results:
+        updatedAt = results['updatedAt']
+    return balance
 
 def getTransactions(account, network):
     try:
@@ -130,59 +122,6 @@ def getLastTransactionTimestamp(account, network):
         return 1648710000
     else:
         return row[0]
-
-# Look up and return any transaction events where wallet was the seller
-def getTavernSales(wallet, startDate, endDate):
-    sales = []
-    startStamp = int(datetime(startDate.year, startDate.month, startDate.day).timestamp())
-    endStamp = int(datetime(endDate.year, endDate.month, endDate.day).timestamp() + 86400)
-    try:
-        con = aConn()
-        cur = con.cursor()
-    except Exception as err:
-        logging.error('DB error trying to look up tavern sales. {0}'.format(str(err)))
-    if con != None and con.open:
-        cur.execute("SELECT * FROM transactions WHERE account=%s and network != 'dfkchain' and eventType='tavern' and blockTimestamp>=%s and blockTimestamp<%s", (wallet, startStamp, endStamp))
-        row = cur.fetchone()
-        while row != None:
-            r = jsonpickle.decode(row[3])
-            if type(r) is records.TavernTransaction and r.seller == wallet:
-                r.txHash = row[0]
-                r.network = row[5]
-                sales.append(r)
-            row = cur.fetchone()
-
-        con.close()
-    else:
-        logging.info('Skipping sales lookup due to db conn failure.')
-    return sales
-
-# Look up and return any transaction events where wallet was paid through Jewel contract
-def getWalletPayments(wallet):
-    payments = []
-    try:
-        con = aConn()
-        cur = con.cursor()
-    except Exception as err:
-        logging.error('DB error trying to look up wallet payments. {0}'.format(str(err)))
-    if con != None and con.open:
-        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType='airdrops'", (wallet))
-        row = cur.fetchone()
-        while row != None:
-            r = jsonpickle.decode(row[3])
-            if type(r) is list:
-                for item in r:
-                    if type(item) is records.AirdropTransaction and hasattr(item, 'address') and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
-                        payments.append(item)
-            else:
-                if type(item) is records.AirdropTransaction and hasattr(item, 'address') and item.address == '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C':
-                    payments.append(item)
-            row = cur.fetchone()
-
-        con.close()
-    else:
-        logging.info('Skipping payments lookup due to db conn failure.')
-    return payments
 
 def findReport(account, startDate, endDate, walletHash):
     con = aConn()
@@ -437,13 +376,14 @@ def removeGroupList(account, groupName):
 def createDatabase():
     con = aConn()
     cur = con.cursor()
-    cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices LONGTEXT, marketcap LONGTEXT, volume LONGTEXT, INDEX IX_price_date_token (date, token))')
-    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events LONGTEXT, account VARCHAR(63), network VARCHAR(31), fee DOUBLE, feeValue DOUBLE, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
-    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus TINYINT, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions LONGTEXT, txCounts VARCHAR(10230), wallets LONGTEXT, walletGroup VARCHAR(63), walletHash VARCHAR(63), PRIMARY KEY (account, startDate, endDate, walletHash), INDEX IX_rpt_status (reportStatus))')
-    cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets LONGTEXT, generatedTimestamp TIMESTAMP NOT NULL, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
+    cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices STRING, marketcap STRING, volume STRING, INDEX IX_price_date_token (date, token))')
+    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events STRING, account VARCHAR(63), network VARCHAR(31), fee FLOAT, feeValue FLOAT, PRIMARY KEY (txHash, account), INDEX IX_tx_account (account), INDEX IX_tx_time (blockTimestamp), INDEX IX_tx_type (eventType))')
+    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus INT2, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions STRING, txCounts VARCHAR(10230), wallets STRING, walletGroup VARCHAR(63), walletHash VARCHAR(63), PRIMARY KEY (account, startDate, endDate, walletHash), INDEX IX_rpt_status (reportStatus))')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets STRING, generatedTimestamp TIMESTAMP NOT NULL, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
     cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
-    cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL, txHash VARCHAR(127), token VARCHAR(63), amount DOUBLE, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')
+    cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL, txHash VARCHAR(127), token VARCHAR(63), amount FLOAT, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')
     cur.execute('CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(40) NOT NULL PRIMARY KEY, account VARCHAR(63) NOT NULL, expires FLOAT, INDEX IX_session_account (account))')
+    cur.execute('CREATE TABLE IF NOT EXISTS balances (updateTime TIMESTAMP PRIMARY KEY, balanceData STRING)')
     con.commit()
     con.close()
 

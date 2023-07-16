@@ -28,7 +28,7 @@ def index():
         walletList = []
     bankState = 'ragmanEmpty'
     bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-    balance = balances.readCurrent()
+    balance = db.readBalance()
     bankProgress = '${0:.2f}'.format(balance)
     if balance >= 30:
         bankState = 'ragman'
@@ -93,7 +93,7 @@ def report_page(contentid=None):
     purchaseAddresses = ''
     bankState = 'ragmanEmpty'
     bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-    balance = balances.readCurrent()
+    balance = db.readBalance()
     bankProgress = '${0:.2f}'.format(balance)
     if balance >= 30:
         bankState = 'ragman'
@@ -123,7 +123,7 @@ def report_page(contentid=None):
     else:
         accounts = 'Error: Report content not found'
 
-    return render_template('report.html', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage))
+    return render_template('report.html', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
 @app.route("/getReportList")
 def report_list():

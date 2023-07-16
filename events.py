@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
+import sys
 from pickletools import read_uint2
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
 import nets
-import contracts
 import records
 import prices
 import db
@@ -14,6 +14,8 @@ import time
 import decimal
 import jsonpickle
 import logging
+sys.path.append("./web/")
+import contracts
 
 def EventsMap():
     return {

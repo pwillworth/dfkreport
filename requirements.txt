@@ -1,4 +1,4 @@
-web3 <= 5.28.0
+web3
 pyhmy
 jinja2
 jsonpickle

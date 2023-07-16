@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import nets
 import db
-import contracts
 from web3 import Web3
 import prices
 import json
 import logging
 import logging.handlers
 import jsonpickle
+sys.path.append("./web/")
+import contracts
 
 def main():
     handler = logging.handlers.RotatingFileHandler('refresh.log', maxBytes=33554432, backupCount=10)

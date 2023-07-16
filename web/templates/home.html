@@ -223,7 +223,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
       <div id="opaqueIcon"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 64px;opacity: 50%;" /></div>
     </div>
     <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
-      <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage }}</h3>
+      <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage | safe }}</h3>
       <h1 id="bankProgress" title="Total amount of donations received this month." style="margin-bottom: 60px;">{{ bankProgress }}</h1>
       <img src="{{ BASE_SCRIPT_URL }}static/images/jewel.png" style="max-width:32px;"/>
       <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about" target="_blank">Donate Now</a></div>

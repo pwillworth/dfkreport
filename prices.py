@@ -9,8 +9,9 @@ from datetime import timezone
 import logging
 import decimal
 import db
-import contracts
 import nets
+sys.path.append("./web/")
+import contracts
 
 token_map = {
     '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a': 'harmony',

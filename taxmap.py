@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import events
-import contracts
 import records
 import datetime
 import logging
 import db
 import constants
 from decimal import *
+sys.path.append("./web/")
+import contracts
 
 # Record for final tax report data
 class TaxItem:
