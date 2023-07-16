@@ -1,7 +1,7 @@
 
 hmy_main = 'https://api.harmony.one'
 avax_main = 'https://api.snowtrace.io'
-avax_key = 'GSERGME84BB4WRVZFYCBVA7AITGYE43SJP'
+avax_key = ''
 
 hmy_web3 = 'https://api.harmony.one'
 avax_web3 = 'https://api.avax.network/ext/bc/C/rpc'
