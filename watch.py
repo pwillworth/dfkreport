@@ -14,7 +14,7 @@ def main():
     con = db.aConn()
     logging.info('Started report watcher.')
     while True:
-        if con != None and con.open:
+        if con != None and con.closed == 0:
             logging.debug('check for reports')
             with con.cursor() as cur:
                 try:

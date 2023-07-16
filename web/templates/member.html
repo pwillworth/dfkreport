@@ -124,8 +124,8 @@ function loadReports() {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('POST', `${BASE_SCRIPT_URL}getReportList.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}getReportList.py?account=${wAddress}&sid=sid${sid}`);
+  request.open('POST', `${BASE_SCRIPT_URL}getReportList?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}getReportList?account=${wAddress}&sid=sid${sid}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {
@@ -149,8 +149,8 @@ function loadGroups() {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('POST', `${BASE_SCRIPT_URL}getGroupList.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}getGroupList.py?account=${wAddress}&sid=${sid}`);
+  request.open('POST', `${BASE_SCRIPT_URL}getGroupList?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}getGroupList?account=${wAddress}&sid=${sid}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to load wallet groups.');
@@ -167,7 +167,7 @@ function loadGroups() {
   request.send();
 }
 function viewReport(contentFile) {
-  window.open(`${BASE_SCRIPT_URL}report.py?contentFile=${contentFile}`);
+  window.open(`${BASE_SCRIPT_URL}report/${contentFile}`);
 }
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete','unknown','unknown','unknown','unknown','unknonw','Blockchain Error', 'Site Error'];
@@ -238,8 +238,8 @@ function createGroup(groupName, walletList) {
   const wAddress = account.givenProvider.selectedAddress;
   var request = new XMLHttpRequest();
   var wallets = encodeURIComponent(walletList);
-  request.open('POST', `${BASE_SCRIPT_URL}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}postGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
+  request.open('POST', `${BASE_SCRIPT_URL}postGroupList?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}postGroupList?account=${wAddress}&sid=${sid}&groupName=${groupName}&wallets=${wallets}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to add wallet group due to server error.');
@@ -265,8 +265,8 @@ function removeGroup(event, groupName) {
   const wAddress = account.givenProvider.selectedAddress;
   var request = new XMLHttpRequest();
   var wallets = encodeURIComponent(walletList);
-  request.open('POST', `${BASE_SCRIPT_URL}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}removeGroupList.py?account=${wAddress}&sid=${sid}&groupName=${groupName}`);
+  request.open('POST', `${BASE_SCRIPT_URL}removeGroupList?account=${wAddress}&sid=${sid}&groupName=${groupName}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}removeGroupList?account=${wAddress}&sid=${sid}&groupName=${groupName}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to remove wallet group due to server error.');
@@ -448,8 +448,8 @@ function paymentComplete(txHash) {
       network = '';
   }
   var request = new XMLHttpRequest();
-  request.open('POST', `${BASE_SCRIPT_URL}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}validatePayment.py?account=${wAddress}&txHash=${txHash}&network=${network}`);
+  request.open('POST', `${BASE_SCRIPT_URL}validatePayment?account=${wAddress}&txHash=${txHash}&network=${network}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}validatePayment?account=${wAddress}&txHash=${txHash}&network=${network}`);
   request.onload = function() {
     if (!request.status || (request.status >= 400)) {
       alert('Failed to validate due to server error.');
@@ -470,7 +470,7 @@ function paymentComplete(txHash) {
 <div style="height: 100px;">
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
-    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}home.py" title="go to home page"><img src="{{ BASE_SCRIPT_URL }}static/images/home.png" style="max-width:48px;margin-right:14px;"/></a></div>
+    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}home" title="go to home page"><img src="{{ BASE_SCRIPT_URL }}static/images/home.png" style="max-width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">
@@ -548,7 +548,7 @@ function paymentComplete(txHash) {
   </div>
 </div>
 <div class="footer">
-	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
+	<a href="{{ BASE_SCRIPT_URL }}" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about" title="Support us and get info" target="_blank">About</a>
 	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
 <div id="groupDialog" class="window">

@@ -1372,8 +1372,8 @@ function handleAccountsChanged(accounts) {
 }
 function handleAuth(wAddress, signature) {
   var request = new XMLHttpRequest();
-  request.open('GET', `${BASE_SCRIPT_URL}auth.py?account=${wAddress}&signature=${signature}`, true);
-  console.log(`loading ${BASE_SCRIPT_URL}auth.py?account=${wAddress}&signature=${signature}`);
+  request.open('GET', `${BASE_SCRIPT_URL}auth?account=${wAddress}&signature=${signature}`, true);
+  console.log(`loading ${BASE_SCRIPT_URL}auth?account=${wAddress}&signature=${signature}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {
@@ -1413,8 +1413,8 @@ async function login(sign=false) {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('GET', `${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}login.py?account=${wAddress}&sid=${sid}`);
+  request.open('GET', `${BASE_SCRIPT_URL}login?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}login?account=${wAddress}&sid=${sid}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {
@@ -1446,8 +1446,8 @@ async function logout() {
   }
   const wAddress = selectedAccount;
   var request = new XMLHttpRequest();
-  request.open('GET', `${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`, true);
-  console.log(`loading: ${BASE_SCRIPT_URL}logout.py?account=${wAddress}&sid=${sid}`);
+  request.open('GET', `${BASE_SCRIPT_URL}logout?account=${wAddress}&sid=${sid}`, true);
+  console.log(`loading: ${BASE_SCRIPT_URL}logout?account=${wAddress}&sid=${sid}`);
   request.onload = function() {
     console.log('load completed');
     if (!request.status || (request.status >= 400)) {

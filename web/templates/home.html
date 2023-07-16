@@ -88,7 +88,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
     $("#loadingSection").css("display","block");
     $("#mappingSection").css("display","block");
     console.log('generate');
-    $.post(BASE_SCRIPT_URL + "generate.py",{
+    $.post(BASE_SCRIPT_URL + "generate",{
         walletAddress: generateAddress,
         includeHarmony: includeHarmony,
         includeDFKChain: includeDFKChain,
@@ -107,9 +107,9 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
             $("#lilaImg").attr('src', `${BASE_SCRIPT_URL}static/images/liladone.jpg`);
             $( "#loadingMessage").html('Lila: I have that report ready now, launching on new page...');
             var contentFile = data.response.contentFile;
-            var reportWin = window.open(`${BASE_SCRIPT_URL}report.py?contentFile=${contentFile}`);
+            var reportWin = window.open(`${BASE_SCRIPT_URL}report/${contentFile}`);
             if (!reportWin || reportWin.closed || typeof reportWin.closed=='undefined') {
-              $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="${BASE_SCRIPT_URL}report.py?contentFile=${contentFile}">here</a> to open it.`);
+              $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="${BASE_SCRIPT_URL}report/${contentFile}">here</a> to open it.`);
             }
             var genButton = document.getElementById('goFilter');
             genButton.disabled = false;
@@ -162,7 +162,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
 <div>
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;margin-top:-16px;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
-    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}members.py" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;margin-right:14px;"/></a></div>
+    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}member" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">
@@ -170,7 +170,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
     <div id="reportCriteria" class="ghWidgetBox ui-widget-content">
       <form id="reportSearch" name="reportSearch">
       <div class="boxHeader ui-widget-header">Report Options
-        <a href="{{ BASE_SCRIPT_URL }}help.py" alt="read documentation"><img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;"/></a></href>
+        <a href="{{ BASE_SCRIPT_URL }}help" alt="read documentation"><img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;"/></a></href>
       </div>
       <div class="sectionHead"></div>
       <fieldset id="dateRangeSet">
@@ -226,7 +226,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
       <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage }}</h3>
       <h1 id="bankProgress" title="Total amount of donations received this month." style="margin-bottom: 60px;">{{ bankProgress }}</h1>
       <img src="{{ BASE_SCRIPT_URL }}static/images/jewel.png" style="max-width:32px;"/>
-      <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about.py" target="_blank">Donate Now</a></div>
+      <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about" target="_blank">Donate Now</a></div>
       <img src="{{ BASE_SCRIPT_URL }}static/images/crystal.png" style="max-width:32px;"/>
     </div>
   </div>
@@ -295,7 +295,7 @@ function generateReport(generateAddress, generateStart, generateEnd, costBasis, 
   </div>
 </div>
 <div class="footer">
-	<a href="{{ BASE_SCRIPT_URL }}home.py" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help.py" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about.py" title="Support us and get info" target="_blank">About</a>
+	<a href="{{ BASE_SCRIPT_URL }}" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about" title="Support us and get info" target="_blank">About</a>
 	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>

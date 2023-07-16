@@ -5,12 +5,9 @@
 
 """
 
-import sys
-import cgi
 import pickle
 import jsonpickle
 import logging
-sys.path.append("../")
 import db
 import csvFormats
 
@@ -63,55 +60,41 @@ def getResponseJSON(results, contentType, eventGroup='all'):
 
     return response
 
+def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
+    failure = False
 
-logging.basicConfig(filename='../view.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-# Extract query parameters
-form = cgi.FieldStorage()
-contentFile = form.getfirst('contentFile', '')
-# can be set to csv, otherwise json response is returned
-formatType = form.getfirst('formatType', '')
-# can be tax or transaction, only used for CSV
-contentType = form.getfirst('contentType', '')
-# can be koinlyuniversal or anything else for default
-csvFormat = form.getfirst('csvFormat', 'manual')
-# can be any event group to return only that group of events instead of all
-eventGroup = form.getfirst('eventGroup', 'all')
-contentFile = db.dbInsertSafe(contentFile)
-
-failure = False
-
-if formatType == 'csv':
-	print('Content-type: text/csv')
-	print('Content-disposition: attachment; filename="dfk-report.csv"\n')
-else:
-    print('Content-type: text/json\n')
-
-if contentFile == '':
-    response = '{ "response" : "Error: content file id in contentFile parameter is required to view a report" }'
-    failure = True
-
-if not failure:
-    # report is ready
-    if contentType == '':
-        response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
+    if formatType == 'csv':
+        print('Content-type: text/csv')
+        print('Content-disposition: attachment; filename="dfk-report.csv"\n')
     else:
-        results = None
-        try:
-            with open('../reports/{0}'.format(contentFile), 'rb') as file:
-                results = pickle.load(file)
-        except FileNotFoundError as err:
-            response = '{ "response" : "Error: content file is invalid or no longer available.  You may need to regenerate the report" }'
-            failure = True
+        print('Content-type: text/json\n')
 
-        if 'taxes' in results:
-            if formatType == 'csv':
-                logging.info('Getting response CSV')
-                response = csvFormats.getResponseCSV(results, contentType, csvFormat)
-            else:
-                response = getResponseJSON(results, contentType, eventGroup)
+    if contentFile == '':
+        response = '{ "response" : "Error: content file id in contentFile parameter is required to view a report" }'
+        failure = True
+
+    if not failure:
+        # report is ready
+        if contentType == '':
+            response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
         else:
-            response = '{ "response" : "Error: content file corrupted or empty.  You may need to regenerate the report" }'
-            failure = True
+            results = None
+            try:
+                with open('../reports/{0}'.format(contentFile), 'rb') as file:
+                    results = pickle.load(file)
+            except FileNotFoundError as err:
+                response = '{ "response" : "Error: content file is invalid or no longer available.  You may need to regenerate the report" }'
+                failure = True
 
-print(response)
+            if 'taxes' in results:
+                if formatType == 'csv':
+                    logging.info('Getting response CSV')
+                    response = csvFormats.getResponseCSV(results, contentType, csvFormat)
+                else:
+                    response = getResponseJSON(results, contentType, eventGroup)
+            else:
+                response = '{ "response" : "Error: content file corrupted or empty.  You may need to regenerate the report" }'
+                failure = True
+
+    return response
 

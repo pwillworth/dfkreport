@@ -2,4 +2,4 @@ web3 <= 5.28.0
 pyhmy
 jinja2
 jsonpickle
-pymysql
+psycopg2
