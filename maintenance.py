@@ -30,7 +30,7 @@ def cleanTransactions():
     con = db.aConn()
     # Get list of accounts with active reports
     with con.cursor() as cur:
-        cur.execute("SELECT account FROM reports")
+        cur.execute("SELECT DISTINCT account FROM reports")
         row = cur.fetchone()
         while row != None:
             accounts.append(row[0])
@@ -59,8 +59,7 @@ def cleanTransactions():
 
 def main():
     # get in the right spot when running this so file paths can be managed relatively
-    os.chdir(settings.WEB_ROOT)
-    handler = logging.handlers.RotatingFileHandler('../maintenance.log', maxBytes=33554432, backupCount=10)
+    handler = logging.handlers.RotatingFileHandler('maintenance.log', maxBytes=33554432, backupCount=10)
     logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     # clean up old reports

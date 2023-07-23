@@ -75,25 +75,25 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType
     logging.info('Start Event map build')
     for wallet in wallets:
         logging.warning('add data for wallet: {0}'.format(wallet))
-        if contentType == 'tax' or eventGroup == 'tavern':
+        if contentType == 'tax' or eventGroup in ['all','tavern']:
             eventMap['tavern'] += db.getEventData(wallet, 'tavern')
-        if contentType == 'tax' or eventGroup == 'swaps':
+        if contentType == 'tax' or eventGroup in ['all','swaps']:
             eventMap['swaps'] += db.getEventData(wallet, 'swaps')
-        if contentType == 'tax' or eventGroup == 'liquidity':
+        if contentType == 'tax' or eventGroup in ['all','liquidity']:
             eventMap['liquidity'] += db.getEventData(wallet, 'liquidity')
-        if contentType == 'tax' or eventGroup == 'wallet':
+        if contentType == 'tax' or eventGroup in ['all','wallet']:
             eventMap['wallet'] += db.getEventData(wallet, 'wallet')
-        if contentType == 'tax' or eventGroup == 'bank':
+        if contentType == 'tax' or eventGroup in ['all','bank']:
             eventMap['bank'] += db.getEventData(wallet, 'bank')
-        if contentType == 'tax' or eventGroup == 'gardens':
+        if contentType == 'tax' or eventGroup in ['all','gardens']:
             eventMap['gardens'] += db.getEventData(wallet, 'gardens')
-        if contentType == 'tax' or eventGroup == 'quests':
+        if contentType == 'tax' or eventGroup in ['all','quests']:
             eventMap['quests'] += db.getEventData(wallet, 'quests')
-        if contentType == 'tax' or eventGroup == 'alchemist':
+        if contentType == 'tax' or eventGroup in ['all','alchemist']:
             eventMap['alchemist'] += db.getEventData(wallet, 'alchemist')
-        if contentType == 'tax' or eventGroup == 'airdrops':
+        if contentType == 'tax' or eventGroup in ['all','airdrops']:
             eventMap['airdrops'] += db.getEventData(wallet, 'airdrops')
-        if contentType == 'tax' or eventGroup == 'lending':
+        if contentType == 'tax' or eventGroup in ['all','lending']:
             eventMap['lending'] += db.getEventData(wallet, 'lending')
 
     # Map the events into tax records
@@ -130,25 +130,25 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType
 
     # pop out all events not in date range
     logging.info('paring data to range')
-    if contentType == 'tax' or eventGroup == 'tavern':
+    if contentType == 'tax' or eventGroup in ['all','tavern']:
         eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'swaps':
+    if contentType == 'tax' or eventGroup in ['all','swaps']:
         eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'wallet':
+    if contentType == 'tax' or eventGroup in ['all','wallet']:
         eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'liquidity':
+    if contentType == 'tax' or eventGroup in ['all','liquidity']:
         eventMap['liquidity'] = [x for x in eventMap['liquidity'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'bank':
+    if contentType == 'tax' or eventGroup in ['all','bank']:
         eventMap['bank'] = [x for x in eventMap['bank'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'gardens':
+    if contentType == 'tax' or eventGroup in ['all','gardens']:
         eventMap['gardens'] = [x for x in eventMap['gardens'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'quests':
+    if contentType == 'tax' or eventGroup in ['all','quests']:
         eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'alchemist':
+    if contentType == 'tax' or eventGroup in ['all','alchemist']:
         eventMap['alchemist'] = [x for x in eventMap['alchemist'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'airdrops':
+    if contentType == 'tax' or eventGroup in ['all','airdrops']:
         eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
-    if contentType == 'tax' or eventGroup == 'lending':
+    if contentType == 'tax' or eventGroup in ['all','lending']:
         eventMap['lending'] = [x for x in eventMap['lending'] if inReportRange(x, startDate, endDate)]
         eventMap['lending'] = costBasisSort(eventMap['lending'], 'fifo')
 

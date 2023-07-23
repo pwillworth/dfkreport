@@ -4,8 +4,6 @@ from flask import render_template
 from flask import make_response
 from markupsafe import escape
 from web3 import Web3
-import io
-import csv
 import jsonpickle
 import urllib
 import db
@@ -77,26 +75,26 @@ def report_generate():
 
     return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, costBasis, eventGroup, purchaseAddresses)
 
-@app.route("/view", methods=['POST'])
+@app.route("/view", methods=['GET', 'POST'])
 def report_view():
     contentFile = request.form.get('contentFile', '')
     # can be set to csv, otherwise json response is returned
     formatType = request.form.get('formatType', '')
     # can be tax or transaction, only used for CSV
     contentType = request.form.get('contentType', '')
-    # can be koinlyuniversal or anything else for default
-    csvFormat = request.form.get('csvFormat', 'manual')
     # can be any event group to return only that group of events instead of all
     eventGroup = request.form.get('eventGroup', 'all')
+    # can be koinlyuniversal or anything else for default
+    csvFormat = request.args.get('csvFormat', '')
+    if csvFormat != '':
+        formatType = request.args.get('formatType', formatType)
+        contentType = request.args.get('contentType', contentType)
+        contentFile = request.args.get('contentFile', contentFile)
     contentFile = db.dbInsertSafe(contentFile)
-
 
     result = view.getReportData(contentFile, formatType, contentType, csvFormat, eventGroup)
     if formatType == 'csv':
-        si = io.StringIO()
-        cw = csv.writer(si)
-        cw.writerows(result)
-        output = make_response(si.getvalue())
+        output = make_response(result)
         output.headers['Content-type'] = 'text/csv'
         output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
     else:
