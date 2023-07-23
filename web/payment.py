@@ -81,7 +81,7 @@ def addPayment(account, txHash, token, amount, network, purchaseTime):
         else:
             # calculate time to add and new expiration
             generateTime = int(datetime.now(timezone.utc).timestamp())
-            cur.execute("SELECT expiresTimestamp FROM members WHERE account = %s", (account))
+            cur.execute("SELECT expiresTimestamp FROM members WHERE account = %s", (account,))
             rowu = cur.fetchone()
             previousExpires = 0
             if rowu != None:
@@ -91,7 +91,7 @@ def addPayment(account, txHash, token, amount, network, purchaseTime):
                     previousExpires = rowu[0]
             # credit from current time if expired in past or from future if still active
             newExpires = max(generateTime, previousExpires) + int(purchaseTime)
-            cur.execute("INSERT INTO payments (account, generatedTimestamp, txHash, token, amount, previousExpires, newExpires, network) VALUES (%s, UTC_TIMESTAMP(), %s, %s, %s, %s, %s, %s)", (account, txHash, token, amount, previousExpires, newExpires, network))
+            cur.execute("INSERT INTO payments (account, generatedTimestamp, txHash, token, amount, previousExpires, newExpires, network) VALUES (%s, (now() at time zone 'utc'), %s, %s, %s, %s, %s, %s)", (account, txHash, token, amount, previousExpires, newExpires, network))
             result = cur.rowcount
             # member record updated if it existed otherwise payments can be picked up on member registration
             if rowu != None:
@@ -106,11 +106,11 @@ def validatePayment(network, account, txHash):
     txToken = ''
     tokenAmount = 0
 
-    if not Web3.isAddress(account):
+    if not Web3.is_address(account):
         response = ''.join(('{ "error" : "Error: The account you provided is not a vaild wallet address: ', account, '." }'))
         failure = True
     else:
-        account = Web3.toChecksumAddress(account)
+        account = Web3.to_checksum_address(account)
 
     # Connect to right network that txs are for
     if network == 'klaytn':
@@ -120,7 +120,7 @@ def validatePayment(network, account, txHash):
     else:
         response = ''.join(('{ "error" : "Error: Invalid network,  ', network, ' only dfkchain and klaytn supported." }'))
         failure = True
-    if not w3.isConnected():
+    if not w3.is_connected():
         response = ''.join(('{ "error" : "Error: Critical w3 connection failure for,  ', network, ', please try again later." }'))
         failure = True
 
@@ -140,7 +140,7 @@ def validatePayment(network, account, txHash):
             response = ''.join(('{ "error" : "Error: That transaction was from: ', result['from'], ', not you." }'))
             failure = True
     if failure == False:
-        txValue = Web3.fromWei(result['value'], 'ether')
+        txValue = Web3.from_wei(result['value'], 'ether')
         if txValue > 0 and result['to'] != PAYMENT_ADDRESS:
             response = ''.join(('{ "error" : "Error: That transaction went to: ', result['to'], ', not the payment address." }'))
             failure = True
@@ -161,11 +161,11 @@ def validatePayment(network, account, txHash):
             tokenAmount = txValue
         else:
             # also check for any random token trasfers in the wallet
-            results = extractTokenResults(w3, txHash, account, int(datetime.now(timezone.utc).timestamp()), receipt, '', '', network)
+            results = extractTokenResults(w3, account, receipt, network)
             for xfer in results:
-                if xfer.address == PAYMENT_ADDRESS:
-                    txToken = xfer.coinType
-                    tokenAmount = xfer.coinAmount
+                if xfer[0] == PAYMENT_ADDRESS:
+                    txToken = xfer[1]
+                    tokenAmount = xfer[2]
         if txToken not in PAYMENT_TOKENS[network] or not tokenAmount > 0:
             response = ''.join(('{ "error" : "Error: No valid token transfers were found in that transaction." }'))
             failure = True

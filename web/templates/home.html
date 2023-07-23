@@ -62,7 +62,7 @@ function refreshLists() {
   }
 }
 function loadGroupSel() {
-  $.post(BASE_SCRIPT_URL + "getGroupList.py", {
+  $.post(BASE_SCRIPT_URL + "getGroupList", {
     account: selectedAccount,
     sid: sid}, function ( data ) {
       if ('error' in data) {

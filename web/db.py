@@ -197,7 +197,7 @@ def getMemberStatus(account):
 def checkSession(sid):
 	con = aConn()
 	cursor = con.cursor()
-	cursor.execute('SELECT account, expires FROM sessions WHERE sid=%s', (sid))
+	cursor.execute('SELECT account, expires FROM sessions WHERE sid=%s', (sid,))
 	row = cursor.fetchone()
 	if row == None:
 		# no record
@@ -206,7 +206,7 @@ def checkSession(sid):
 		if time.time() > row[1]:
 			# session is expired, delete it
 			result = ""
-			tempSQL = "DELETE FROM tSessions WHERE sid='" + sid + "'"
+			tempSQL = "DELETE FROM tSessions WHERE sid='{0}'".format(sid)
 			cursor.execute(tempSQL)
 		else:
 			# good session, return userid
@@ -302,12 +302,13 @@ def addGroupList(account, groupName, addressList):
         row = cur.fetchone()
         cur.execute("SELECT account, groupName, wallets FROM groups WHERE account = %s AND groupName=%s", (account,groupName))
         row2 = cur.fetchone()
+        generateTime = datetime.now(timezone.utc)
         if row != None and row[0] != None:
-            cur.execute("UPDATE groups SET groupName=%s, updatedTimestamp=UTC_TIMESTAMP() WHERE account=%s AND wallets=%s", (groupName, account, jsonpickle.encode(addressList)))
+            cur.execute("UPDATE groups SET groupName=%s, updatedTimestamp=%s WHERE account=%s AND wallets=%s", (groupName, generateTime, account, jsonpickle.encode(addressList)))
         elif row2 != None and row2[0] != None:
-            cur.execute("UPDATE groups SET wallets=%s, updatedTimestamp=UTC_TIMESTAMP() WHERE account=%s AND groupName=%s", (jsonpickle.encode(addressList), account, groupName))
+            cur.execute("UPDATE groups SET wallets=%s, updatedTimestamp=%s WHERE account=%s AND groupName=%s", (jsonpickle.encode(addressList), generateTime, account, groupName))
         else:
-            cur.execute("INSERT INTO groups (account, groupName, wallets, generatedTimestamp) VALUES (%s, %s, %s, UTC_TIMESTAMP())", (account, groupName, jsonpickle.encode(addressList)))
+            cur.execute("INSERT INTO groups (account, groupName, wallets, generatedTimestamp) VALUES (%s, %s, %s, %s)", (account, groupName, jsonpickle.encode(addressList), generateTime))
         result = cur.rowcount
     con.close()
 

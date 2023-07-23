@@ -25,10 +25,8 @@ def index():
         memberStatus = db.getMemberStatus(loginState[1])
         memberState = memberStatus[0]
         secondsLeft = memberStatus[1]
-        walletList = memberStatus[3]
     else:
         memberState = 0
-        walletList = []
     bankState = 'ragmanEmpty'
     bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
     balance = db.readBalance()
@@ -186,8 +184,8 @@ def group_list():
 @app.route("/postGroupList", methods=['POST'])
 def post_group_list():
     loginState = readAccount(request.args, request.cookies)
-    groupName = request.form.get("groupName", "")
-    wallets = request.form.get("wallets", "")
+    groupName = request.args.get("groupName", "")
+    wallets = request.args.get("wallets", "")
     # escape input to prevent sql injection
     groupName = db.dbInsertSafe(groupName)
 
@@ -216,8 +214,8 @@ def post_group_list():
             input = walletAddresses.split()
         for address in input:
             address = address.strip()
-            if Web3.isAddress(address):
-                addressList.append(Web3.toChecksumAddress(address))
+            if Web3.is_address(address):
+                addressList.append(Web3.to_checksum_address(address))
             elif len(address) == 0:
                 continue
             else:
@@ -233,8 +231,9 @@ def post_group_list():
 
 @app.route("/removeGroupList", methods=['POST'])
 def del_group_list():
+    failure = False
     loginState = readAccount(request.args, request.cookies)
-    groupName = request.form.get("groupName", "")
+    groupName = request.args.get("groupName", "")
     # escape input to prevent sql injection
     groupName = db.dbInsertSafe(groupName)
 
@@ -248,7 +247,7 @@ def del_group_list():
 
     return response
 
-@app.route("/auth", methods=['POST'])
+@app.route("/auth")
 def auth():
     account = request.args.get("account", "")
     signature = request.args.get("signature", "")
@@ -266,7 +265,7 @@ def auth():
 
     return { "sid" : sessionResult }
 
-@app.route("/login", methods=['POST'])
+@app.route("/login")
 def login():
     account = request.args.get("account", "")
     sid = request.args.get('sid', '')
@@ -293,7 +292,7 @@ def login():
             nonceResult = db.getAccountNonce(account)
             return { "nonce" : str(nonceResult) }
 
-@app.route("/logout", methods=['POST'])
+@app.route("/logout")
 def logout():
     account = request.args.get("account", "")
     sid = request.args.get('sid', '')
@@ -336,11 +335,9 @@ def member_connect():
         memberStatus = db.getMemberStatus(loginState[1])
         memberState = memberStatus[0]
         secondsLeft = memberStatus[1]
-        walletList = memberStatus[3]
     else:
         memberState = 0
-        walletList = []
-    return render_template('member.html', memberState=memberState, memberAccount=loginState[1], secondsLeft=secondsLeft, expiryDescription=utils.timeDescription(secondsLeft), playerWallets=walletList)
+    return render_template('member.html', memberState=memberState, memberAccount=loginState[1], secondsLeft=secondsLeft, expiryDescription=utils.timeDescription(secondsLeft))
 
 
 @app.route("/addWallet", methods=['POST'])
