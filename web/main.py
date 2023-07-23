@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from flask import Flask, request, redirect, url_for
 from flask import render_template
+from flask import make_response
 from markupsafe import escape
 from web3 import Web3
+import io
+import csv
 import jsonpickle
 import urllib
 import db
@@ -11,7 +14,7 @@ import payment
 import generate
 import view
 
-app = Flask(__name__)
+app = Flask('dfkreport')
 
 @app.route("/")
 def index():
@@ -36,6 +39,17 @@ def index():
 
     return render_template('home.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
+@app.route("/_ah/warmup")
+def warmup():
+    """Served stub function returning no content.
+
+    Your warmup logic can be implemented here (e.g. set up a database connection pool)
+
+    Returns:
+        An empty string, an HTTP code 200, and an empty object.
+    """
+    return "", 200, {}
+
 @app.route("/about")
 def about():
     return render_template('about.html')
@@ -44,41 +58,53 @@ def about():
 def help():
     return render_template('help.html')
 
-@app.route("/generate")
+@app.route("/generate", methods=['GET','POST'])
 def report_generate():
     # Extract query parameters
-    account = request.args.get('account', '')
-    wallet = request.args.get('walletAddress', '')
-    startDate = request.args.get('startDate', '')
-    endDate = request.args.get('endDate', '')
-    includeHarmony = request.args.get('includeHarmony', 'on')
-    includeDFKChain = request.args.get('includeDFKChain', 'on')
-    includeAvalanche = request.args.get('includeAvalanche', 'false')
-    includeKlaytn = request.args.get('includeKlaytn', 'on')
-    costBasis = request.args.get('costBasis', 'fifo')
+    account = request.form.get('account', '')
+    wallet = request.form.get('walletAddress', '')
+    startDate = request.form.get('startDate', '')
+    endDate = request.form.get('endDate', '')
+    includeHarmony = request.form.get('includeHarmony', 'on')
+    includeDFKChain = request.form.get('includeDFKChain', 'on')
+    includeAvalanche = request.form.get('includeAvalanche', 'false')
+    includeKlaytn = request.form.get('includeKlaytn', 'on')
+    costBasis = request.form.get('costBasis', 'fifo')
     # can be any event group to return only that group of events instead of all
-    eventGroup = request.args.get('eventGroup', 'all')
+    eventGroup = request.form.get('eventGroup', 'all')
     # Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
-    purchaseAddresses = request.args.get('purchaseAddresses', '')
+    purchaseAddresses = request.form.get('purchaseAddresses', '')
 
     loginState = readAccount(request.args, request.cookies)
 
     return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, costBasis, eventGroup, purchaseAddresses)
 
-@app.route("/view")
+@app.route("/view", methods=['POST'])
 def report_view():
-    contentFile = request.args.get('contentFile', '')
+    contentFile = request.form.get('contentFile', '')
     # can be set to csv, otherwise json response is returned
-    formatType = request.args.get('formatType', '')
+    formatType = request.form.get('formatType', '')
     # can be tax or transaction, only used for CSV
-    contentType = request.args.get('contentType', '')
+    contentType = request.form.get('contentType', '')
     # can be koinlyuniversal or anything else for default
-    csvFormat = request.args.get('csvFormat', 'manual')
+    csvFormat = request.form.get('csvFormat', 'manual')
     # can be any event group to return only that group of events instead of all
-    eventGroup = request.args.get('eventGroup', 'all')
+    eventGroup = request.form.get('eventGroup', 'all')
     contentFile = db.dbInsertSafe(contentFile)
 
-    return view.getReportData(contentFile, formatType, contentType, csvFormat, eventGroup)
+
+    result = view.getReportData(contentFile, formatType, contentType, csvFormat, eventGroup)
+    if formatType == 'csv':
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerows(result)
+        output = make_response(si.getvalue())
+        output.headers['Content-type'] = 'text/csv'
+        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
+    else:
+        output = result
+
+    return output
 
 @app.route("/report/<contentid>")
 def report_page(contentid=None):
@@ -123,9 +149,9 @@ def report_page(contentid=None):
     else:
         accounts = 'Error: Report content not found'
 
-    return render_template('report.html', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
+    return render_template('report.html', BASE_SCRIPT_URL='/', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
-@app.route("/getReportList")
+@app.route("/getReportList", methods=['POST'])
 def report_list():
     loginState = readAccount(request.args, request.cookies)
 
@@ -144,7 +170,7 @@ def report_list():
         reportData = { "reports" : listResult }
         return reportData
 
-@app.route("/getGroupList")
+@app.route("/getGroupList", methods=['POST'])
 def group_list():
     loginState = readAccount(request.args, request.cookies)
     if loginState[0] > 0:
@@ -157,11 +183,11 @@ def group_list():
     else:
         return '{ "groups" : '+listResult+' }'
 
-@app.route("/postGroupList")
+@app.route("/postGroupList", methods=['POST'])
 def post_group_list():
     loginState = readAccount(request.args, request.cookies)
-    groupName = request.args.get("groupName", "")
-    wallets = request.args.get("wallets", "")
+    groupName = request.form.get("groupName", "")
+    wallets = request.form.get("wallets", "")
     # escape input to prevent sql injection
     groupName = db.dbInsertSafe(groupName)
 
@@ -205,10 +231,10 @@ def post_group_list():
 
     return response
 
-@app.route("/removeGroupList")
+@app.route("/removeGroupList", methods=['POST'])
 def del_group_list():
     loginState = readAccount(request.args, request.cookies)
-    groupName = request.args.get("groupName", "")
+    groupName = request.form.get("groupName", "")
     # escape input to prevent sql injection
     groupName = db.dbInsertSafe(groupName)
 
@@ -222,7 +248,7 @@ def del_group_list():
 
     return response
 
-@app.route("/auth")
+@app.route("/auth", methods=['POST'])
 def auth():
     account = request.args.get("account", "")
     signature = request.args.get("signature", "")
@@ -240,7 +266,7 @@ def auth():
 
     return { "sid" : sessionResult }
 
-@app.route("/login")
+@app.route("/login", methods=['POST'])
 def login():
     account = request.args.get("account", "")
     sid = request.args.get('sid', '')
@@ -267,7 +293,7 @@ def login():
             nonceResult = db.getAccountNonce(account)
             return { "nonce" : str(nonceResult) }
 
-@app.route("/logout")
+@app.route("/logout", methods=['POST'])
 def logout():
     account = request.args.get("account", "")
     sid = request.args.get('sid', '')
@@ -320,7 +346,7 @@ def member_connect():
 @app.route("/addWallet", methods=['POST'])
 def add_wallet():
     loginState = readAccount(request.args, request.cookies)
-    wallet = request.args.get('wallet','')
+    wallet = request.form.get('wallet','')
     # attempt add if logged in
     if loginState[0] > 0:
         if Web3.is_address(wallet):
@@ -342,7 +368,7 @@ def add_wallet():
 @app.route("/removeWallet", methods=['POST'])
 def remove_wallet():
     loginState = readAccount(request.args, request.cookies)
-    wallet = request.args.get('wallet','')
+    wallet = request.form.get('wallet','')
     # attempt removal if logged in
     if loginState[0] > 0:
         if Web3.is_address(wallet):

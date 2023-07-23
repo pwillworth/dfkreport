@@ -11,6 +11,7 @@ import time
 import logging
 import settings
 import constants
+import events
 
 # Return array of transactions on Harmony for the address
 def getHarmonyData(acct, address, startDate, endDate, walletHash, alreadyFetched=0, page_size=settings.TX_PAGE_SIZE):
@@ -298,6 +299,51 @@ def getTransactionList(account, wallets, startDate, endDate, txCounts, page_size
             totalTx += txCounts[wallet][1]
         result[wallet] = [hmy_txs, avx_txs, dfk_txs, ktn_txs]
     return result
+
+# Parse all of the events for accounts
+def saveTransactions(account, txData, txCounts, wallets, startDate, endDate, includedChains):
+    walletHash = db.getWalletHash(wallets)
+    totalTx = 0
+    for wallet in wallets:
+        logging.warning('saving new transactions for wallet: {0}'.format(wallet))
+        if includedChains & constants.HARMONY > 0:
+            logging.info('checking {0} transactions on harmony for {1}'.format(len(txData[wallet][0]), wallet))
+            eventMapHarmony = events.checkTransactions(account, txData[wallet][0], wallet, startDate, endDate, walletHash, 'harmony', totalTx)
+            if eventMapHarmony == 'Error: Blockchain connection failure.':
+                raise ConnectionError('Service Unavailable')
+            else:
+                totalTx += txCounts[wallet][0]
+        else:
+            eventMapHarmony = 0
+        if includedChains & constants.DFKCHAIN > 0:
+            logging.info('checking {0} transactions on DFKChain for {1}'.format(len(txData[wallet][2]), wallet))
+            eventMapDFK = events.checkTransactions(account, txData[wallet][2], wallet, startDate, endDate, walletHash, 'dfkchain', totalTx)
+            if eventMapDFK == 'Error: Blockchain connection failure.':
+                raise ConnectionError('Service Unavailable')
+            else:
+                totalTx += txCounts[wallet][2]
+        else:
+            eventMapDFK = 0
+        if includedChains & constants.KLAYTN > 0:
+            logging.info('checking {0} transactions on klaytn for {1}'.format(len(txData[wallet][3]), wallet))
+            eventMapKlay = events.checkTransactions(account, txData[wallet][3], wallet, startDate, endDate, walletHash, 'klaytn', totalTx)
+            if eventMapKlay == 'Error: Blockchain connection failure.':
+                raise ConnectionError('Service Unavailable')
+            else:
+                totalTx += txCounts[wallet][3]
+        else:
+            eventMapKlay = 0
+        if includedChains & constants.AVALANCHE > 0:
+            logging.info('checking {0} transactions on avalanche for {1}'.format(len(txData[wallet][1]), wallet))
+            eventMapAvax = events.checkTransactions(account, txData[wallet][1], wallet, startDate, endDate, walletHash, 'avalanche', totalTx)
+            if eventMapAvax == 'Error: Blockchain connection failure.':
+                raise ConnectionError('Service Unavailable')
+            else:
+                totalTx += txCounts[wallet][1]
+        else:
+            eventMapAvax = 0
+
+    return totalTx
 
 
 if __name__ == "__main__":

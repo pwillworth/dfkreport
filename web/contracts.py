@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-import os
 from web3 import Web3
 import decimal
 
-def getABI(contractName):
-    location = os.path.abspath(__file__)
-    with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
-        ABI = f.read()
-    return ABI
 
 # Simple way to determine conversion, maybe change to lookup on chain later
 def valueFromWei(amount, token, network):
@@ -17,7 +11,7 @@ def valueFromWei(amount, token, network):
         goldValues = KLAYTN_GOLD_VALUES
     else:
         goldValues = DFKCHAIN_GOLD_VALUES
-    #w3.fromWei doesn't seem to have an 8 decimal option for BTC
+    #w3.from_wei doesn't seem to have an 8 decimal option for BTC
     if token in ['0x3095c7557bCb296ccc6e363DE01b760bA031F2d9', '0xdc54046c0451f9269FEe1840aeC808D36015697d','0x7516EB8B8Edfa420f540a162335eACF3ea05a247','0x16D0e1fBD024c600Ca0380A4C5D57Ee7a2eCBf9c']:
         return decimal.Decimal(amount) / decimal.Decimal(100000000)
     elif token == GOLD_TOKENS[network]:
@@ -29,7 +23,7 @@ def valueFromWei(amount, token, network):
     else:
         weiConvert = 'ether'
 
-    return Web3.fromWei(amount, weiConvert)
+    return Web3.from_wei(amount, weiConvert)
 
 # just a utility for looking  up a name without bombing if not in list
 def getAddressName(address):

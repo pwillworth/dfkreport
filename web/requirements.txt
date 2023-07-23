@@ -1,5 +1,5 @@
+flask
 web3 == 6.5.0
-pyhmy
 jinja2
 jsonpickle
 psycopg2

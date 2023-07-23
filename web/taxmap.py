@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
-import events
 import records
 import datetime
 import logging
 import db
-import constants
 from decimal import *
-sys.path.append("./web/")
 import contracts
+
+def EventsMap():
+    return {
+        'tavern': [],
+        'swaps': [],
+        'liquidity': [],
+        'wallet': [],
+        'bank': [],
+        'gardens': [],
+        'quests': [],
+        'alchemist': [],
+        'airdrops': [],
+        'lending': [],
+        'gas': 0
+    }
 
 # Record for final tax report data
 class TaxItem:
@@ -54,98 +66,93 @@ def inReportRange(item, startDate, endDate):
     itemDate = datetime.date.fromtimestamp(item.timestamp)
     return itemDate >= startDate and itemDate <= endDate
 
+
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(account, txData, txCounts, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
-    walletHash = db.getWalletHash(wallets)
+def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType, eventGroup):
     # Generate map of all events from transaction list
-    eventMap = events.EventsMap()
-    totalTx = 0
+    eventMap = EventsMap()
+
     logging.info('Start Event map build')
     for wallet in wallets:
-        if includedChains & constants.HARMONY > 0:
-            logging.info('checking {0} transactions on harmony for {1}'.format(len(txData[wallet][0]), wallet))
-            eventMapHarmony = events.checkTransactions(account, txData[wallet][0], wallet, startDate, endDate, walletHash, 'harmony', totalTx)
-            if eventMapHarmony == 'Error: Blockchain connection failure.':
-                raise ConnectionError('Service Unavailable')
-            else:
-                totalTx += txCounts[wallet][0]
-        else:
-            eventMapHarmony = events.EventsMap()
-        if includedChains & constants.DFKCHAIN > 0:
-            logging.info('checking {0} transactions on DFKChain for {1}'.format(len(txData[wallet][2]), wallet))
-            eventMapDFK = events.checkTransactions(account, txData[wallet][2], wallet, startDate, endDate, walletHash, 'dfkchain', totalTx)
-            if eventMapDFK == 'Error: Blockchain connection failure.':
-                raise ConnectionError('Service Unavailable')
-            else:
-                totalTx += txCounts[wallet][2]
-        else:
-            eventMapDFK = events.EventsMap()
-        if includedChains & constants.KLAYTN > 0:
-            logging.info('checking {0} transactions on klaytn for {1}'.format(len(txData[wallet][3]), wallet))
-            eventMapKlay = events.checkTransactions(account, txData[wallet][3], wallet, startDate, endDate, walletHash, 'klaytn', totalTx)
-            if eventMapKlay == 'Error: Blockchain connection failure.':
-                raise ConnectionError('Service Unavailable')
-            else:
-                totalTx += txCounts[wallet][3]
-        else:
-            eventMapKlay = events.EventsMap()
-        if includedChains & constants.AVALANCHE > 0:
-            logging.info('checking {0} transactions on avalanche for {1}'.format(len(txData[wallet][1]), wallet))
-            eventMapAvax = events.checkTransactions(account, txData[wallet][1], wallet, startDate, endDate, walletHash, 'avalanche', totalTx)
-            if eventMapAvax == 'Error: Blockchain connection failure.':
-                raise ConnectionError('Service Unavailable')
-            else:
-                totalTx += txCounts[wallet][1]
-        else:
-            eventMapAvax = events.EventsMap()
-
-        # Have to look up Tavern sale/hire events because they are not associated direct to wallet
-        eventMap['tavern'] += eventMapHarmony['tavern'] + eventMapDFK['tavern'] + eventMapKlay['tavern'] + db.getTavernSales(wallet, startDate, endDate)
-        eventMap['swaps'] += eventMapHarmony['swaps'] + eventMapAvax['swaps'] + eventMapDFK['swaps']+ eventMapKlay['swaps']
-        eventMap['liquidity'] += eventMapHarmony['liquidity'] + eventMapAvax['liquidity'] + eventMapDFK['liquidity'] + eventMapKlay['liquidity']
-        eventMap['wallet'] += eventMapHarmony['wallet'] + eventMapAvax['wallet'] + eventMapDFK['wallet'] + eventMapKlay['wallet']
-        eventMap['bank'] += eventMapHarmony['bank'] + eventMapAvax['bank'] + eventMapDFK['bank'] + eventMapKlay['bank']
-        eventMap['gardens'] += eventMapHarmony['gardens'] + eventMapAvax['gardens'] + eventMapDFK['gardens'] + eventMapKlay['gardens']
-        eventMap['quests'] += eventMapHarmony['quests'] + eventMapDFK['quests'] + eventMapKlay['quests']
-        eventMap['alchemist'] += eventMapHarmony['alchemist'] + eventMapDFK['alchemist'] + eventMapKlay['alchemist']
-        # Look up wallet payments distributed by interacting with Jewel contract also
-        eventMap['airdrops'] += eventMapHarmony['airdrops'] + eventMapKlay['airdrops'] + eventMapDFK['airdrops'] + db.getWalletPayments(wallet)
-        eventMap['gas'] += eventMapHarmony['gas'] + eventMapAvax['gas'] + eventMapDFK['gas'] + eventMapKlay['gas']
+        logging.warning('add data for wallet: {0}'.format(wallet))
+        if contentType == 'tax' or eventGroup == 'tavern':
+            eventMap['tavern'] += db.getEventData(wallet, 'tavern')
+        if contentType == 'tax' or eventGroup == 'swaps':
+            eventMap['swaps'] += db.getEventData(wallet, 'swaps')
+        if contentType == 'tax' or eventGroup == 'liquidity':
+            eventMap['liquidity'] += db.getEventData(wallet, 'liquidity')
+        if contentType == 'tax' or eventGroup == 'wallet':
+            eventMap['wallet'] += db.getEventData(wallet, 'wallet')
+        if contentType == 'tax' or eventGroup == 'bank':
+            eventMap['bank'] += db.getEventData(wallet, 'bank')
+        if contentType == 'tax' or eventGroup == 'gardens':
+            eventMap['gardens'] += db.getEventData(wallet, 'gardens')
+        if contentType == 'tax' or eventGroup == 'quests':
+            eventMap['quests'] += db.getEventData(wallet, 'quests')
+        if contentType == 'tax' or eventGroup == 'alchemist':
+            eventMap['alchemist'] += db.getEventData(wallet, 'alchemist')
+        if contentType == 'tax' or eventGroup == 'airdrops':
+            eventMap['airdrops'] += db.getEventData(wallet, 'airdrops')
+        if contentType == 'tax' or eventGroup == 'lending':
+            eventMap['lending'] += db.getEventData(wallet, 'lending')
 
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(str(wallets)))
-    logging.info('building swap data')
-    swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
-    logging.info('building liquidity data')
-    liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
-    logging.info('building payment data')
-    walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
-    logging.info('building bank data')
-    bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
-    logging.info('building gardens data')
-    gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
-    logging.info('building tavern data')
-    tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
-    logging.info('building quest data')
-    questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
-    logging.info('building airdrop data')
-    airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
-    logging.info('building lending data')
-    lendingData = buildLendingRecords(eventMap['lending'], startDate, endDate)
+    if contentType == 'tax':
+        logging.info('building swap data')
+        swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
+        logging.info('building liquidity data')
+        liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
+        logging.info('building payment data')
+        walletData = buildPaymentRecords(eventMap['wallet'], startDate, endDate)
+        logging.info('building bank data')
+        bankData = buildBankRecords(eventMap['bank'], startDate, endDate)
+        logging.info('building gardens data')
+        gardensData = buildGardensRecords(eventMap['gardens'], startDate, endDate)
+        logging.info('building tavern data')
+        tavernData = buildTavernRecords(eventMap['tavern'], startDate, endDate)
+        logging.info('building quest data')
+        questData = buildQuestRecords(eventMap['quests'], startDate, endDate)
+        logging.info('building airdrop data')
+        airdropData = buildAirdropRecords(eventMap['airdrops'], startDate, endDate)
+        logging.info('building lending data')
+        lendingData = buildLendingRecords(eventMap['lending'], startDate, endDate)
+    else:
+        swapData = []
+        liquidityData = []
+        walletData = []
+        bankData = []
+        gardensData = []
+        tavernData = []
+        questData = []
+        airdropData = []
+        lendingData = []
+
     # pop out all events not in date range
     logging.info('paring data to range')
-    eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
-    eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
-    eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
-    eventMap['liquidity'] = [x for x in eventMap['liquidity'] if inReportRange(x, startDate, endDate)]
-    eventMap['bank'] = [x for x in eventMap['bank'] if inReportRange(x, startDate, endDate)]
-    eventMap['gardens'] = [x for x in eventMap['gardens'] if inReportRange(x, startDate, endDate)]
-    eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
-    eventMap['alchemist'] = [x for x in eventMap['alchemist'] if inReportRange(x, startDate, endDate)]
-    eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
-    eventMap['lending'] = [x for x in eventMap['lending'] if inReportRange(x, startDate, endDate)]
-    eventMap['lending'] = costBasisSort(eventMap['lending'], 'fifo')
-    # Return all tax records combined and events
+    if contentType == 'tax' or eventGroup == 'tavern':
+        eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'swaps':
+        eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'wallet':
+        eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'liquidity':
+        eventMap['liquidity'] = [x for x in eventMap['liquidity'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'bank':
+        eventMap['bank'] = [x for x in eventMap['bank'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'gardens':
+        eventMap['gardens'] = [x for x in eventMap['gardens'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'quests':
+        eventMap['quests'] = [x for x in eventMap['quests'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'alchemist':
+        eventMap['alchemist'] = [x for x in eventMap['alchemist'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'airdrops':
+        eventMap['airdrops'] = [x for x in eventMap['airdrops'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup == 'lending':
+        eventMap['lending'] = [x for x in eventMap['lending'] if inReportRange(x, startDate, endDate)]
+        eventMap['lending'] = costBasisSort(eventMap['lending'], 'fifo')
+
+    # Return full data structure but containing only requested types of data
     return {
         'taxes': swapData + liquidityData + walletData + bankData + gardensData + tavernData + questData + airdropData + lendingData,
         'events': eventMap

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import transactions
-import taxmap
 import db
 import settings
 import datetime
@@ -50,8 +49,7 @@ def main():
         logging.info('found old report with tx data, reusing for new one')
         includedChains = reportInfo[12]
         wallets = reportInfo[15]
-        with open('../transactions/{0}'.format(reportInfo[8]), 'rb') as file:
-            txData = pickle.load(file)
+        txData = pickle.loads(db.getReportTx(reportInfo[8]))
     else:
         # generate.py pre-generates report record, but if running outside of that, create one
         if reportInfo == None:
@@ -89,8 +87,6 @@ def main():
             return 1
         # The transactions are written to a file and record updated indicate fetching complete
         transactionsFile = uuid.uuid4().hex
-        with open('../transactions/{0}'.format(transactionsFile), 'wb') as f:
-            pickle.dump(txData, f)
         try:
             db.completeTransactions(args.wallet, args.startDate, args.endDate, walletHash, transactionsFile)
         except Exception as err:
@@ -98,7 +94,7 @@ def main():
 
     # With transaction list, we now generate the events and tax map
     try:
-        reportData = taxmap.buildTaxMap(args.wallet, txData, txResult, wallets, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), costBasis, includedChains, moreOptions)
+        txSaved = transactions.saveTransactions(args.wallet, txData, txResult, wallets, datetime.datetime.strptime(args.startDate, '%Y-%m-%d').date(), datetime.datetime.strptime(args.endDate, '%Y-%m-%d').date(), includedChains)
     except Exception as err:
         logging.error('Unexpected Error {0} building tax map, setting report to failure.'.format(err))
         traceback.print_exc()
@@ -116,13 +112,8 @@ def main():
             logging.error('DB report update error failure: {0}'.format(str(err)))
         return 1
 
-    for item in reportData['taxes']:
-        logging.debug(str(item.__dict__) + '\n')
-
     # The results are written to a file and record updated to notify completion
     reportFile = uuid.uuid4().hex
-    with open('../reports/{0}'.format(reportFile), 'wb') as f:
-        pickle.dump(reportData, f)
     try:
         db.completeReport(args.wallet, args.startDate, args.endDate, walletHash, reportFile)
     except Exception as err:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Price data resources
 import requests
-import sys
+import os
 from web3 import Web3
 import json
 import datetime
@@ -10,7 +10,6 @@ import logging
 import decimal
 import db
 import nets
-sys.path.append("./web/")
 import contracts
 
 token_map = {
@@ -65,6 +64,12 @@ decimal_units = {
 }
 
 today_prices = {}
+
+def getABI(contractName):
+    location = os.path.abspath(__file__)
+    with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
+        ABI = f.read()
+    return ABI
 
 def priceLookup(timestamp, token, network, fiatType='usd'):
     lookupDate = datetime.date.fromtimestamp(timestamp).strftime('%d-%m-%Y')
@@ -163,7 +168,7 @@ def getCurrentPrice(token, throughToken, network):
     # use the current gaias tears for lookup because the logs still emit the old address for some reason
     if token == '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278':
         token = '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA'
-    ABI = contracts.getABI('UniswapV2Router02')
+    ABI = getABI('UniswapV2Router02')
     if network == 'dfkchain':
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
@@ -189,8 +194,8 @@ def getCurrentPrice(token, throughToken, network):
     throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
     # Sometimes 8 decimal tokens will try to get looked up, so skip those
     if tokenDecimals in decimal_units and throughTokenDecimals in decimal_units:
-        tokenOne = 1 if tokenDecimals == 0 else Web3.toWei(1, decimal_units[tokenDecimals])
-        throughTokenOne = Web3.toWei(1, decimal_units[throughTokenDecimals])
+        tokenOne = 1 if tokenDecimals == 0 else Web3.to_wei(1, decimal_units[tokenDecimals])
+        throughTokenOne = Web3.to_wei(1, decimal_units[throughTokenDecimals])
     else:
         return -1
 
@@ -206,7 +211,7 @@ def getCurrentPrice(token, throughToken, network):
             if throughToken in token_map:
                 throughPrice = priceLookup(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc)), throughToken, network)
             if throughPrice > -1:
-                token1Amount = [1, Web3.toWei(throughPrice, decimal_units[usdcDecimals])]
+                token1Amount = [1, Web3.to_wei(throughPrice, decimal_units[usdcDecimals])]
             else:
                 token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
             # USD price by multiplying value in through token by through token value in USDC
@@ -217,7 +222,7 @@ def getCurrentPrice(token, throughToken, network):
     return price
 
 def getTokenInfo(w3, address):
-    ABI = contracts.getABI('ERC20')
+    ABI = getABI('ERC20')
     contract = w3.eth.contract(address=address, abi=ABI)
     try:
         symbol = contract.functions.symbol().call()
@@ -237,7 +242,6 @@ def main():
     endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
     result = fetchItemPrice('0xB3F5867E277798b50ba7A71C0b24FDcA03045eDF')
     #result = getCurrentPrice('0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
-    sys.stdout.write(str(result))
     #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
     #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
     #while startDate <= endDate:

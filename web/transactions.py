@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from web3 import Web3
-from pyhmy import account
 import nets
 import requests
 import logging
@@ -22,15 +21,16 @@ def getTransactionCount(wallets, includedChains):
         dfk_result = 0
         ktn_result = 0
         if includedChains & nets.HARMONY > 0:
-            try:
-                hmy_result += account.get_transactions_count(address, 'ALL', endpoint=nets.hmy_main)
-            except ConnectionError:
-                result = 'Error: Failed to connect to Harmony API'
-                logging.error("connection to harmony api failed")
+            w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+            if not w3.is_connected():
+                logging.error('Error: Critical w3 connection failure for harmony')
+                result = 'Error: Blockchain connection failure.'
+            else:
+                hmy_result += w3.eth.get_transaction_count(address)
 
         if includedChains & nets.DFKCHAIN > 0:
             w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
-            if not w3.isConnected():
+            if not w3.is_connected():
                 logging.error('Error: Critical w3 connection failure for dfk chain')
                 result = 'Error: Blockchain connection failure.'
             else:
@@ -38,7 +38,7 @@ def getTransactionCount(wallets, includedChains):
 
         if includedChains & nets.KLAYTN > 0:
             w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
-            if not w3.isConnected():
+            if not w3.is_connected():
                 logging.error('Error: Critical w3 connection failure for Klaytn')
                 result = 'Error: Blockchain connection failure.'
             else:

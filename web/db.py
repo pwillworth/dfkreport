@@ -20,7 +20,7 @@ def ReportOptions():
     }
 
 def aConn():
-    conn = psycopg2.connect("sslmode=verify-full options=--cluster=caring-wasp-2917",
+    conn = psycopg2.connect("sslmode=verify-full sslrootcert=certs/root.crt options=--cluster=caring-wasp-2917",
         host = dfkInfo.DB_HOST,
         port = "26257",
 	    dbname= dfkInfo.DB_NAME,
@@ -61,78 +61,16 @@ def readBalance():
         updatedAt = results['updatedAt']
     return balance
 
-def getTransactions(account, network):
-    try:
-        con = aConn()
-        cur = con.cursor()
-        cur.execute("SELECT * FROM transactions WHERE account=%s AND network=%s", (account, network))
-        rows = cur.fetchall()
-        con.close()
-    except Exception as err:
-        # if db is unavailable we can just continue
-        logging.error('Error getting txs {0}'.format(str(err)))
-        rows = []
-
-    return dict([[row[0], row] for row in rows])
-
-def findTransaction(txHash, account):
-    try:
-        con = aConn()
-        cur = con.cursor()
-        cur.execute("SELECT * FROM transactions WHERE txHash=%s AND account=%s", (txHash, account))
-        row = cur.fetchone()
-        con.close()
-    except Exception as err:
-        # if db is unavailable we can just continue
-        logging.error('Error finding tx {0}'.format(str(err)))
-        row = None
-
-    return row
-
-def saveTransaction(tx, timestamp, type, events, wallet, network, gasUsed, gasValue):
-    try:
-        con = aConn()
-        cur = con.cursor()
-    except Exception as err:
-        logging.error('Failed to save tx {0}'.format(str(err)))
-        con = None
-    if con != None and con.open:
-        try:
-            cur.execute("INSERT INTO transactions VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (tx, timestamp, type, events, wallet, network, gasUsed, gasValue))
-        except Exception as err:
-            logging.error('Unexpected Error {0} caching transaction {1} - '.format(err, tx))
-        con.close()
-    else:
-        logging.info('Skipping tx save due to previous db failure.')
-
-# For determining how much history we already have for a wallet cached
-def getLastTransactionTimestamp(account, network):
-    try:
-        con = aConn()
-        cur = con.cursor()
-        # Dont include tavern transactions to find last tx cached because it may be from block crawler
-        cur.execute("SELECT max(blockTimestamp) FROM transactions WHERE account=%s and network=%s and eventType != 'tavern'", (account, network))
-        row = cur.fetchone()
-        con.close()
-    except Exception as err:
-        # if db is unavailable we can just continue
-        logging.error('Error finding tx {0}'.format(str(err)))
-        row = None
-    if row == None or row[0] == None:
-        return 1648710000
-    else:
-        return row[0]
-
 def findReport(account, startDate, endDate, walletHash):
     con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (account, startDate, endDate, walletHash))
-    row = cur.fetchone()
-    # Make sure they don't already have a report running for other range
     existRow = None
-    if not settings.CONCURRENT_REPORTS:
-        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s OR walletHash!=%s)", (account, startDate, endDate, walletHash))
-        existRow = cur.fetchone()
+    with con.cursor() as cur:
+        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (account, startDate, endDate, walletHash))
+        row = cur.fetchone()
+        # Make sure they don't already have a report running for other range
+        if not settings.CONCURRENT_REPORTS:
+            cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s OR walletHash!=%s)", (account, startDate, endDate, walletHash))
+            existRow = cur.fetchone()
     con.close()
     if existRow != None:
         return existRow
@@ -141,8 +79,8 @@ def findReport(account, startDate, endDate, walletHash):
 
 def createReport(account, startDate, endDate, now, txCount, costBasis, includedChains, wallets, group, walletHash, proc=None, moreOptions=None, txCounts=[]):
     con = aConn()
-    cur = con.cursor()
-    cur.execute("INSERT INTO reports (account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, jsonpickle.encode(wallets), group, walletHash))
+    with con.cursor() as cur:
+        cur.execute("INSERT INTO reports (account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, jsonpickle.encode(wallets), group, walletHash))
     con.close()
 
 def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, walletHash, moreOptions=None, txCounts=[]):
@@ -158,18 +96,6 @@ def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedCha
         logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
         logging.error(err)
 
-def completeTransactions(wallet, startDate, endDate, walletHash, fileName):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("UPDATE reports SET reportStatus=1, transactionsContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
-    con.close()
-
-def completeReport(wallet, startDate, endDate, walletHash, fileName):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=2, reportContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
-    con.close()
-
 def deleteReport(wallet, startDate, endDate, walletHash, transactionFile, reportFile):
     con = aConn()
     cur = con.cursor()
@@ -183,12 +109,6 @@ def deleteReport(wallet, startDate, endDate, walletHash, transactionFile, report
         logging.error('Failure attempting delete of report files for {0}. {1}/{2}'.format(wallet, transactionFile, reportFile))
         logging.error(err)
 
-def updateReportError(wallet, startDate, endDate, walletHash, statusCode=9):
-    con = aConn()
-    cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (statusCode, wallet, startDate, endDate, walletHash))
-    con.close()
-
 def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount):
     con = aConn()
     cur = con.cursor()
@@ -200,13 +120,43 @@ def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount
     logging.info('updating report {0} records {1} {2} - found rpt {3}'.format(wallet, updateType, recordCount, cur.rowcount))
     con.close()
 
-def getRunningReports():
+def getReportData(contentFile):
     con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT Count(*) FROM reports WHERE proc=1")
-    row = cur.fetchone()
+    with con.cursor() as cur:
+        cur.execute('SELECT rData from reportdata WHERE id=%s', (contentFile,))
+        result = cur.fetchone()
     con.close()
-    return row[0]
+    return result
+
+def getEventData(wallet, eventType):
+    events = []
+    try:
+        con = aConn()
+        cur = con.cursor()
+    except Exception as err:
+        logging.error('DB error trying to look up event data. {0}'.format(str(err)))
+    if con != None and not con.closed:
+        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType=%s", (wallet, eventType))
+        row = cur.fetchone()
+        while row != None:
+            r = jsonpickle.decode(row[3])
+            if type(r) is list:
+                for evt in r:
+                    evt.txHash = row[0]
+                    evt.network = row[5]
+                    events.append(evt)
+            else:
+                # cache records saved before feb 2022 did not have txHash property
+                r.txHash = row[0]
+                # cache records saved before dec 2022 did not have network property
+                r.network = row[5]
+                events.append(r)
+            row = cur.fetchone()
+
+        con.close()
+    else:
+        logging.info('Skipping data lookup due to db conn failure.')
+    return events
 
 def getWalletGroup(account, group):
     results = []

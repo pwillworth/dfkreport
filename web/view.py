@@ -4,11 +4,11 @@
  Copyright 2023 Paul Willworth <ioscode@gmail.com>
 
 """
-
-import pickle
+from datetime import datetime
 import jsonpickle
 import logging
 import db
+import taxmap
 import csvFormats
 
 
@@ -63,12 +63,6 @@ def getResponseJSON(results, contentType, eventGroup='all'):
 def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
     failure = False
 
-    if formatType == 'csv':
-        print('Content-type: text/csv')
-        print('Content-disposition: attachment; filename="dfk-report.csv"\n')
-    else:
-        print('Content-type: text/json\n')
-
     if contentFile == '':
         response = '{ "response" : "Error: content file id in contentFile parameter is required to view a report" }'
         failure = True
@@ -78,13 +72,16 @@ def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
         if contentType == '':
             response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
         else:
-            results = None
-            try:
-                with open('../reports/{0}'.format(contentFile), 'rb') as file:
-                    results = pickle.load(file)
-            except FileNotFoundError as err:
-                response = '{ "response" : "Error: content file is invalid or no longer available.  You may need to regenerate the report" }'
-                failure = True
+            results = {}
+            con = db.aConn()
+            with con.cursor() as cur:
+                cur.execute('SELECT wallets, startDate, endDate, costBasis, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
+                row = cur.fetchone()
+            con.close()
+            if row != None:
+                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], jsonpickle.loads(row[4]), contentType, eventGroup)
+            else:
+                response = '{ "response" : "Error: failed to find completed report with that content id" }'
 
             if 'taxes' in results:
                 if formatType == 'csv':
