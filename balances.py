@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import nets
 import logging
 import decimal
@@ -112,5 +113,8 @@ def updateBalances():
     con.close()
 
 if __name__ == "__main__":
+    # get in the right spot when running this so file paths can be managed relatively
+    location = os.path.abspath(__file__)
+    os.chdir('/'.join(location.split('/')[0:-1]))
     logging.basicConfig(filename='balances.log', level=logging.INFO)
     updateBalances()

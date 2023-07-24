@@ -677,6 +677,7 @@ function loadTaxes(results) {
 
     setTimeout(addTaxRow, 50, recordCategory, taxResult[i].description, taxResult[i].acquiredDate, taxResult[i].soldDate, taxResult[i].proceeds, taxResult[i].costs, taxResult[i].gains, accountedString);
   }
+  $("#loadingSection").css("display","none");
   // some very small accounts may result in no tax generating records
   // switch to the transaction tab in this case as there may be something there
   if ( taxResult.length == 0 ) {

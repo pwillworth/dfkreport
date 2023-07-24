@@ -88,7 +88,7 @@ var usdFormat = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 })
 $( function() {
-    $( "#reportProgress, #mappingProgress" ).progressbar({
+    $( "#mappingProgress" ).progressbar({
       value: false,
       max: 2000
     });
@@ -158,10 +158,6 @@ function viewReport(account, contentFile, contentType, eventGroup='all') {
             reportRecords = data.response.tax_records;
             loadReport(data.response, contentType);
             $("#exportContainer").show(500);
-            $("#loadingSection").css("display","none");
-            $("#loadingMessage").html('Lila: I can help you.');
-            $("#reportProgress").progressbar( "option", "value", false);
-            $("#reportPercent").html("");
             for (let i = 0; i < event_groups.length; i++) {
               setTimeout(`viewReport("${account}","${contentFile}","transaction","${event_groups[i]}")`, 500);
             }
@@ -264,15 +260,9 @@ function downloadDone() {
         </div>
       </div>
       <div id="reportInfo">
-        <div id="loadingSection" style="display: none;">
-          <img src="{{ BASE_SCRIPT_URL }}static/images/gettingrecords.gif" class="goldBorder lilaBox" />
-          <div class="talk-bubble tri-right round border right-top">
-            <div class="talktext">
-              <p id="loadingMessage">Lila: Hi, I can help you.</p>
-            </div>
-          </div>
-          <div id="reportProgress"></div>
-          <div id="reportPercent"></div>
+        <div id="loadingSection">
+          <div class="lds-ripple"><div></div><div></div></div>
+          <div id="loadMsg">Loading Tax Records</div>
         </div>
         <div id="summaryReport" style="display: none;">
           <div id="paymentsTotal" class="summaryBox" style="width:95%;height:40px;" title="Totals your Jewel income from payments, airdrops, staking, and quests.">
