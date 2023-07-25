@@ -8,9 +8,7 @@ import settings
 import logging
 
 def main():
-    # get in the right spot when running this so file paths can be managed relatively
-    os.chdir(settings.WEB_ROOT)
-    logging.basicConfig(filename='../watch.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(filename='watch.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     con = db.aConn()
     logging.info('Started report watcher.')
     while True:
@@ -36,10 +34,9 @@ def main():
                         cur2.execute("UPDATE reports SET proc=1 WHERE account=%s AND startDate=%s AND endDate=%s AND generatedTimestamp=%s", (row[0], row[1], row[2], row[3]))
                     con.commit()
                     logging.debug('kickoff proc')
-                    cmds = '../main.py {0} "{1}" "{2}" --costbasis {3} --chains {4} --wallets {5}'.format(row[0], row[1], row[2], row[4], row[5], row[7])
+                    cmds = './main.py {0} "{1}" "{2}" --costbasis {3} --chains {4} --wallets {5}'.format(row[0], row[1], row[2], row[4], row[5], row[7])
                     subprocess.Popen(shlex.split(cmds), start_new_session=True)
                     time.sleep(1)
-                    logging.debug('done waiting 1s')
                 else:
                     db.updateReportError(row[0], row[1], row[2], row[7], 7)
                     logging.info('Update report too busy for {0}'.format(row[0]))
@@ -55,4 +52,7 @@ def main():
     con.close()
 
 if __name__ == "__main__":
-	main()
+    # get in the right spot when running this so file paths can be managed relatively
+    location = os.path.abspath(__file__)
+    os.chdir('/'.join(location.split('/')[0:-1]))
+    main()

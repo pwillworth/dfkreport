@@ -13,7 +13,7 @@ import traceback
 
 
 def main():
-    handler = logging.handlers.RotatingFileHandler('../main.log', maxBytes=33554432, backupCount=10)
+    handler = logging.handlers.RotatingFileHandler('main.log', maxBytes=33554432, backupCount=10)
     logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('We got a report request')
     parser = argparse.ArgumentParser()

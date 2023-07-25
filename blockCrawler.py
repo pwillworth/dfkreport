@@ -47,7 +47,7 @@ def parseEvents(network):
         tavernContractAddress = '0x13a65B9F8039E2c032Bc022171Dc05B30c3f2892'
         petCatalogContractAddress = '0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3'
 
-    if not w3.isConnected():
+    if not w3.is_connected():
         logging.critical('Error: Critical w3 connection failure for '.format(network))
         return 'Error: Blockchain connection failure.'
     # pick up where last process left off in blocks
@@ -78,14 +78,14 @@ def parseEvents(network):
         endBlock += 1023
         if endBlock > toBlock:
             endBlock = toBlock
-        tavernFilter = tavernContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
+        tavernFilter = tavernContract.events.AuctionSuccessful().create_filter(fromBlock=blockNumber, toBlock=endBlock)
         try:
             tavernChanges = tavernFilter.get_all_entries()
         except ValueError as err:
             logging.warning('got expected error meaning no events getting entries for {0}: {1}'.format(network, str(err)))
         w3.eth.uninstall_filter(tavernFilter.filter_id)
 
-        petSalesFilter = petCatalogContract.events.AuctionSuccessful().createFilter(fromBlock=blockNumber, toBlock=endBlock)
+        petSalesFilter = petCatalogContract.events.AuctionSuccessful().create_filter(fromBlock=blockNumber, toBlock=endBlock)
         try:
             petSaleChanges = petSalesFilter.get_all_entries()
         except ValueError as err:

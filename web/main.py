@@ -48,11 +48,11 @@ def warmup():
 
 @app.route("/about")
 def about():
-    return render_template('about.html')
+    return render_template('about.html', BASE_SCRIPT_URL='/')
 
 @app.route("/help")
 def help():
-    return render_template('help.html')
+    return render_template('help.html', BASE_SCRIPT_URL='/')
 
 @app.route("/generate", methods=['GET','POST'])
 def report_generate():
@@ -72,6 +72,12 @@ def report_generate():
     purchaseAddresses = request.form.get('purchaseAddresses', '')
 
     loginState = readAccount(request.args, request.cookies)
+    # ensure account passed is checksum version when logged in otherwise use wallet
+    if loginState[0] > 0:
+        account = loginState[1]
+    else:
+        if account == '':
+            account = wallet
 
     return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, costBasis, eventGroup, purchaseAddresses)
 
@@ -335,7 +341,7 @@ def member_connect():
         secondsLeft = memberStatus[1]
     else:
         memberState = 0
-    return render_template('member.html', memberState=memberState, memberAccount=loginState[1], secondsLeft=secondsLeft, expiryDescription=utils.timeDescription(secondsLeft))
+    return render_template('member.html', BASE_SCRIPT_URL='/', memberState=memberState, memberAccount=loginState[1], secondsLeft=secondsLeft, expiryDescription=utils.timeDescription(secondsLeft))
 
 
 @app.route("/addWallet", methods=['POST'])

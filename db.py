@@ -10,7 +10,7 @@ def ReportOptions():
     }
 
 def aConn():
-    conn = psycopg2.connect("sslmode=verify-full options=--cluster=caring-wasp-2917",
+    conn = psycopg2.connect("sslmode=verify-full sslrootcert=web/certs/root.crt options=--cluster=caring-wasp-2917",
         host = dfkInfo.DB_HOST,
         port = "26257",
 	    dbname= dfkInfo.DB_NAME,
@@ -175,7 +175,7 @@ def createDatabase():
     con = aConn()
     cur = con.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices STRING, marketcap STRING, volume STRING, INDEX IX_price_date_token (date, token))')
-    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events STRING, account VARCHAR(63), network VARCHAR(31), fee FLOAT, feeValue FLOAT, PRIMARY KEY (txHash, account), INDEX IX_tx_account_type (account, eventType), INDEX IX_tx_time (blockTimestamp))')
+    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events STRING, account VARCHAR(63), network VARCHAR(31), fee FLOAT, feeValue FLOAT, PRIMARY KEY (txHash, account), INDEX IX_tx_account_type (account, eventType), INDEX IX_account_network (account, network))')
     cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus INT2, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions STRING, txCounts VARCHAR(10230), wallets STRING, walletGroup VARCHAR(63), walletHash VARCHAR(63), PRIMARY KEY (account, startDate, endDate, walletHash), INDEX IX_rpt_status (reportStatus))')
     cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets STRING, generatedTimestamp TIMESTAMP NOT NULL, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
     cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
@@ -188,10 +188,6 @@ def createDatabase():
 def main():
     # Initialize database
     createDatabase()
-    con = aConn()
-    cur = con.cursor()
-    #cur.execute("DELETE FROM reports")
-    con.close()
 
 
 if __name__ == "__main__":
