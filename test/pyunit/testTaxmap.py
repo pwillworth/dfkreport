@@ -5,8 +5,9 @@ import decimal
 import sys
 sys.path.append("../../")
 import records
-import taxmap
 import events
+sys.path.append("../../web/")
+import taxmap
 
 
 class testTaxmap(unittest.TestCase):

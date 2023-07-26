@@ -7,13 +7,13 @@ jobs:
 
 - job: 'Test'
   pool:
-    vmImage: 'Ubuntu 20.04'
+    vmImage: 'Ubuntu 22.04'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
       Python38:
         python.version: '3.8'
+      Python39:
+        python.version: '3.9'
     maxParallel: 2
 
   steps:
@@ -40,7 +40,7 @@ jobs:
 - job: 'Publish'
   dependsOn: 'Test'
   pool:
-    vmImage: 'Ubuntu 20.04'
+    vmImage: 'Ubuntu 22.04'
 
   steps:
   - task: UsePythonVersion@0

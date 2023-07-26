@@ -7,7 +7,6 @@ import json
 import logging
 import logging.handlers
 import jsonpickle
-sys.path.append("./web/")
 import contracts
 
 def main():
