@@ -16,6 +16,7 @@
 <script type="text/javascript">
 
 var currentView = 'tax';
+var reportLoaded = false;
 
 $(document).ready(function() {
     sid = getCookie('sid', '');
@@ -142,8 +143,9 @@ function switchView(view) {
 }
 function refreshLists() {
   // triggered by ethereum connection completing for multiwallet reports by logged in users
-  if ( '{{ walletGroup }}' != '' ) {
+  if ( '{{ walletGroup }}' != '' && reportLoaded == false ) {
     viewReport(selectedAccount, '{{ contentFile }}', 'tax');
+    reportLoaded = true;
   }
 }
 // Load the old report in two steps after it is done, first tax report, then events
@@ -154,12 +156,14 @@ function viewReport(account, contentFile, contentType, eventGroup='all') {
         contentType: contentType,
         eventGroup: eventGroup,
         sid: sid}, function( data ) {
+          var delay = 0;
           if (contentType == 'tax') {
             reportRecords = data.response.tax_records;
             loadReport(data.response, contentType);
             $("#exportContainer").show(500);
             for (let i = 0; i < event_groups.length; i++) {
-              setTimeout(`viewReport("${account}","${contentFile}","transaction","${event_groups[i]}")`, 500);
+              delay = i*2000;
+              setTimeout(`viewReport("${account}","${contentFile}","transaction","${event_groups[i]}")`, delay);
             }
           } else {
             reportRecords = data.response.event_records;
