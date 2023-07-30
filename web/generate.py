@@ -135,7 +135,7 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
         if len(status) == 18:
             if status[5] == 2:
                 # report is ready
-                response = ''.join(('{ "response" : {\n  "contentFile" : "', status[9], '",\n  "status" : "complete",\n  "message" : "Report ready post to view.py with contentFile and send contentType parameter as tax or transaction to get results."\n  }\n}'))
+                response = ''.join(('{ "response" : {\n  "contentFile" : "', status[9], '",\n  "status" : "complete",\n  "message" : "Report ready post to view endpoint with contentFile and send contentType parameter as tax or transaction to get results."\n  }\n}'))
             elif status[5] == 7:
                 # too busy right now
                 log.warning('responding report too busy for {0}'.format(str(status)))

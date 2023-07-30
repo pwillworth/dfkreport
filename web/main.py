@@ -35,17 +35,6 @@ def index():
 
     return render_template('home.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
-@app.route("/_ah/warmup")
-def warmup():
-    """Served stub function returning no content.
-
-    Your warmup logic can be implemented here (e.g. set up a database connection pool)
-
-    Returns:
-        An empty string, an HTTP code 200, and an empty object.
-    """
-    return "", 200, {}
-
 @app.route("/about")
 def about():
     return render_template('about.html', BASE_SCRIPT_URL='/')

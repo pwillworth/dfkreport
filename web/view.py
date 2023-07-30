@@ -79,7 +79,7 @@ def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
                 row = cur.fetchone()
             con.close()
             if row != None:
-                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], jsonpickle.loads(row[4]), contentType, eventGroup)
+                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], jsonpickle.loads(row[4]), contentType, eventGroup, formatType)
             else:
                 response = '{ "response" : "Error: failed to find completed report with that content id" }'
 

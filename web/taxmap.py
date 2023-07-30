@@ -68,13 +68,12 @@ def inReportRange(item, startDate, endDate):
 
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType, eventGroup):
+def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType, eventGroup, formatType='json'):
     # Generate map of all events from transaction list
     eventMap = EventsMap()
 
     logging.info('Start Event map build')
     for wallet in wallets:
-        logging.warning('add data for wallet: {0}'.format(wallet))
         if contentType == 'tax' or eventGroup in ['all','tavern']:
             eventMap['tavern'] += db.getEventData(wallet, 'tavern')
         if contentType == 'tax' or eventGroup in ['all','swaps']:
@@ -87,7 +86,7 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType
             eventMap['bank'] += db.getEventData(wallet, 'bank')
         if contentType == 'tax' or eventGroup in ['all','gardens']:
             eventMap['gardens'] += db.getEventData(wallet, 'gardens')
-        if contentType == 'tax' or eventGroup in ['all','quests']:
+        if contentType == 'tax' or formatType == 'csv' or (endDate - startDate) < datetime.timedelta(days=8):
             eventMap['quests'] += db.getEventData(wallet, 'quests')
         if contentType == 'tax' or eventGroup in ['all','alchemist']:
             eventMap['alchemist'] += db.getEventData(wallet, 'alchemist')

@@ -37,9 +37,11 @@ def main():
                     cmds = './main.py {0} "{1}" "{2}" --costbasis {3} --chains {4} --wallets {5}'.format(row[0], row[1], row[2], row[4], row[5], row[7])
                     subprocess.Popen(shlex.split(cmds), start_new_session=True)
                     time.sleep(1)
-                else:
+                elif settings.MAX_REPORTS > 1 and reportCount >= settings.MAX_REPORTS:
                     db.updateReportError(row[0], row[1], row[2], row[7], 7)
                     logging.info('Update report too busy for {0}'.format(row[0]))
+                else:
+                    logging.warning('Minimal node ignoring report request.')
             else:
                 logging.debug('No report records waiting')
         else:

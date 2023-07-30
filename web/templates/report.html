@@ -4,7 +4,7 @@
 <meta property="og:title" content="Lila's Ledger - Report">
 <meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
 <meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
-<link rel="shortcut icon" href="{{ BASE_SCRIPT_URL }}static/images/favicon.png" />
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.min.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="/static/jquery-ui.structure.min.css" media="screen" />
@@ -264,7 +264,7 @@ function downloadDone() {
         </div>
       </div>
       <div id="reportInfo">
-        <div id="loadingSection">
+        <div id="loadingSection" style="height: 40px;">
           <div class="lds-ripple"><div></div><div></div></div>
           <div id="loadMsg">Loading Tax Records</div>
         </div>
@@ -282,7 +282,7 @@ function downloadDone() {
             </h3>
           </div>
           <div id="quests_summary" class="summaryBox inlineBlock" style="height: 680px;">
-            <div id="smy_quests_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="smyIcon" /><span>Quest</span></div>
+            <div id="smy_quests_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="smyIcon" /><span>Quest (if 1 week range or less)</span></div>
             <div id="smy_quests_data"></div>
           </div>
           <div id="swaps_summary" class="summaryBox inlineBlock" style="height: 680px;">
@@ -372,7 +372,7 @@ function downloadDone() {
             <table id="tx_alchemist_data" class="transactionTable" style="display: none;">
             </table>
           </div>
-          <h2 id="tx_quests_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest</span><span id="tx_quests_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
+          <h2 id="tx_quests_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest (if 1 week range or less)</span><span id="tx_quests_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
           <div style="display: none;">
             <table id="tx_quests_data" class="transactionTable" style="display: none;">
             </table>
