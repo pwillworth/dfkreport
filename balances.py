@@ -48,6 +48,7 @@ def getBalances(wallet):
     jewelValue = 0.0
     crystalValue = 0.0
     jadeValue = 0.0
+    klayValue = 0.0
     # Get balances on DFKChain
     balanceJewel = w3d.eth.get_balance(wallet)
     if balanceJewel > 1:
@@ -107,10 +108,13 @@ def getBalances(wallet):
 def updateBalances():
     snapTime = datetime.now(timezone.utc)
     result = getBalances(COGNIFACT_WALLET)
-    con = db.aConn()
-    with con.cursor() as cur:
-        cur.execute('INSERT INTO balances (updateTime, balanceData) VALUES (%s, %s)', (snapTime, jsonpickle.dumps({ 'tokens': result })))
-    con.close()
+    if 'Error:' in result:
+        logging.error('Could not write balance data due to {0}'.format(result))
+    else:
+        con = db.aConn()
+        with con.cursor() as cur:
+            cur.execute('INSERT INTO balances (updateTime, balanceData) VALUES (%s, %s)', (snapTime, jsonpickle.dumps({ 'tokens': result })))
+        con.close()
 
 if __name__ == "__main__":
     # get in the right spot when running this so file paths can be managed relatively

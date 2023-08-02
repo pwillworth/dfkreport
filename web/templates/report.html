@@ -22,7 +22,6 @@ $(document).ready(function() {
     sid = getCookie('sid', '');
     isConnected()
     $("#busyImg").css("display","none");
-    optionsReset();
     $('.txHeader').hover(function() {
       $( this ).addClass('goldBorder');
     }, function() {
@@ -40,21 +39,25 @@ $(document).ready(function() {
     if ('{{ contentFile }}' != '') {
       var addrDisplay = `{{ wallets }}
       `;
-      if ( '{{ walletGroup }}' == '' ) {
-        var addr = '{{ account }}';
-        viewReport(addr, '{{ contentFile }}', 'tax');
-      }
       $('#accountAddress').html(addrDisplay);
       if ({{ includedChains }} & 1) {
         $("#optHarmony").prop('checked', true);
+      } else {
+        $("#optHarmony").prop('checked', false);
       }
       if ({{ includedChains }} & 4) {
         $("#optDFKChain").prop('checked', true);
+      } else {
+        $("#optDFKChain").prop('checked', false);
       }
       if ({{ includedChains }} & 8) {
-        $("optKlaytn").prop('checked', true);
+        $("#optKlaytn").prop('checked', true);
+      } else {
+        $("#optKlaytn").prop('checked', false);
       }
       if ({{ includedChains }} & 2) {
+        $("#optAvalanche").prop('checked', true);
+      } else {
         $("#optAvalanche").prop('checked', false);
       }
       $("#startDate").html('{{ startDate }}');
@@ -82,6 +85,10 @@ $(document).ready(function() {
         $("#purchaseAddresses").html("{{ purchaseAddresses }}");
         $('#addressEntry').show();
       }
+      if ( '{{ walletGroup }}' == '' ) {
+        var addr = '{{ account }}';
+        viewReport(addr, '{{ contentFile }}', 'tax');
+      }
     }
 });
 var usdFormat = new Intl.NumberFormat('en-US', {
@@ -94,25 +101,7 @@ $( function() {
       max: 2000
     });
   } );
-// Restore defaults for options
-function optionsReset() {
-  $("#optHarmony").prop('checked', true);
-  $("#optDFKChain").prop('checked', true);
-  $("optKlaytn").prop('checked', true);
-  $("#optAvalanche").prop('checked', false);
-  // Default to last year if it is early in year, this year otherwise
-  var dt = new Date();
-  var setYear = dt.getFullYear();
-  if (dt.getMonth() < 5) {
-    setYear = setYear -1;
-  }
-  $("#startDate").val(setYear + "-01-01");
-  $("#endDate").val(setYear + "-12-31");
-  $("#fifo").attr('checked', 'checked');
-  $("#manual").attr('checked', 'checked');
-  $("#purchaseAddresses").val('');
-  $('#addressEntry').hide();
-}
+
 // Switch between Tax, Summary, and Transaction report views
 function switchView(view) {
   if (view == 'tax') {
@@ -209,11 +198,11 @@ function downloadDone() {
       <span id="startDate"></span> to <span id="endDate"></span>
       <div class="sectionHead">Included Chains</div>
       <fieldset class="chainSelect">
-        <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked" disabled="disabled" />
+        <input type="checkbox" id="optHarmony" name="optHarmony" disabled="disabled" />
         <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
-        <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked" disabled="disabled" />
+        <input type="checkbox" id="optDFKChain" name="optDFKChain" disabled="disabled" />
         <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
-        <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked" disabled="disabled" />
+        <input type="checkbox" id="optKlaytn" name="optKlaytn" disabled="disabled" />
         <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
         <input type="checkbox" id="optAvalanche" name="optAvalanche" disabled="disabled" />
         <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" class="chainButton"/></label>

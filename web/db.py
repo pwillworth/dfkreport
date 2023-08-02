@@ -128,7 +128,7 @@ def getReportData(contentFile):
     con.close()
     return result
 
-def getEventData(wallet, eventType):
+def getEventData(wallet, eventType, networks):
     events = []
     try:
         con = aConn()
@@ -136,7 +136,7 @@ def getEventData(wallet, eventType):
     except Exception as err:
         logging.error('DB error trying to look up event data. {0}'.format(str(err)))
     if con != None and not con.closed:
-        cur.execute("SELECT * FROM transactions WHERE account=%s and eventType=%s", (wallet, eventType))
+        cur.execute("SELECT * FROM transactions WHERE account=%s AND eventType=%s AND network IN %s", (wallet, eventType, networks))
         row = cur.fetchone()
         while row != None:
             r = jsonpickle.decode(row[3])

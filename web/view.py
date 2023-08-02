@@ -75,11 +75,11 @@ def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
             results = {}
             con = db.aConn()
             with con.cursor() as cur:
-                cur.execute('SELECT wallets, startDate, endDate, costBasis, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
+                cur.execute('SELECT wallets, startDate, endDate, costBasis, includedChains, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
                 row = cur.fetchone()
             con.close()
             if row != None:
-                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], jsonpickle.loads(row[4]), contentType, eventGroup, formatType)
+                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], row[4], jsonpickle.loads(row[5]), contentType, eventGroup, formatType)
             else:
                 response = '{ "response" : "Error: failed to find completed report with that content id" }'
 

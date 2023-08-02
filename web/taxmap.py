@@ -5,6 +5,7 @@ import logging
 import db
 from decimal import *
 import contracts
+import nets
 
 def EventsMap():
     return {
@@ -62,38 +63,51 @@ class CostBasisItem:
         self.fiatReceiveValue = fiatReceiveValue
         self.receiveAmountNotAccounted = receiveAmount
 
+def getNetworkList(includedChains):
+    networks = ()
+    if includedChains & nets.HARMONY > 0:
+        networks = networks + ('harmony',)
+    if includedChains & nets.DFKCHAIN > 0:
+        networks = networks + ('dfkchain',)
+    if includedChains & nets.KLAYTN > 0:
+        networks = networks + ('klaytn',)
+    if includedChains & nets.AVALANCHE > 0:
+        networks = networks + ('avalanche',)
+    return networks
+
 def inReportRange(item, startDate, endDate):
     itemDate = datetime.date.fromtimestamp(item.timestamp)
     return itemDate >= startDate and itemDate <= endDate
 
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(wallets, startDate, endDate, costBasis, moreOptions, contentType, eventGroup, formatType='json'):
+def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup, formatType='json'):
     # Generate map of all events from transaction list
     eventMap = EventsMap()
+    networks = getNetworkList(includedChains)
 
     logging.info('Start Event map build')
     for wallet in wallets:
         if contentType == 'tax' or eventGroup in ['all','tavern']:
-            eventMap['tavern'] += db.getEventData(wallet, 'tavern')
+            eventMap['tavern'] += db.getEventData(wallet, 'tavern', networks)
         if contentType == 'tax' or eventGroup in ['all','swaps']:
-            eventMap['swaps'] += db.getEventData(wallet, 'swaps')
+            eventMap['swaps'] += db.getEventData(wallet, 'swaps', networks)
         if contentType == 'tax' or eventGroup in ['all','liquidity']:
-            eventMap['liquidity'] += db.getEventData(wallet, 'liquidity')
+            eventMap['liquidity'] += db.getEventData(wallet, 'liquidity', networks)
         if contentType == 'tax' or eventGroup in ['all','wallet']:
-            eventMap['wallet'] += db.getEventData(wallet, 'wallet')
+            eventMap['wallet'] += db.getEventData(wallet, 'wallet', networks)
         if contentType == 'tax' or eventGroup in ['all','bank']:
-            eventMap['bank'] += db.getEventData(wallet, 'bank')
+            eventMap['bank'] += db.getEventData(wallet, 'bank', networks)
         if contentType == 'tax' or eventGroup in ['all','gardens']:
-            eventMap['gardens'] += db.getEventData(wallet, 'gardens')
+            eventMap['gardens'] += db.getEventData(wallet, 'gardens', networks)
         if contentType == 'tax' or formatType == 'csv' or (endDate - startDate) < datetime.timedelta(days=8):
-            eventMap['quests'] += db.getEventData(wallet, 'quests')
+            eventMap['quests'] += db.getEventData(wallet, 'quests', networks)
         if contentType == 'tax' or eventGroup in ['all','alchemist']:
-            eventMap['alchemist'] += db.getEventData(wallet, 'alchemist')
+            eventMap['alchemist'] += db.getEventData(wallet, 'alchemist', networks)
         if contentType == 'tax' or eventGroup in ['all','airdrops']:
-            eventMap['airdrops'] += db.getEventData(wallet, 'airdrops')
+            eventMap['airdrops'] += db.getEventData(wallet, 'airdrops', networks)
         if contentType == 'tax' or eventGroup in ['all','lending']:
-            eventMap['lending'] += db.getEventData(wallet, 'lending')
+            eventMap['lending'] += db.getEventData(wallet, 'lending', networks)
 
     # Map the events into tax records
     logging.info('Start Tax mapping {0}'.format(str(wallets)))
