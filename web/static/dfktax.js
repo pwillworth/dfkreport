@@ -499,7 +499,7 @@ const LENDING_ADDRESSES = {
   '0x49d95736FE7f1F32E3ee5deFc26c95bA22834639': 'Tranq1DAILending',
 }
 crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'];
-event_groups = ['tavern','swaps','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
+event_groups = ['tavern','swaps','trades','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
 paymentsTotalValue = 0;
 var sid='';
@@ -612,6 +612,9 @@ function loadReport(results, contentType, eventGroup='all') {
         break;
       case 'swaps':
         loadSwapEvents(eventResult[eventGroup]);
+        break;
+      case 'trades':
+        loadTradeEvents(eventResult[eventGroup]);
         break;
       case 'liquidity':
         loadLiquidityEvents(eventResult[eventGroup]);
@@ -785,6 +788,59 @@ function loadSwapEvents(swapEvents) {
     swapTable = swapTable + '<tr><td>' + k + '</td><td>' + swapTotals[k][0].toFixed(0) + '</td><td>' + swapTotals[k][1].toFixed(0) + '</td></tr>';
   }
   $("#smy_swaps_data").html(swapTable + '</table>');
+}
+
+function addTradeRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network, txHash) {
+  $('#tx_trades_data').show();
+  $('#tx_trades_data').append(
+    '<tr title="' + network + ' - ' + txHash + '"><td>' + eventDate.toUTCString() + '</td>' +
+    '<td>' + getTokenName(swapType, network) + '</td>' +
+    '<td>' + Number(swapAmount).toFixed(3) + '</td>' +
+    '<td>' + getTokenName(receiveType, network) + '</td>' +
+    '<td>' + Number(receiveAmount).toFixed(3) + '</td>' +
+    '<td>' + usdFormat.format(fiatSwapValue) + '</td>' +
+    '<td>' + usdFormat.format(fiatReceiveValue) + '</td></tr>'
+  );
+}
+
+function loadTradeEvents(tradeEvents) {
+  // Populate the Transaction list with Bazaar trades Data
+  var tradeTotals = {}
+  $("#tx_trades_data").html('<tr><th>Block Date</th><th>Send Type</th><th>Send Amount</th><th>Receive Type</th><th>Receive Amount</th><th>Send USD Amount</th><th>Receive USD Amount</th></tr>');
+  for (var i = 0; i < tradeEvents.length; i++) {
+    var eventDate = new Date(tradeEvents[i].timestamp * 1000);
+    var fiatReceiveValue = tradeEvents[i].fiatReceiveValue;
+    var fiatSwapValue = tradeEvents[i].fiatSwapValue;
+
+    if (tradeEvents[i].fiatReceiveValue['py/reduce'] != undefined) {
+      fiatReceiveValue = tradeEvents[i].fiatReceiveValue['py/reduce'][1]['py/tuple'][0];
+    }
+    if (tradeEvents[i].fiatSwapValue['py/reduce'] != undefined) {
+      fiatSwapValue = tradeEvents[i].fiatSwapValue['py/reduce'][1]['py/tuple'][0];
+    }
+
+    setTimeout(addTradeRow, 50, eventDate, tradeEvents[i].swapType, tradeEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0], tradeEvents[i].receiveType, tradeEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0], fiatSwapValue, fiatReceiveValue, tradeEvents[i].network, tradeEvents[i].txHash);
+
+    swapName = getTokenName(tradeEvents[i].swapType, tradeEvents[i].network);
+    rcvdName = getTokenName(tradeEvents[i].receiveType, tradeEvents[i].network);
+    if ( swapName in tradeTotals ) {
+      tradeTotals[swapName][0] += parseInt(tradeEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]);
+    } else {
+      tradeTotals[swapName] = [parseInt(tradeEvents[i].swapAmount['py/reduce'][1]['py/tuple'][0]), 0];
+    }
+    if ( rcvdName in tradeTotals ) {
+      tradeTotals[rcvdName][1] += parseInt(tradeEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0]);
+    } else {
+      tradeTotals[rcvdName] = [0, parseInt(tradeEvents[i].receiveAmount['py/reduce'][1]['py/tuple'][0])];
+    }
+    $('#tx_trades_count').html(' (' + (i + 1) + ')');
+  }
+  // Add summary data for each coin type swapped
+  var tradeTable = '<table><tr><th>Coin Type</th><th>Total Sent</th><th>Total Rcvd</th></tr>';
+  for (let k in tradeTotals) {
+    tradeTable = tradeTable + '<tr><td>' + k + '</td><td>' + tradeTotals[k][0].toFixed(0) + '</td><td>' + tradeTotals[k][1].toFixed(0) + '</td></tr>';
+  }
+  $("#smy_trades_data").html(tradeTable + '</table>');
 }
 
 function addLiquidityRow(eventDate, action, poolName, poolAmount, coin1Amount, coin2Amount, coin1FiatValue, coin2FiatValue, network, txHash) {

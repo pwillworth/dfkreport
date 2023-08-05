@@ -182,7 +182,8 @@ address_map = {
     '0x696BECc6ddD5589a9a3Bb93fAc3A53D26b7cb819': 'AlchemistKlay',
     '0x6362b205b539afb5FC369277365441c1dC6fAa28': 'TreatCraftingSD',
     '0x3Eab8a8F71dDA3e6c907C74302B734805C4f3278': 'VendorKlay',
-    '0x1Bf68A9d1EaEe7826b3593C20a0ca93293cb489a': 'Orbit Bridge Eth->Klaytn'
+    '0x1Bf68A9d1EaEe7826b3593C20a0ca93293cb489a': 'Orbit Bridge Eth->Klaytn',
+    '0x902F2b740bC158e16170d57528405d7f2a793Ca2': 'Bazaar Crystalavale'
 }
 
 HARMONY_TOKENS = {

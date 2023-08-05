@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import requests
 from pickletools import read_uint2
 from web3 import Web3
 from web3.logs import STRICT, IGNORE, DISCARD, WARN
@@ -157,6 +158,14 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
                         results.fiatFeeValue = feeValue
                         eventsFound = True
                         db.saveTransaction(tx, timestamp, 'liquidity', jsonpickle.encode(results), wallet, network, txFee, feeValue)
+                else:
+                    logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
+            elif 'Bazaar' in action:
+                results = extractBazaarResults(w3, tx, wallet, result['to'], timestamp, receipt, value, network)
+                if results != None:
+                    results.fiatFeeValue = feeValue
+                    eventsFound = True
+                    db.saveTransaction(tx, timestamp, 'trades', jsonpickle.encode(results), wallet, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
             elif 'Gardener' in action:
@@ -798,6 +807,89 @@ def extractSwapResults(w3, txn, account, dex, timestamp, receipt, value, network
                     errStr += 'Rcvd {0} {1}|'.format(rcvdAmount[i], rcvdToken[i])
                 logging.error('Error: Unrecognized Swap combination: ' + errStr)
 
+# Get data related to a bazaar transaction based on order Id
+def getBazaarTx(orderId):
+    query = """query {
+        bazaarTransactions(
+            where: { orderId: %s })
+            {
+                initiator { id }
+                owner { id }
+                quantity
+                price
+                side
+                tokenAddress
+                executedStamp
+                txHash
+                network
+            }
+        }
+    """
+    data = query % (orderId)
+    graph_uri = "https://api.defikingdoms.com/graphql"
+    try:
+        r = requests.post(graph_uri, json={'query': data})
+    except Exception as err:
+        result = "Error: failed to get bazaar tx - {0}".format(str(err))
+
+    if r.status_code == 200:
+        result = r.json()
+        if 'data' in result and 'bazaarTransactions' in result['data']:
+            if len(result['data']['bazaarTransactions']) > 0:
+                result = result['data']['bazaarTransactions'][0]
+            else:
+                result = "Error: no bazaar transaction found for OrderId {0}".format(orderId)
+        else:
+            result = str(result)
+    else:
+        result = "Error: failed to get bazaar transaction - {0} {1}".format(str(r.status_code), r.text)
+    return result
+
+def extractBazaarResults(w3, txn, account, bazaarAddress, timestamp, receipt, value, network):
+    ABI = getABI('BazaarDiamond')
+    contract = w3.eth.contract(address='0x902F2b740bC158e16170d57528405d7f2a793Ca2', abi=ABI)
+    decoded_logs = contract.events.OrderExecuted().process_receipt(receipt, errors=DISCARD)
+    if network == 'dfkchain':
+        # jewel on dfkchain
+        bazaarCurrency = '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260'
+    else:
+        # unknown otherwise
+        bazaarCurrency = ''
+
+    rcvdToken = ''
+    rcvdAmount = 0
+    sentToken = ''
+    sentAmount = 0
+    for log in decoded_logs:
+        orderId = log['args']['orderId']
+        # owner of order is not available in Event, so we must lookup in API
+        orderInfo = getBazaarTx(orderId)
+        logging.info("order {0}: {1}".format(str(orderId), str(orderInfo)))
+        if 'tokenAddress' in orderInfo:
+            transactToken = Web3.to_checksum_address(orderInfo['tokenAddress'])
+            if (orderInfo['owner']['id'] == account and orderInfo['side'] == 0) or (orderInfo['initiator']['id'] == account and orderInfo['side'] == 1):
+                # our buy order initiated by someone else, or someone elses sell order initiated by us
+                sentToken = bazaarCurrency
+                sentAmount += int(orderInfo['quantity']) * decimal.Decimal(int(orderInfo['price'])/(10.0**30))
+                rcvdToken = transactToken
+                rcvdAmount += contracts.valueFromWei(int(orderInfo['quantity']), transactToken, network)
+            elif (orderInfo['initiator']['id'] == account and orderInfo['side'] == 0) or (orderInfo['owner']['id'] == account and orderInfo['side'] == 1):
+                # others buy order filled by us or our sell order someone else bought from
+                sentToken = transactToken
+                sentAmount += contracts.valueFromWei(int(orderInfo['quantity']), transactToken, network)
+                rcvdToken = bazaarCurrency
+                rcvdAmount += int(orderInfo['quantity']) * decimal.Decimal(int(orderInfo['price'])/(10.0**30))
+            else:
+                # If we are not initiator or owner then we were just part of a Tx with multiple fills including other sellers, ignore
+                logging.info('Skipping OrderExecute log not involving wallet.')
+
+    if rcvdToken != '' and sentToken != '':
+        r = records.TraderTransaction(txn, network, timestamp, sentToken, rcvdToken, sentAmount, rcvdAmount)
+        fiatValues = getSwapFiatValues(timestamp, sentToken, sentAmount, rcvdToken, rcvdAmount, network)
+        r.fiatSwapValue = fiatValues[0]
+        r.fiatReceiveValue = fiatValues[1]
+        return r
+
 # Lookup and return the fiat values given two tokens in a swap at a point in time
 def getSwapFiatValues(timestamp, sentToken, sentAmount, rcvdToken, rcvdAmount, network):
     # Lookup price for normal tokens, but set direct value of both for fiat type coins
@@ -1344,12 +1436,14 @@ def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent, with
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
-    tx = '0x45f1d833ad24a5e8d0e76035b67e89440bac24357b3733c92e9ad38eb8f50319'
+    w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
+    tx = '0x01b32a38595e9cd9fae86ef7ebd8efea9b1dca68dc1e64bd978e04f0c71d5ab8'
+    #tx = '0x118f64f5e663a066159beb4e177dda70284edd73ba4244e95c776d32a1359957'
+    #tx = '0x715200f3bb4bfde6029da0cc9396fb243d8a6bc4ab17d9acf3d85b61d285a338'
     result = w3.eth.get_transaction(tx)
     action = lookupEvent(result['from'], result['to'], '0xC49601fe84fA58ec4B05E5d51F9054977692cB73')
     value = Web3.from_wei(result['value'], 'ether')
     block = result['blockNumber']
     receipt = w3.eth.get_transaction_receipt(tx)
-    results = extractSwapResults(w3, tx, '0x6544adC57244DB0d2379400DE17b465c918c2a45', result['to'], 1676614935, receipt, value, 'harmony')
+    results = extractBazaarResults(w3, tx, '0xB9824c4cf87de16ee4a446B36e2450cdEf37D611', result['to'], 1676614935, receipt, value, 'dfkchain')
     print(str(results.__dict__))

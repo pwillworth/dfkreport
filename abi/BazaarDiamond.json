@@ -1,0 +1,2002 @@
+[
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "components": [
+            {
+                "internalType": "address",
+                "name": "facetAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "enum IDiamondCut.FacetCutAction",
+                "name": "action",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes4[]",
+                "name": "functionSelectors",
+                "type": "bytes4[]"
+            }
+            ],
+            "indexed": false,
+            "internalType": "struct IDiamondCut.FacetCut[]",
+            "name": "_diamondCut",
+            "type": "tuple[]"
+        },
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "_init",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "bytes",
+            "name": "_calldata",
+            "type": "bytes"
+        }
+        ],
+        "name": "DiamondCut",
+        "type": "event"
+    },
+    {
+        "inputs": [
+        {
+            "components": [
+            {
+                "internalType": "address",
+                "name": "facetAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "enum IDiamondCut.FacetCutAction",
+                "name": "action",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes4[]",
+                "name": "functionSelectors",
+                "type": "bytes4[]"
+            }
+            ],
+            "internalType": "struct IDiamondCut.FacetCut[]",
+            "name": "_diamondCut",
+            "type": "tuple[]"
+        },
+        {
+            "internalType": "address",
+            "name": "_init",
+            "type": "address"
+        },
+        {
+            "internalType": "bytes",
+            "name": "_calldata",
+            "type": "bytes"
+        }
+        ],
+        "name": "diamondCut",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes4",
+            "name": "_functionSelector",
+            "type": "bytes4"
+        }
+        ],
+        "name": "facetAddress",
+        "outputs": [
+        {
+            "internalType": "address",
+            "name": "facetAddress_",
+            "type": "address"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "facetAddresses",
+        "outputs": [
+        {
+            "internalType": "address[]",
+            "name": "facetAddresses_",
+            "type": "address[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_facet",
+            "type": "address"
+        }
+        ],
+        "name": "facetFunctionSelectors",
+        "outputs": [
+        {
+            "internalType": "bytes4[]",
+            "name": "facetFunctionSelectors_",
+            "type": "bytes4[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "facets",
+        "outputs": [
+        {
+            "components": [
+            {
+                "internalType": "address",
+                "name": "facetAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes4[]",
+                "name": "functionSelectors",
+                "type": "bytes4[]"
+            }
+            ],
+            "internalType": "struct IDiamondLoupe.Facet[]",
+            "name": "facets_",
+            "type": "tuple[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes4",
+            "name": "_interfaceId",
+            "type": "bytes4"
+        }
+        ],
+        "name": "supportsInterface",
+        "outputs": [
+        {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "previousOwner",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newOwner",
+            "type": "address"
+        }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+        {
+            "internalType": "address",
+            "name": "owner_",
+            "type": "address"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_newOwner",
+            "type": "address"
+        }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "Pausable__NotPaused",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "Pausable__Paused",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UintUtils__InsufficientHexLength",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": false,
+            "internalType": "enum Side",
+            "name": "side",
+            "type": "uint8"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "fee",
+            "type": "uint256"
+        }
+        ],
+        "name": "DefaultFeeSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "feeAddress",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "feePercent",
+            "type": "uint256"
+        }
+        ],
+        "name": "FeeAddressAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "source",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+        }
+        ],
+        "name": "FeeDeferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "source",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+        }
+        ],
+        "name": "FeeDisbursed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "source",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+        }
+        ],
+        "name": "FeeLockedBurned",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "enum Side",
+            "name": "side",
+            "type": "uint8"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "fee",
+            "type": "uint256"
+        }
+        ],
+        "name": "MarketFeeSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "baseToken",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "bool",
+            "name": "isERC20",
+            "type": "bool"
+        },
+        {
+            "indexed": false,
+            "internalType": "enum Side",
+            "name": "side",
+            "type": "uint8"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+        }
+        ],
+        "name": "OrderAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "feePercent",
+                "type": "uint256"
+            }
+            ],
+            "indexed": false,
+            "internalType": "struct Order",
+            "name": "order",
+            "type": "tuple"
+        }
+        ],
+        "name": "OrderCancelled",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "initiator",
+            "type": "address"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "remainingQuantity",
+            "type": "uint256"
+        },
+        {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+        }
+        ],
+        "name": "OrderExecuted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        }
+        ],
+        "name": "Paused",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "previousAdminRole",
+            "type": "bytes32"
+        },
+        {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "newAdminRole",
+            "type": "bytes32"
+        }
+        ],
+        "name": "RoleAdminChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+        }
+        ],
+        "name": "RoleGranted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        },
+        {
+            "indexed": true,
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+        }
+        ],
+        "name": "RoleRevoked",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+        {
+            "indexed": false,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        }
+        ],
+        "name": "Unpaused",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_ORDER_VALUE",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MODERATOR_ROLE",
+        "outputs": [
+        {
+            "internalType": "bytes32",
+            "name": "",
+            "type": "bytes32"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "PRICE_FACTOR",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_price",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_orderId",
+            "type": "uint256"
+        }
+        ],
+        "name": "addToOrderList",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "defaultPrecision",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        }
+        ],
+        "name": "getRoleAdmin",
+        "outputs": [
+        {
+            "internalType": "bytes32",
+            "name": "",
+            "type": "bytes32"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        }
+        ],
+        "name": "grantRole",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        }
+        ],
+        "name": "hasRole",
+        "outputs": [
+        {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "maxTotalPrice",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "nextOrderId",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "name": "orders",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "bool",
+            "name": "isERC20",
+            "type": "bool"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "feePercent",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "pause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "paused",
+        "outputs": [
+        {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "powerUpManagerAddress",
+        "outputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        }
+        ],
+        "name": "precisionOverride",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_price",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_orderId",
+            "type": "uint256"
+        }
+        ],
+        "name": "removeFromOrderList",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        }
+        ],
+        "name": "renounceRole",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "bytes32",
+            "name": "role",
+            "type": "bytes32"
+        },
+        {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+        }
+        ],
+        "name": "revokeRole",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_fee",
+            "type": "uint256"
+        }
+        ],
+        "name": "setDefaultFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "uint256",
+            "name": "_precision",
+            "type": "uint256"
+        }
+        ],
+        "name": "setDefaultPrecision",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address[]",
+            "name": "_feeAddresses",
+            "type": "address[]"
+        },
+        {
+            "internalType": "uint256[]",
+            "name": "_feePercents",
+            "type": "uint256[]"
+        }
+        ],
+        "name": "setFees",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_fee",
+            "type": "uint256"
+        }
+        ],
+        "name": "setMarketFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "uint256",
+            "name": "_maxTotalPrice",
+            "type": "uint256"
+        }
+        ],
+        "name": "setMaxTotalPrice",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_powerUpManagerAddress",
+            "type": "address"
+        }
+        ],
+        "name": "setPowerUpManagerAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_precision",
+            "type": "uint256"
+        }
+        ],
+        "name": "setPrecisionOverride",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "bool",
+            "name": "_useWeth",
+            "type": "bool"
+        }
+        ],
+        "name": "setToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "unpause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "useWeth",
+        "outputs": [
+        {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_quantity",
+            "type": "uint256"
+        }
+        ],
+        "name": "calcFee",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_user",
+            "type": "address"
+        },
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "calcFeePercent",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "getBestOrder",
+        "outputs": [
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "feePercent",
+                "type": "uint256"
+            }
+            ],
+            "internalType": "struct Order",
+            "name": "",
+            "type": "tuple"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "getBestOrderId",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        }
+        ],
+        "name": "getBestOrders",
+        "outputs": [
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "feePercent",
+                "type": "uint256"
+            }
+            ],
+            "internalType": "struct Order",
+            "name": "buyOrder",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "feePercent",
+                "type": "uint256"
+            }
+            ],
+            "internalType": "struct Order",
+            "name": "sellOrder",
+            "type": "tuple"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_quantity",
+            "type": "uint256"
+        }
+        ],
+        "name": "getCostForQuantity",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "getNumPrices",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_key",
+            "type": "uint256"
+        }
+        ],
+        "name": "getOrderBookNode",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "_returnKey",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_parent",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_left",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_right",
+            "type": "uint256"
+        },
+        {
+            "internalType": "bool",
+            "name": "_red",
+            "type": "bool"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "getOrderBookRoot",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_price",
+            "type": "uint256"
+        }
+        ],
+        "name": "getOrderIdsAtPrice",
+        "outputs": [
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        },
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "uint256[]",
+            "name": "_orderIds",
+            "type": "uint256[]"
+        }
+        ],
+        "name": "getOrders",
+        "outputs": [
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "feePercent",
+                "type": "uint256"
+            }
+            ],
+            "internalType": "struct Order[]",
+            "name": "",
+            "type": "tuple[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        }
+        ],
+        "name": "getPrices",
+        "outputs": [
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_tokenId",
+            "type": "uint256"
+        },
+        {
+            "internalType": "enum Side",
+            "name": "_side",
+            "type": "uint8"
+        },
+        {
+            "internalType": "uint256",
+            "name": "_price",
+            "type": "uint256"
+        }
+        ],
+        "name": "getQuantityUpToPrice",
+        "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "_user",
+            "type": "address"
+        }
+        ],
+        "name": "getUserOpenOrderIds",
+        "outputs": [
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuard__ReentrantCall",
+        "type": "error"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "uint256[]",
+            "name": "_orderIds",
+            "type": "uint256[]"
+        }
+        ],
+        "name": "cancelOrders",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "orderId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "newTotalPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "newQuantity",
+                "type": "uint256"
+            }
+            ],
+            "internalType": "struct EditOrderInput[]",
+            "name": "_inputs",
+            "type": "tuple[]"
+        }
+        ],
+        "name": "editOrders",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "components": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "enum Side",
+                "name": "side",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "quantity",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "addUnfilledOrderToOrderbook",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isERC20",
+                "type": "bool"
+            }
+            ],
+            "internalType": "struct OrderInput[]",
+            "name": "_inputs",
+            "type": "tuple[]"
+        }
+        ],
+        "name": "makeOrders",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        },
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        },
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        },
+        {
+            "internalType": "bytes",
+            "name": "",
+            "type": "bytes"
+        }
+        ],
+        "name": "onERC1155BatchReceived",
+        "outputs": [
+        {
+            "internalType": "bytes4",
+            "name": "",
+            "type": "bytes4"
+        }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        },
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        },
+        {
+            "internalType": "bytes",
+            "name": "",
+            "type": "bytes"
+        }
+        ],
+        "name": "onERC1155Received",
+        "outputs": [
+        {
+            "internalType": "bytes4",
+            "name": "",
+            "type": "bytes4"
+        }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

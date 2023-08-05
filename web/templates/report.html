@@ -278,6 +278,10 @@ function downloadDone() {
             <div id="smy_swaps_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="smyIcon" /><span>Trader</span></div>
             <div id="smy_swaps_data"></div>
           </div>
+          <div id="trades_summary" class="summaryBox inlineBlock" style="height: 680px;">
+            <div id="smy_trades_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bazaar.png" class="smyIcon" /><span>Bazaar</span></div>
+            <div id="smy_trades_data"></div>
+          </div>
           <div id="liquidity_summary" class="summaryBox inlineBlock" style="height: 680px;">
             <div id="smy_liquidity_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="smyIcon" /><span>Liquidity</span></div>
             <div id="smy_liquidity_data"></div>
@@ -339,6 +343,11 @@ function downloadDone() {
           <h2 id="tx_swaps_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Trader</span><span id="tx_swaps_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="txIcon" /></h2>
           <div style="display: none;">
             <table id="tx_swaps_data" class="transactionTable" style="display: none;">
+            </table>
+          </div>
+          <h2 id="tx_trades_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bazaar</span><span id="tx_trades_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bazaar.png" class="txIcon" /></h2>
+          <div style="display: none;">
+            <table id="tx_trades_data" class="transactionTable" style="display: none;">
             </table>
           </div>
           <h2 id="tx_liquidity_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Liquidity</span><span id="tx_liquidity_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="txIcon" /></h2>

@@ -178,6 +178,24 @@ def getResponseCSV(records, contentType, format):
             else:
                 response += ','.join(('trader', blockDateStr, 'swap', contracts.getTokenName(record.swapType, record.network), str(record.swapAmount), contracts.getTokenName(record.receiveType, record.network), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash, str(txFee), '\n'))
         logging.info('done with swaps')
+        for record in eventRecords['trades']:
+            blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(getDateFormat(format))
+            txFee = ''
+            txFeeCurrency = ''
+            if hasattr(record, 'fiatFeeValue'):
+                txFee = record.fiatFeeValue
+                txFeeCurrency = 'USD'
+            if format == 'koinlyuniversal':
+                response += ','.join((blockDateStr, str(record.swapAmount), contracts.getTokenName(record.swapType, record.network), str(record.receiveAmount), contracts.getTokenName(record.receiveType, record.network), str(txFee), txFeeCurrency, str(record.fiatSwapValue), record.fiatType, '', 'swap', record.txHash, '\n'))
+            elif format == 'coinledgeruniversal':
+                response += ','.join((blockDateStr, 'Defi Kingdoms', contracts.getTokenName(record.swapType, record.network), str(record.swapAmount), contracts.getTokenName(record.receiveType, record.network), str(record.receiveAmount), txFeeCurrency, str(txFee), '', 'Trade', record.txHash, '\n'))
+            elif format == 'tokentax':
+                response += ','.join(('Trade', str(record.receiveAmount), contracts.getTokenName(record.receiveType, record.network), str(record.swapAmount), contracts.getTokenName(record.swapType, record.network), str(txFee), txFeeCurrency, 'Defi Kingdoms', '', record.txHash, blockDateStr, '\n'))
+            elif format == 'turbotax':
+                response += ','.join((blockDateStr, 'Convert', contracts.getTokenName(record.swapType, record.network), str(record.swapAmount), contracts.getTokenName(record.receiveType, record.network), str(record.receiveAmount), txFeeCurrency, str(txFee), record.fiatType, str(record.fiatSwapValue), '', record.txHash, '\n'))
+            else:
+                response += ','.join(('bazaar', blockDateStr, 'trade', contracts.getTokenName(record.swapType, record.network), str(record.swapAmount), contracts.getTokenName(record.receiveType, record.network), str(record.receiveAmount), str(record.fiatSwapValue), str(record.fiatReceiveValue), record.txHash, str(txFee), '\n'))
+        logging.info('done with trades')
         for record in eventRecords['liquidity']:
             blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(getDateFormat(format))
             txFee = ''

@@ -11,6 +11,7 @@ def EventsMap():
     return {
         'tavern': [],
         'swaps': [],
+        'trades': [],
         'liquidity': [],
         'wallet': [],
         'bank': [],
@@ -92,6 +93,8 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOpti
             eventMap['tavern'] += db.getEventData(wallet, 'tavern', networks)
         if contentType == 'tax' or eventGroup in ['all','swaps']:
             eventMap['swaps'] += db.getEventData(wallet, 'swaps', networks)
+        if contentType == 'tax' or eventGroup in ['all','trades']:
+            eventMap['trades'] += db.getEventData(wallet, 'trades', networks)
         if contentType == 'tax' or eventGroup in ['all','liquidity']:
             eventMap['liquidity'] += db.getEventData(wallet, 'liquidity', networks)
         if contentType == 'tax' or eventGroup in ['all','wallet']:
@@ -113,7 +116,7 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOpti
     logging.info('Start Tax mapping {0}'.format(str(wallets)))
     if contentType == 'tax':
         logging.info('building swap data')
-        swapData = buildSwapRecords(eventMap['swaps'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
+        swapData = buildSwapRecords(eventMap['swaps']+eventMap['trades'], startDate, endDate, eventMap['wallet'], eventMap['airdrops'], eventMap['gardens'], eventMap['quests'], eventMap['tavern'], eventMap['lending'], costBasis, moreOptions['purchaseAddresses'])
         logging.info('building liquidity data')
         liquidityData = buildLiquidityRecords(eventMap['liquidity'], startDate, endDate)
         logging.info('building payment data')
@@ -147,6 +150,8 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOpti
         eventMap['tavern'] = [x for x in eventMap['tavern'] if inReportRange(x, startDate, endDate)]
     if contentType == 'tax' or eventGroup in ['all','swaps']:
         eventMap['swaps'] = [x for x in eventMap['swaps'] if inReportRange(x, startDate, endDate)]
+    if contentType == 'tax' or eventGroup in ['all','trades']:
+        eventMap['trades'] = [x for x in eventMap['trades'] if inReportRange(x, startDate, endDate)]
     if contentType == 'tax' or eventGroup in ['all','wallet']:
         eventMap['wallet'] = [x for x in eventMap['wallet'] if inReportRange(x, startDate, endDate)]
     if contentType == 'tax' or eventGroup in ['all','liquidity']:
