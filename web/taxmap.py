@@ -563,7 +563,7 @@ def buildGardensRecords(gardensEvents, startDate, endDate):
         eventDate = datetime.date.fromtimestamp(event.timestamp)
         # Create basic income tax record for any staking reward claim that is not locked
         # Locked Jewel is accounted for when mined from mining quest and it actually is available and realized
-        if event.event == 'staking-reward' and eventDate >= startDate and eventDate <= endDate:
+        if event.event in ['staking-reward','staking-reward-unlocked'] and eventDate >= startDate and eventDate <= endDate:
             if ''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType)) in rewardGroups:
                 rewardGroups[''.join((eventDate.strftime('%d-%m-%Y'), event.event, event.coinType))].proceeds += event.fiatValue
                 # this is hacky, but I'm just gonna use it to keep track of total jewel since it is not needed

@@ -169,15 +169,17 @@ function viewReport(account, contentFile, contentType, eventGroup='all') {
     );
     return false;
 }
-function exportData(format) {
+async function exportData(format) {
+  $("#exportCSV").prop('disabled', true);
+  $("#loadingCSV").show();
   var csvFormat = $('input[name=csvf]:checked').val();
   var url = `${BASE_SCRIPT_URL}view?formatType=${format}&contentType=${currentView}&contentFile={{ contentFile }}&csvFormat=${csvFormat}`;
   var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
   document.getElementById('frame_box').innerHTML = htm;
 }
-// todo figure out callback for iframe load
 function downloadDone() {
-  $("#mask").hide();
+  $("#exportCSV").prop('disabled', false);
+  $("#loadingCSV").hide();
 }
 </script>
 <body>
@@ -231,7 +233,8 @@ function downloadDone() {
         <div id="purchaseAddresses"></div>
       </div>
       <div class="sectionHead"></div>
-      <button type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;top: -2px;">Export CSV</button>
+      <button id="exportCSV" type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;top: -2px;">Export CSV</button>
+      <div id="loadingCSV" style="display:none;">Preparing CSV...<div class="lds-ripple"><div></div><div></div></div></div>
     </div>
     <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
       <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage | safe }}</h3>

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from web3 import Web3
+from web3.middleware import geth_poa_middleware
 from pyhmy import account
 import nets
 import db
@@ -211,12 +212,29 @@ def getGlacierTxList(chainID, account, address, startDate, endDate, walletHash, 
     nextPageToken = ''
     retryCount = 0
     txs = []
+    blockFilter = ""
+    lowerBound = db.getLastTransactionTimestamp(address, 'dfkchain')
+    if lowerBound > 1648710000:
+        w3 = Web3(Web3.HTTPProvider(nets.dfk_pokt))
+        # middleware used to allow for interpreting longer data length for get_block on dfkchain
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        if not w3.is_connected():
+            logging.error('Error: Critical w3 connection failure for dfk chain')
+        else:
+            latestBlock = w3.eth.get_block('finalized')
+            latestBlockTimestamp = latestBlock.timestamp
+            # estimate block at timestamp based on assumption that each block is about 2s
+            # this will give a buffer of overlap since blocks usually take slightly over 2s on DFKChain
+            estimatedBlock = latestBlock.number - int((latestBlockTimestamp - lowerBound) / 2)
+            logging.info("estimatedBlock = {0} - int(({1} - {2}) / 2)".format(latestBlock.number, latestBlockTimestamp, lowerBound))
+            blockFilter = "&startBlock={0}".format(estimatedBlock)
 
     while tx_end == False:
         if nextPageToken != '':
-            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}&pageToken={4}".format(chainID, address, nets.glacier, page_size, nextPageToken)
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}{4}&pageToken={5}".format(chainID, address, nets.glacier, page_size, blockFilter, nextPageToken)
         else:
-            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}".format(chainID, address, nets.glacier, page_size)
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}{4}".format(chainID, address, nets.glacier, page_size, blockFilter)
+        logging.info(rURL)
 
         try:
             r = requests.get(rURL, auth=(dfkInfo.COV_KEY,''))
@@ -349,5 +367,6 @@ def saveTransactions(account, txData, txCounts, wallets, startDate, endDate, inc
 if __name__ == "__main__":
     logging.basicConfig(filename='transactions.log', level=logging.INFO)
     #result = getTransactionCount('0xeAaAcc98c0d582b6167054fb6017d09cA77bcfc5', 4)
-    result = getCovalentTxList('53935', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '2022-01-01', '2022-02-01', '')
+    result = getGlacierTxList('53935', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '2023-08-01', '2023-08-05', '')
+    #result = getCovalentTxList('53935', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', '2022-01-01', '2022-02-01', '')
     print(str(result))

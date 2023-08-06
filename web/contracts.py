@@ -588,7 +588,7 @@ DFKCHAIN_TOKENS = {
     '0xcD9201F50e5Be84ECE3D8F603dcd3e9DD5e88ea2': 'Vigor Crystal',
     '0x8780c4aa8bd0D15493D63C884bd9D427199Cf2cf': 'Greater Vigor Crystal',
     '0xbd2677c06C9448534A851bdD25dF045872b87cb1': 'Lesser Fortitude Crystal',
-    '0xe9BfCc80800EB77a1eAF6881825936770aF83Eb6': 'Fortitude Crystal',
+    '0xdbEE8C336B06f2d30a6d2bB3817a3Ae0E34f4900': 'Fortitude Crystal',
     '0x3e1c80c3B916C93748Ae642c885d4BFb5D6a6BFe': 'Greater Fortitude Crystal',
     '0xC989c916F189D2A2BE0322c020942d7c43aEa830': 'Lesser Wit Crystal',
     '0xAeb5b59c8B90D4F078046550Cc8F9f08dC127253': 'Wit Crystal',

@@ -168,8 +168,8 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
                     db.saveTransaction(tx, timestamp, 'trades', jsonpickle.encode(results), wallet, network, txFee, feeValue)
                 else:
                     logging.error('Error: Failed to parse a swap result. {0}'.format('not needed'))
-            elif 'Gardener' in action:
-                results = extractGardenerResults(w3, tx, wallet, timestamp, receipt, network)
+            elif 'Gardener' in action or 'Unlock' in action:
+                results = extractGardenerResults(w3, tx, wallet, result['to'], timestamp, receipt, network)
                 if results != None and len(results) > 0:
                     results[0].fiatFeeValue = feeValue
                     eventsFound = True
@@ -653,23 +653,27 @@ def extractJewelerResults(w3, txn, account, jeweler, timestamp, receipt, network
     return [r, rc, rb]
     
 
-def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
-    # events record amount of jewel/crystal received when claiming at the gardens
+def extractGardenerResults(w3, txn, account, toAddress, timestamp, receipt, network):
+    # events record amount of jewel/crystal received when claiming at the gardens or unlocking locked tokens
     powerToken = contracts.POWER_TOKENS[network]
     ABI = getABI('MasterGardener')
     contract = w3.eth.contract(address='0xDB30643c71aC9e2122cA0341ED77d09D5f99F924', abi=ABI)
     events = []
+    receivedAmount = 0
+    lockedAmount = 0
     decoded_logs = contract.events.SendGovernanceTokenReward().process_receipt(receipt, errors=DISCARD)
     for log in decoded_logs:
-        receivedAmount = Web3.from_wei(log['args']['amount'], 'ether')
-        lockedAmount = Web3.from_wei(log['args']['lockAmount'], 'ether')
+        receivedAmount += Web3.from_wei(log['args']['amount'], 'ether')
+        lockedAmount += Web3.from_wei(log['args']['lockAmount'], 'ether')
+    if receivedAmount > 0 or lockedAmount > 0:
         r = records.GardenerTransaction(txn, network, timestamp, 'staking-reward', powerToken, receivedAmount - lockedAmount)
         rl = records.GardenerTransaction(txn, network, timestamp, 'staking-reward-locked', powerToken, lockedAmount)
         tokenPrice = prices.priceLookup(timestamp, powerToken, network)
         r.fiatValue = tokenPrice * r.coinAmount
         rl.fiatValue = tokenPrice * rl.coinAmount
         events.append(r)
-        events.append(rl)
+        if lockedAmount > 0:
+            events.append(rl)
 
     # events record amount of lp tokens put in and out of gardens for farming and when
     ABI = getABI('JewelToken')
@@ -690,6 +694,12 @@ def extractGardenerResults(w3, txn, account, timestamp, receipt, network):
                 gardenEvent = 'deposit'
                 gardenToken = log['address']
                 gardenAmount = Web3.from_wei(log['args']['value'], 'ether')
+        if 'to' in log['args'] and toAddress in ['0x33606BE9839E180Bc7f671de008CB3669dD61A42']:
+            if log['args']['to'] == account:
+                gardenEvent = 'staking-reward-unlocked'
+                gardenToken = log['address']
+                gardenAmount = Web3.from_wei(log['args']['value'], 'ether')
+
     if gardenAmount > 0:
         r = records.GardenerTransaction(txn, network, timestamp, gardenEvent, gardenToken, gardenAmount)
         events.append(r)
@@ -1437,13 +1447,11 @@ def extractTokenResults(w3, txn, account, timestamp, receipt, depositEvent, with
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
-    tx = '0x01b32a38595e9cd9fae86ef7ebd8efea9b1dca68dc1e64bd978e04f0c71d5ab8'
-    #tx = '0x118f64f5e663a066159beb4e177dda70284edd73ba4244e95c776d32a1359957'
-    #tx = '0x715200f3bb4bfde6029da0cc9396fb243d8a6bc4ab17d9acf3d85b61d285a338'
+    tx = '0x10c2842606b6aeccf102020e65cdef150cc192850c7b642f87b3c9ac2ba93a37'
     result = w3.eth.get_transaction(tx)
-    action = lookupEvent(result['from'], result['to'], '0xC49601fe84fA58ec4B05E5d51F9054977692cB73')
+    action = lookupEvent(result['from'], result['to'], '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF')
     value = Web3.from_wei(result['value'], 'ether')
     block = result['blockNumber']
     receipt = w3.eth.get_transaction_receipt(tx)
-    results = extractBazaarResults(w3, tx, '0xB9824c4cf87de16ee4a446B36e2450cdEf37D611', result['to'], 1676614935, receipt, value, 'dfkchain')
+    results = extractGardenerResults(w3, tx, '0x0FD279b463ff6fAf896Ca753adb5ad2232Ee9AAF', result['to'], 1676614935, receipt, 'dfkchain')
     print(str(results.__dict__))
