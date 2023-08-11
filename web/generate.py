@@ -125,6 +125,8 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
         # allow non-connected users to run on wallet address entry
         if account == '':
             account = wallet
+        else:
+            account = Web3.to_checksum_address(account)
         try:
             status = getReportStatus(account, startDate, endDate, costBasis, includedChains, otherOptions, wallets, walletGroup)
         except Exception as err:
