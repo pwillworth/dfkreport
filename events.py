@@ -64,8 +64,8 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
             tx = txn
         txList.append(tx)
         eventsFound = False
-        # Update report tracking record for status every 50 txs
-        if txCount % 50 == 0:
+        # Update report tracking record for status every 200 txs
+        if txCount % 200 == 0:
             try:
                 db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
             except Exception as err:
