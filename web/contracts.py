@@ -489,6 +489,28 @@ HARMONY_GOLD_VALUES = {
     '0x17f3B5240C4A71a3BBF379710f6fA66B9b51f224': 0, # Bounty Hero Achievement
 }
 
+HARMONY_CRAFTABLE = {
+    '0x2789F04d22a845dC854145d3c289240517f2BcF0': 0, #Health Vial
+    '0x87361363A75c9A6303ce813D0B2656c34B68FF52': 0, #Full Health Potion
+    '0x19b020001AB0C12Ffa93e1FDeF90c7C37C8C71ef': 0, #Mana Vial
+    '0xDc2C698aF26Ff935cD1c50Eef3a4A933C62AF18D': 0, #Full Mana Potion
+    '0x959ba19508827d1ed2333B1b503Bd5ab006C710e': 0, #Stamina Vial
+    '0xA1f8b0E88c51a45E152934686270DDF4E3356278': 0, #Anti-poison Potion
+    '0x1771dEc8D9A29F30d82443dE0a69e7b6824e2F53': 0, #Anti-blinding Potion
+    '0x7e120334D9AFFc0982719A4eacC045F78BF41C68': 0, #Magic Resistance Potion
+    '0xFb03c364969a0bB572Ce62b8Cd616A7DDEb4c09A': 0, #Toughness Potion
+    '0x872dD1595544CE22ad1e0174449C7ECE6F0bb01b': 0, #Switftness Potion
+    '0xe4E7C0c693d8A7FC159776a993495378705464A7': 0, #Lesser Might Stone
+    '0xbb5614D466b77d50DdEd994892DFe6F0ACA4eEbb': 0, #Lesser Finesse Stone
+    '0xd9A8abC0Ce1ADC23F1c1813986c9a9C21C9e7510': 0, #Lesser Swiftness Stone
+    '0xB00CbF5Cd5e7b321436C2D3d8078773522D2F073': 0, #Lesser Vigor Stone
+    '0x1f57eb682377f5Ad6276b9315412920BdF9530f6': 0, #Lesser Fortitude Stone
+    '0x4Ff7A020ec1100D36d5C81F3D4815F2e9C704b59': 0, #Lesser Wit Stone
+    '0x762b98B3758d0A5Eb95B3E4A1E2914Ce0A80D99c': 0, #Lesser Insight Stone
+    '0x6D6eA1D2Dc1Df6Eaa2153f212d25Cf92d13Be628': 0, #Lesser Fortune Stone
+    '0x6D4f4bC32df561a35C05866051CbE9C92759Da29': 0, #Lesser Chaos Stone
+}
+
 DFKCHAIN_TOKENS = {
     '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb': 'Crystal',
     '0xA11f52cd55900e7faf0daca7F2BA1DF8df30AdDd': 'xCrystalOld',
@@ -739,6 +761,30 @@ DFKCHAIN_GOLD_VALUES = {
     '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 0 #Greater Chaos Stone
 }
 
+DFKCHAIN_CRAFTABLE = {
+    '0x591853e01EcFDcF1Bdc9f093423C197BfBBd1A4f': 0, #Health Vial # Crystalvale crafted items
+    '0x5948dd8Df6afEFE05B033AD8f3ae513a9Cd4F1Dc': 0, #Full Health Potion
+    '0x240da5314B05E84392e868aC8f2b80ad6becadd4': 0, #Mana Vial
+    '0xf17FD21bDF6713a1Dfed668b97835b21e32651e8': 0, #Full Mana Potion
+    '0x242078edFDca25ef2A497C8D9f256Fd641472E5F': 0, #Stamina Vial
+    '0x449eB718e351a86718A090A1a8Db3FD561306d9b': 0, #Anti-Poison Potion
+    '0x5986045e7c221c8AD40A736B6434D82E29687aeB': 0, #Anti-Blind Potion
+    '0xFADCb72aAE2713975a890b59FF47231D1A552De3': 0, #Magic Resistance Potion
+    '0x2dfFf745d2c7ddCAD4E97b80DF33705B1a95A172': 0, #Toughness Potion
+    '0x84246Ce3988742D46fC00d9b8b2AFb5CDBDaE660': 0, #Swiftness Potion
+    '0xf345b884eA45aEcb3E46CeEaEDB9CE993Ba3615a': 0, #Lesser Might Stone # Crystalvale stones
+    '0xF1D53fa23C562246B9d8EC591eEa12Ec0288a888': 0, #Lesser Finesse Stone
+    '0xd37aCbAC3C25a543B30aa16208637cfa6EB97eDd': 0, #Lesser Swiftness Stone
+    '0x63891e0fcfEe0cEB12dE5fb96F43ADf9DbEC20a3': 0, #Lesser Vigor Stone
+    '0xf599Ae2c925D3287a7fF64DC1b55C7Ea6EE3AA8f': 0, #Lesser Fortitude Stone
+    '0xFC943eBd19112D6c6098412238E4E8319641B3d8': 0, #Lesser Wit Stone
+    '0x3D112747ff2463802Afa240B62ade8F1cc4a5c7d': 0, #Lesser Insight Stone
+    '0x934e3e2a433F37cC2D02855A43fD7Ed475EA7451': 0, #Lesser Fortune Stone
+    '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 0, #Lesser Chaos Stone
+    '0xAcDa84fAb3d3cdB38078b04901a26c103C37E7F4': 0, #Regular Pet Treat
+    '0x8Df3fFa5a677ba9737CE8Afcb8dd15Bd74085adD': 0, #Premium Pet Treat
+}
+
 KLAYTN_TOKENS = {
     '0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432': 'wKlay',
     '0xe4f05A66Ec68B54A58B17c22107b02e0232cC817': 'wKlay2',
@@ -970,6 +1016,30 @@ KLAYTN_GOLD_VALUES = {
     '0x38bDed7C399bbD214a19De35260766b130cAFd2F': 0, #'Lesser Chaos Stone',
     '0x880cb941AAb394775f54F2b6468035bbdD0B81dF': 0, #'Chaos Stone',
     '0x932049DF7f09DeE7cF5Aefe03f373810EBbdDDc7': 0 #'Greater Chaos Stone',
+}
+
+KLAYTN_CRAFTABLE = {
+    '0xa27C1429a676db902B9f0360686eDbB57d0A7B01': 0, #'Health Vial', # crafted items
+    '0xf710244462431b9962706B46826AFB3B38376c7b': 0, #'Full Health Potion',
+    '0x8639d64A2088500EC4f20fB5C41A995fE4f1d85a': 0, #'Mana Vial',
+    '0x108D31E23bC6540878E6532F3376b3EC982e1C58': 0, #'Full Mana Potion',
+    '0x4546DBaAb48Bf1BF2ad7B56d04952d946Ab6e2a7': 0, #'Stamina Vial',
+    '0xE34a733fA92B41A1CA4241da9D2d5834Cc8D1011': 0, #'Anti-Poison Potion',
+    '0x5FB537aF1d929af7BDD7935C289158c940782ed6': 0, #'Anti-Blind Potion',
+    '0x9c8A0C6a7ad8Be153773070D434CDbeA5176D2ff': 0, #'Magic Resistance Potion',
+    '0xf757a7F4ffF29e7F7b4aCCe6Ffb04E59e91EFDA8': 0, #'Toughness Potion',
+    '0xcb7aA7cA9357DAF9F2b78D262A4f89cDfE5abC70': 0, #'Swiftness Potion',
+    '0xbb8ac0BB95E433204217b0478B3f6d815EcB2d8C': 0, #'Lesser Might Stone', # stones
+    '0x784bd01e3882b80aa837f6A3041Cd386eC54a501': 0, #'Lesser Finesse Stone',
+    '0xAd51199B453075C73FA106aFcAAD59f705EF7872': 0, #'Lesser Swiftness Stone',
+    '0x50F683acefA41b226CEfAdc0dd2ea6fFBfED56A0': 0, #'Lesser Vigor Stone',
+    '0xBC5248B4f50f4c7D2F9A67Be1f1d4b8be44ffc75': 0, #'Lesser Fortitude Stone',
+    '0x5903F478e456DD4Ce5387caBE3984DfEf93D0A46': 0, #'Lesser Wit Stone',
+    '0xfC66cF68505F8E95C52C4F7f84936436DBd52e9B': 0, #'Lesser Insight Stone',
+    '0x816E22125021530535364390a3E2fA305a436247': 0, #'Lesser Fortune Stone',
+    '0x38bDed7C399bbD214a19De35260766b130cAFd2F': 0, #'Lesser Chaos Stone',
+    '0x2F11e335224C5aBd3418B99922A9fe442F5696E9': 0, #Regular Pet Treat
+    '0xEec86C39e061B3Dec44f608Ff0ADA8053B8fFaDb': 0, #Premium Pet Treat
 }
 
 AVALANCHE_TOKENS = {

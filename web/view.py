@@ -46,7 +46,8 @@ def getResponseJSON(results, contentType, eventGroup='all'):
             response += '  "term"  : "{0}",\n'.format(record.term)
             if hasattr(record, 'txFees'):
                 response += '  "txFees" : "{0}",\n'.format(record.txFees)
-            response += '  "amountNotAccounted"  : "{0}"\n'.format(record.amountNotAccounted)
+            response += '  "amountNotAccounted"  : "{0}",\n'.format(record.amountNotAccounted)
+            response += '  "costBasisItems"  : {0}\n'.format(jsonpickle.encode(record.costBasisItems, make_refs=False))
             response += '  }, \n'
 
         # trim off extra comma
@@ -95,3 +96,40 @@ def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
 
     return response
 
+def getTokensReport(wallets, startDate, endDate, includedChains):
+    swapData = []
+    tradeData = []
+    networks = taxmap.getNetworkList(includedChains)
+    for wallet in wallets:
+        swapData += db.getEventData(wallet, 'swaps', networks)
+        tradeData += db.getEventData(wallet, 'trades', networks)
+    tokensRecords = taxmap.buildSwapRecords(swapData+tradeData, startDate, endDate, [], [], [], [], [], [], 'fifo', [])
+    response = getResponseJSON({'taxes': tokensRecords, 'events': taxmap.EventsMap() }, 'tax')
+    return response
+
+def getCraftingReport(wallets, startDate, endDate, includedChains):
+    swapData = []
+    tradeData = []
+    craftData = []
+    airdropData = []
+    networks = taxmap.getNetworkList(includedChains)
+    for wallet in wallets:
+        swapData += db.getEventData(wallet, 'swaps', networks)
+        tradeData += db.getEventData(wallet, 'trades', networks)
+        craftData += db.getEventData(wallet, 'alchemist', networks)
+        airdropData += db.getEventData(wallet, 'airdrops', networks)
+    craftingRecords = taxmap.buildCraftingRecords(swapData+tradeData, startDate, endDate, craftData, airdropData)
+    response = getResponseJSON({'taxes': craftingRecords, 'events': taxmap.EventsMap() }, 'tax')
+    return response
+
+def getNFTReport(wallets, startDate, endDate, includedChains):
+    tavernData = []
+    networks = taxmap.getNetworkList(includedChains)
+    for wallet in wallets:
+        tavernData += db.getEventData(wallet, 'tavern', networks)
+    tavernRecords = taxmap.buildTavernRecords(tavernData, startDate, endDate)
+    response = getResponseJSON({'taxes': tavernRecords, 'events': taxmap.EventsMap() }, 'tax')
+    return response
+
+def getPetsReport(wallets, startDate, endDate, includedChains):
+    failure = False

@@ -5,6 +5,7 @@ from flask import make_response
 from markupsafe import escape
 from web3 import Web3
 import jsonpickle
+from datetime import timezone, datetime, date
 import urllib
 import db
 import utils
@@ -15,6 +16,7 @@ import view
 app = Flask('dfkreport')
 
 @app.route("/")
+@app.route("/home")
 def index():
     secondsLeft = -1
     loginState = readAccount(request.args, request.cookies)
@@ -42,6 +44,27 @@ def about():
 @app.route("/help")
 def help():
     return render_template('help.html', BASE_SCRIPT_URL='/')
+
+@app.route("/tax")
+def tax_report():
+    secondsLeft = -1
+    loginState = readAccount(request.args, request.cookies)
+    # get subscription status
+    if loginState[0] > 0:
+        memberStatus = db.getMemberStatus(loginState[1])
+        memberState = memberStatus[0]
+        secondsLeft = memberStatus[1]
+    else:
+        memberState = 0
+    bankState = 'ragmanEmpty'
+    bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
+    balance = db.readBalance()
+    bankProgress = '${0:.2f}'.format(balance)
+    if balance >= 30:
+        bankState = 'ragman'
+        bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
+
+    return render_template('tax.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
 @app.route("/generate", methods=['GET','POST'])
 def report_generate():
@@ -141,6 +164,78 @@ def report_page(contentid=None):
         accounts = 'Error: Report content not found'
 
     return render_template('report.html', BASE_SCRIPT_URL='/', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
+
+@app.route("/pnl/<content_type>", methods=['GET', 'POST'])
+def pnl(content_type=None):
+    failure = False
+    includedChains = 0
+    walletGroup = ''
+    wallets = []
+    # Extract query parameters
+    account = request.form.get('account', '')
+    wallet = request.form.get('walletAddress', '')
+    startDate = request.form.get('startDate', '')
+    endDate = request.form.get('endDate', '')
+    includeHarmony = request.form.get('includeHarmony', 'on')
+    includeDFKChain = request.form.get('includeDFKChain', 'on')
+    includeAvalanche = request.form.get('includeAvalanche', 'false')
+    includeKlaytn = request.form.get('includeKlaytn', 'on')
+
+    loginState = readAccount(request.args, request.cookies)
+    # ensure account passed is checksum version when logged in otherwise use wallet
+    if loginState[0] > 0:
+        account = loginState[1]
+    else:
+        if account == '':
+            account = wallet
+
+    try:
+        tmpStart = datetime.strptime(startDate, '%Y-%m-%d').date()
+        tmpEnd = datetime.strptime(endDate, '%Y-%m-%d').date()
+    except ValueError:
+        response = '{ "response" : "Error: You must provide dates in the format YYYY-MM-DD" }'
+        failure = True
+
+    if not Web3.is_address(wallet):
+        # If address not passed, check if it is one of users multi wallet groups
+        if loginState[0] > 0:
+            wallets = db.getWalletGroup(account, wallet)
+        if type(wallets) is list and len(wallets) > 0:
+            walletGroup = wallet
+        else:
+            response = { "response" : "Error: {0} is not a valid address.  Make sure you enter the version that starts with 0x".format(wallet) }
+            failure = True
+    else:
+        # Ensure consistent checksum version of address incase they enter lower case
+        wallet = Web3.to_checksum_address(wallet)
+        wallets = [wallet]
+
+    # Build up the bitwise integer of chains to be included
+    if includeHarmony == 'on':
+        includedChains += 1
+    if includeAvalanche == 'on':
+        includedChains += 2
+    if includeDFKChain == 'on':
+        includedChains += 4
+    if includeKlaytn == 'on':
+        includedChains += 8
+    if includedChains < 1:
+        response = { "response" : "Error: You have to select at least 1 blockchain to include." }
+        failure = True
+
+    if failure == True:
+        result = response
+    else:
+        if content_type == 'tokens':
+            result = view.getTokensReport(wallets, tmpStart, tmpEnd, includedChains)
+        elif content_type == 'crafting':
+            result = view.getCraftingReport(wallets, tmpStart, tmpEnd, includedChains)
+        elif content_type == 'nft':
+            result = view.getNFTReport(wallets, tmpStart, tmpEnd, includedChains)
+        else:
+            result = { "error" : "Invalid report type" }
+
+    return result
 
 @app.route("/getReportList", methods=['POST'])
 def report_list():

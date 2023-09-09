@@ -210,6 +210,52 @@ input[disabled] {
 	border: 1px solid rgb(75, 150, 75);
 	padding: 2px;
 }
+.reportLauncher {
+	background-color: #626362;
+	font-size: 28px;
+	margin: 8px;
+	padding: 8px;
+	border-radius: 8px;
+	border: 1px solid #ccc;
+	cursor: pointer;
+	width: 240px;
+	height: 80px;
+}
+.reportLauncher img {
+	height:72px;
+	padding: 2px;
+	vertical-align: middle;
+}
+.reportLauncher:hover {
+	background: #125a9b;
+	color: #d9f1f7;
+}
+[data-title]:hover:after {
+    opacity: 1;
+    transition: all 0.1s ease 0.2s;
+    visibility: visible;
+}
+[data-title]:after {
+    content: attr(data-title);
+    background-color: #cfdd8f;
+    color: #111;
+    font-size: 16px;
+    text-shadow: none;
+	white-space: pre-wrap;
+    min-width: 140px;
+    position: absolute;
+    padding: 1px 5px 2px 5px;
+    bottom: -1.6em;
+    left: 50%;
+    box-shadow: 1px 1px 3px #222222;
+    opacity: 0;
+    border: 1px solid #111111;
+    z-index: 99999;
+    visibility: hidden;
+}
+[data-title] {
+    position: relative;
+}
 
 .chainButton {
 	cursor: pointer;
@@ -452,7 +498,22 @@ input[disabled] {
 	border: 1px solid #ddd;
 	padding: 8px;
 }
-
+.summaryTable {
+	width: 100%;
+	border-collapse: collapse;
+	background-color: #626362;
+	color: #d9f1f7;
+}
+.summaryTable th {
+	font-weight: bold;
+	font-size: 1.2em;
+	border: 1px solid #333333;
+	padding: 8px;
+}
+.summaryTable td {
+	border: 1px solid #ddd;
+	padding: 8px;
+}
 .txIndicator {
 	margin: 4px;
 }

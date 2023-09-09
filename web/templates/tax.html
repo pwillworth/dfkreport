@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <title>Lila's Ledger - Home</title>
 <meta property="og:title" content="Lila's Ledger">
-<meta property="og:description" content="Defi Kingdoms Transaction History reporting on trade performance.">
+<meta property="og:description" content="Defi Kingdoms Transaction History reporting to help quantify potential taxable events.">
 <meta property="og:image" content="{{ BASE_SCRIPT_URL }}static/images/favicon.png">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="stylesheet" type="text/css" href="/static/dfktax.css" media="screen" />
@@ -48,6 +48,10 @@ function optionsReset() {
   }
   $("#startDate").val(setYear + "-01-01");
   $("#endDate").val(setYear + "-12-31");
+  $("#fifo").attr('checked', 'checked');
+  $("#manual").attr('checked', 'checked');
+  $("#purchaseAddresses").val('');
+  $('#addressEntry').hide();
 }
 function refreshLists() {
   if (sid != '' && '{{ memberState }}' == '2') {
@@ -79,24 +83,79 @@ function loadGroupSel() {
     }, "json"
   );
 }
-function getReport(reportType) {
-  $("#loadingSection").css("display","block");
-  $.post(BASE_SCRIPT_URL + "pnl/" + reportType,{
-    walletAddress: $('#ethAddress').val(),
-    includeHarmony: $('input[name=optHarmony]:checked').val(),
-    includeDFKChain: $('input[name=optDFKChain]:checked').val(),
-    includeKlaytn: $('input[name=optKlaytn]:checked').val(),
-    includeAvalanche: $('input[name=optAvalanche]:checked').val(),
-    startDate: $('#startDate').val(),
-    endDate: $('#endDate').val(),
-    account: selectedAccount,
-    sid: sid}, function( data ) {
-      reportRecords = data.response.tax_records;
-      loadReportPNL(data.response, reportType);
-      $("#loadingSection").css("display","none");
-    }, "json"
-  );
-  return false;
+// This function is recursively called to check on report status and will trigger report load when done
+function generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony='false', includeDFKChain='false', includeKlaytn='false', includeAvalanche='false', purchaseAddresses='') {
+    $("#loadingSection").css("display","block");
+    $("#mappingSection").css("display","block");
+    console.log('generate');
+    $.post(BASE_SCRIPT_URL + "generate",{
+        walletAddress: generateAddress,
+        includeHarmony: includeHarmony,
+        includeDFKChain: includeDFKChain,
+        includeKlaytn: includeKlaytn,
+        includeAvalanche: includeAvalanche,
+        startDate: generateStart,
+        endDate: generateEnd,
+        costBasis: costBasis,
+        purchaseAddresses: purchaseAddresses,
+        account: selectedAccount,
+        sid: sid}, async function( data ) {
+          reportStatus = data.response.status
+          if (reportStatus == 'complete') {
+            $("#reportProgress").progressbar( "option", "value", 1 );
+            $("#reportPercent").html('.:100%:.')
+            $("#lilaImg").attr('src', `${BASE_SCRIPT_URL}static/images/liladone.jpg`);
+            $( "#loadingMessage").html('Lila: I have that report ready now, launching on new page...');
+            var contentFile = data.response.contentFile;
+            var reportWin = window.open(`${BASE_SCRIPT_URL}report/${contentFile}`);
+            if (!reportWin || reportWin.closed || typeof reportWin.closed=='undefined') {
+              $( "#loadingMessage").html(`Lila: Your browser blocked my tax report!  You can allow it with your browser, or just click <a target="_blank" href="${BASE_SCRIPT_URL}report/${contentFile}">here</a> to open it.`);
+            }
+            var genButton = document.getElementById('goFilter');
+            genButton.disabled = false;
+          } else if (reportStatus == 'generating') {
+            var progress = getProgress(reportStatus, data.response.transactionsTotal, data.response.transactionsComplete, data.response.transactionsTotal);
+            $("#reportProgress").progressbar( "option", "max", 1 );
+            $("#reportProgress").progressbar( "option", "value", progress );
+            if ( (progress * 100).toFixed(0) == 100 ) {
+              $( "#loadingMessage").html('Lila: I have that report almost ready now, I will have it up in just a minute or two...');
+            } else {
+              $("#loadingMessage").html('Lila: I\'m putting that report together now, maybe you should come back later.  Don\'t you have some quests to do?')
+            }
+            $("#reportPercent").html('.:' + (progress * 100).toFixed(0) + '%:.')
+            await new Promise(r => setTimeout(r, 4000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
+          } else if (reportStatus == 'fetchingtx') {
+            var progress = getProgress(reportStatus, data.response.transactionsFetched, 0, data.response.transactionsTotal);
+            $("#reportProgress").progressbar( "option", "max", 1 );
+            $("#reportProgress").progressbar( "option", "value", progress );
+            $("#loadingMessage").html('Lila: Oh, I know I have that info here somewhere, looking for your records now.')
+            $("#reportPercent").html('.:' + (progress * 100).toFixed(0) + '%:.')
+            await new Promise(r => setTimeout(r, 2000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
+          } else if (reportStatus == 'initiated') {
+            $("#lilaImg").attr('src', `${BASE_SCRIPT_URL}static/images/gettingrecords.gif`);
+            $("#reportProgress").progressbar( "option", "max", 1 );
+            $("#reportProgress").progressbar( "option", "value", 0 );
+            $("#exportContainer").hide(500);
+            await new Promise(r => setTimeout(r, 2000));
+            generateReport(generateAddress, generateStart, generateEnd, costBasis, includeHarmony, includeDFKChain, includeKlaytn, includeAvalanche);
+          } else {
+            // If no status was returned, there must have been some kind of failure and an Error message should be in response
+            $("#loadingSection").css("display","none");
+            $("#mappingSection").css("display","none");
+            $("#loadingMessage").html('Lila: Hi, Things are pretty hectic around here right now.');
+            $("#reportProgress").progressbar( "option", "value", false);
+            $("#reportPercent").html("");
+            $("#mappingProgress").progressbar( "option", "value", false);
+            $("#mappingMessage").html("Loading Transactions...");
+            var genButton = document.getElementById('goFilter');
+            genButton.disabled = false;
+            alert(data.response)
+          }
+        }, "json"
+    );
+    return false;
 }
 </script>
 <body>
@@ -104,7 +163,7 @@ function getReport(reportType) {
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;margin-top:-16px;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
     <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}member" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;margin-right:14px;"/></a></div>
-    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}tax" title="go to legacy tax report gen"><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" style="width:48px;margin-right:14px;"/></a></div>
+    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}home" title="go to home page"><img src="{{ BASE_SCRIPT_URL }}static/images/home.png" style="max-width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">
@@ -114,13 +173,16 @@ function getReport(reportType) {
       <div class="boxHeader ui-widget-header">Report Options
         <a href="{{ BASE_SCRIPT_URL }}help" alt="read documentation"><img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;"/></a></href>
       </div>
-      <div id="multiWalletSelect" style="display:none;">
-        <label for="groupSel">Multi-Wallet:</label>
-        <select name="groupSel" id="groupSel" class="popSel" onchange="$('#ethAddress').val($(this).val())"></select>
-        or
-      </div>
-      <label for="ethAddress">Eth Address:</label>
-      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;" size=40 placeholder="Wallet Address 0x..." />
+      <div class="sectionHead"></div>
+      <fieldset id="dateRangeSet">
+        <legend style="font-weight: bold;">Date Range Included:</legend>
+        <div id="dateSetBox" class="fieldContainer">
+          <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 /></div>
+          <div class="sectionHead"></div>
+          <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 /></div>
+        </div>
+        <div class="sectionHead"></div>
+      </fieldset>
       <div class="sectionHead"></div>
       <fieldset class="chainSelect">
         <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
@@ -133,15 +195,27 @@ function getReport(reportType) {
         <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" class="chainButton"/></label>
       </fieldset>
       <div class="sectionHead"></div>
-      <fieldset id="dateRangeSet">
-        <legend style="font-weight: bold;margin-top:56px;">Date Range Included:</legend>
-        <div id="dateSetBox" class="fieldContainer">
-          <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 /></div>
-          <div class="sectionHead"></div>
-          <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 /></div>
-        </div>
-        <div class="sectionHead"></div>
-      </fieldset>
+      <div style="padding: 4px;margin-top:56px;">
+        <fieldset id="costBasisSet" class="multiToggle">
+          <legend style="font-weight: bold;">Cost Basis:</legend>
+          <input type="radio" name="cbs" id="fifo" value="fifo">
+          <label for="fifo">First in - First Out</label>
+          <input type="radio" name="cbs" id="lifo" value="lifo">
+          <label for="lifo">Last in - First Out</label>
+          <input type="radio" name="cbs" id="hifo" value="hifo">
+          <label for="hifo">Highest in - First Out</label>
+          <input type="radio" name="cbs" id="acb" value="acb">
+          <label for="acb">Adjusted (CAN)</label>
+        </fieldset>
+      </div>
+      <div class="sectionHead"></div>
+      <div class="searchInput" style="text-align:center">
+        <input type="button" value="Add Wallet Purchase Addresses" class="ui-button" onclick="$('#addressEntry').show(500);" style="z-index: 150;"/>
+      </div>
+      <div id="addressEntry" style="display:none;">
+        <label for="purchaseAddresses">Treat xfers to these addresses as taxable</label>
+        <textarea id="purchaseAddresses" name="purchaseAddresses" rows="4" cols="42" maxlength="1000"></textarea>
+      </div>
       <div class="sectionHead"></div>
       <div class="searchInput" style="text-align:center">
         <input type="button" value="Reset" class="ui-button" onclick="optionsReset()"/>
@@ -160,35 +234,29 @@ function getReport(reportType) {
   <div id="rightMainContent" class="ghCol">
     <div id="reportContainer" class="ghWidgetBox ui-widget-content">
       <div class="boxHeader ui-widget-header" style="height:24px;">
-        <div id="results_title" style="float:left;">Market Performance Reports</div>
+        <div id="results_title" style="float:left;">Report Generation</div>
       </div>
       <div id="reportInfo">
         <div id="generateSection">
-          <div id="tokens_report" class="inlineBlock reportLauncher" onclick="getReport('tokens')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" /><span>Tokens</span>
+          <div id="multiWalletSelect" style="display:none;">
+            <label for="groupSel">Multi-Wallet:</label>
+            <select name="groupSel" id="groupSel" class="popSel" onchange="$('#ethAddress').val($(this).val())"></select>
+            or
           </div>
-          <div id="crafting_report" class="inlineBlock reportLauncher" onclick="getReport('crafting')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" /><span>Crafting</span>
-          </div>
-          <div id="nft_report" class="inlineBlock reportLauncher" onclick="getReport('nft')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" /><span>NFTs</span>
-          </div>
+          <label for="ethAddress">Eth Address:</label>
+          <input type=text id="ethAddress" name="ethAddress" size=40 placeholder="Wallet Address 0x..." />
+          <input id="goFilter" type="button" value="Generate!" class="ui-button" onclick="this.disabled=true;generateReport($('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=cbs]:checked').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val(), $('input[name=optAvalanche]:checked').val(), encodeURIComponent($('#purchaseAddresses').val()));" />
         </div>
         <div id="loadingSection" style="display: none;">
+          <img src="{{ BASE_SCRIPT_URL }}static/images/gettingrecords.gif" id="lilaImg" class="goldBorder lilaBox" />
+          <div class="talk-bubble tri-right round border right-top">
+            <div class="talktext">
+              <p id="loadingMessage">Lila: Hi, I can help you.</p>
+            </div>
+          </div>
           <div id="reportProgress"></div>
           <div id="reportPercent"></div>
         </div>
-      </div>
-      <div id="reportContent" class="reportPage">
-        <h2 id="pnl_header"></h2>
-        <table id="pnl_summary" class="summaryTable" style="display: none;">
-          <tr><th>Summary</th><th>Count</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
-          <tr><td>Accounted Sales</td><td id="accountedCount"></td><td id="accountedProceeds"></td><td id="accountedCosts"></td><td id="accountedGains"></td></tr>
-          <tr><td>Unaccounted Sales</td><td id="unaccountedCount"></td><td id="unaccountedProceeds"></td><td id="unaccountedCosts"></td><td id="unaccountedGains"></td></tr>
-        </table>
-        <table id="pnl_data" class="taxTable" style="display: none;">
-          <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
-        </table>
       </div>
     </div>
     <div id="releaseNotes" class="ghWidgetBox ui-widget-content">

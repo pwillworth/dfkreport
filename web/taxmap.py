@@ -43,6 +43,7 @@ class TaxItem:
         self.rcvdAmount = rcvdAmount
         self.rcvdType = rcvdType
         self.txFees = Decimal(txFees)
+        self.costBasisItems = []
     # Only calculate gains assets cost basis was found
     def get_gains(self):
         if self.proceeds > 0:
@@ -55,14 +56,17 @@ class TaxItem:
 
 # A common object structure for combining different types of records
 class CostBasisItem:
-    def __init__(self, txHash, timestamp, receiveType, receiveAmount, fiatType, fiatReceiveValue):
+    def __init__(self, txHash, timestamp, receiveType, receiveAmount, fiatType, fiatReceiveValue, network, eventType='swap', txFee=0):
         self.txHash = txHash
+        self.network = network
         self.timestamp = timestamp
         self.receiveType = receiveType
         self.receiveAmount = receiveAmount
         self.fiatType = fiatType
         self.fiatReceiveValue = fiatReceiveValue
         self.receiveAmountNotAccounted = receiveAmount
+        self.eventType = eventType
+        self.txFee = txFee
 
 def getNetworkList(includedChains):
     networks = ()
@@ -195,63 +199,28 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
     landExpenses = {}
     petExpenses = {}
     perishRewards = {}
-    # Grab a list of all purchases, summons, and levelups to list as expenses
+
     for event in tavernEvents:
         eventDate = datetime.date.fromtimestamp(event.timestamp)
+        # Grab a list of all purchases, summons, and levelups to use for cost basis
         if event.event in ['purchase','summon','crystal','meditate','levelup','enhance','incubate','crack']:
+            ci = CostBasisItem(event.txHash, event.timestamp, event.coinType, event.coinCost, event.fiatType, event.fiatAmount, event.network, event.event, event.fiatFeeValue)
             if event.itemType == 'land':
                 if event.itemID in landExpenses:
-                    if event.event in landExpenses[event.itemID].description:
-                        landExpenses[event.itemID].description = landExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
-                    else:
-                        landExpenses[event.itemID].description += ''.join((' ', event.event))
-                    landExpenses[event.itemID].costs += event.fiatAmount
-                    if landExpenses[event.itemID].acquiredDate == None or eventDate < landExpenses[event.itemID].acquiredDate:
-                        landExpenses[event.itemID].acquiredDate = eventDate
-                    if hasattr(event, 'fiatFeeValue'):
-                        landExpenses[event.itemID].txFees += event.fiatFeeValue
+                    landExpenses[event.itemID].append(ci)
                 else:
-                    ti = TaxItem(event.txHash, event.coinCost, contracts.getTokenName(event.coinType, event.network), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
-                    if hasattr(event, 'fiatFeeValue'):
-                        ti.txFees = event.fiatFeeValue
-                    landExpenses[event.itemID] = ti
+                    landExpenses[event.itemID] = [ci]
             elif event.itemType == 'pet':
                 if event.itemID in petExpenses:
-                    if event.event in petExpenses[event.itemID].description:
-                        petExpenses[event.itemID].description = petExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
-                    else:
-                        petExpenses[event.itemID].description += ''.join((' ', event.event))
-                    petExpenses[event.itemID].costs += event.fiatAmount
-                    if petExpenses[event.itemID].acquiredDate == None or eventDate < petExpenses[event.itemID].acquiredDate:
-                        petExpenses[event.itemID].acquiredDate = eventDate
-                    if hasattr(event, 'fiatFeeValue'):
-                        petExpenses[event.itemID].txFees += event.fiatFeeValue
+                    petExpenses[event.itemID].append(ci)
                 else:
-                    ti = TaxItem(event.txHash, event.coinCost, contracts.getTokenName(event.coinType, event.network), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
-                    if hasattr(event, 'fiatFeeValue'):
-                        ti.txFees = event.fiatFeeValue
-                    petExpenses[event.itemID] = ti
+                    petExpenses[event.itemID] = [ci]
             else:
                 if event.itemID in heroExpenses:
-                    if event.event in heroExpenses[event.itemID].description:
-                        heroExpenses[event.itemID].description = heroExpenses[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
-                    else:
-                        heroExpenses[event.itemID].description += ''.join((' ', event.event))
-                    heroExpenses[event.itemID].costs += event.fiatAmount
-                    if heroExpenses[event.itemID].acquiredDate == None or eventDate < heroExpenses[event.itemID].acquiredDate:
-                        heroExpenses[event.itemID].acquiredDate = eventDate
-                    if hasattr(event, 'fiatFeeValue'):
-                        heroExpenses[event.itemID].txFees += event.fiatFeeValue
+                    heroExpenses[event.itemID].append(ci)
                 else:
-                    ti = TaxItem(event.txHash, event.coinCost, contracts.getTokenName(event.coinType, event.network), 0, '', '{2} {0} {1}'.format(event.itemID, event.event, event.itemType), 'expenses', None, event.fiatType, 0, eventDate, event.fiatAmount)
-                    if hasattr(event, 'fiatFeeValue'):
-                        ti.txFees = event.fiatFeeValue
-                    heroExpenses[event.itemID] = ti
-
-    # Grab a list of all hero hires to list as income
-    for event in tavernEvents:
-        eventDate = datetime.date.fromtimestamp(event.timestamp)
-        if event.event in ['hire'] and eventDate >= startDate and eventDate <= endDate:
+                    heroExpenses[event.itemID] = [ci]
+        elif event.event in ['hire'] and eventDate >= startDate and eventDate <= endDate:
             if event.itemID in heroIncome:
                 if event.event in heroIncome[event.itemID].description:
                     heroIncome[event.itemID].description = heroIncome[event.itemID].description.replace(event.event, '{0}+'.format(event.event))
@@ -266,11 +235,8 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             else:
                 ti = TaxItem(event.txHash, 0, '', event.coinCost, contracts.getTokenName(event.coinType, event.network), 'Hero {0} {1}'.format(event.itemID, event.event), 'income', eventDate, event.fiatType, event.fiatAmount)
                 heroIncome[event.itemID] = ti
-
-    for event in tavernEvents:
-        eventDate = datetime.date.fromtimestamp(event.timestamp)
         # summarize rewards for any perished event in the requested range
-        if event.event == 'perished' and eventDate >= startDate and eventDate <= endDate:
+        elif event.event == 'perished' and eventDate >= startDate and eventDate <= endDate:
             if event.itemID in perishRewards:
                 perishRewards[event.itemID].proceeds += event.fiatAmount
                 perishRewards[event.itemID].soldDate = eventDate
@@ -282,19 +248,22 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     ti.txFees = event.fiatFeeValue
                 ti.amountNotAccounted = 1
                 perishRewards[event.itemID] = ti
+
     # Create a tax record for any perished hero in the requested range and add cost basis
     for kp, vp in perishRewards.items():
         for k, v in heroExpenses.items():
             if k == kp:
-                if vp.acquiredDate == None:
-                    vp.acquiredDate = v.acquiredDate
-                vp.costs = v.costs
-                if 'summon' in v.description or 'purchase' in v.description:
-                    vp.amountNotAccounted = 0
-                if vp.soldDate - vp.acquiredDate > datetime.timedelta(days=365):
-                    vp.term = "long"
-                v.proceeds = vp.proceeds
-                vp.txFees += v.txFees
+                for cbItem in v:
+                    if vp.acquiredDate == None:
+                        vp.acquiredDate = datetime.date.fromtimestamp(cbItem.timestamp)
+                    vp.costs += cbItem.fiatReceiveValue
+                    if cbItem.eventType in ['summon', 'purchase']:
+                        vp.amountNotAccounted = 0
+                    if vp.soldDate - vp.acquiredDate > datetime.timedelta(days=365):
+                        vp.term = "long"
+                    vp.txFees += cbItem.txFee
+                    vp.costBasisItems.append(cbItem)
+                break
         results.append(vp)
 
     for event in tavernEvents:
@@ -313,22 +282,22 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
             else:
                 expenseList = heroExpenses
             for k, v in expenseList.items():
-                if k == event.itemID and v.acquiredDate <= eventDate:
-                    if ti.acquiredDate == None:
-                        ti.acquiredDate = v.acquiredDate
-                    ti.costs = v.costs
-                    ti.amountNotAccounted = 0
-                    if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
-                        ti.term = "long"
-                    v.proceeds = event.fiatAmount
-                    ti.txFees += v.txFees
+                if k == event.itemID:
+                    for cbItem in v:
+                        itemDate = datetime.date.fromtimestamp(cbItem.timestamp)
+                        if itemDate <= eventDate:
+                            if ti.acquiredDate == None:
+                                ti.acquiredDate = itemDate
+                            ti.costs += cbItem.fiatReceiveValue
+                            if cbItem.eventType in ['summon', 'purchase']:
+                                ti.amountNotAccounted = 0
+                            if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
+                                ti.term = "long"
+                            ti.txFees += cbItem.txFee
+                            ti.costBasisItems.append(cbItem)
+                    break
             results.append(ti)
-    for k, v in petExpenses.items():
-        results.append(v)
-    for k, v in landExpenses.items():
-        results.append(v)
-    for k, v in heroExpenses.items():
-        results.append(v)
+
     for k, v in heroIncome.items():
         results.append(v)
     return results
@@ -362,37 +331,37 @@ def buildSwapRecords(swapEvents, startDate, endDate, walletEvents, airdropEvents
     logging.info('  setup list for cost basis')
     cbList = []
     for sEvent in swapEvents:
-        ci = CostBasisItem(sEvent.txHash, sEvent.timestamp, sEvent.receiveType, sEvent.receiveAmount, sEvent.fiatType, sEvent.fiatReceiveValue)
+        ci = CostBasisItem(sEvent.txHash, sEvent.timestamp, sEvent.receiveType, sEvent.receiveAmount, sEvent.fiatType, sEvent.fiatReceiveValue, sEvent.network)
         cbList.append(ci)
     for aEvent in airdropEvents:
         # This can be removed after a clean of airdrops cached records
         if not hasattr(aEvent, 'amountNotAccounted'):
             aEvent.amountNotAccounted = aEvent.tokenAmount
-        ci = CostBasisItem(aEvent.txHash, aEvent.timestamp, aEvent.tokenReceived, aEvent.tokenAmount, aEvent.fiatType, aEvent.fiatValue)
+        ci = CostBasisItem(aEvent.txHash, aEvent.timestamp, aEvent.tokenReceived, aEvent.tokenAmount, aEvent.fiatType, aEvent.fiatValue, aEvent.network)
         cbList.append(ci)
     for gEvent in gardensEvents:
         if not hasattr(gEvent, 'amountNotAccounted'):
             gEvent.amountNotAccounted = gEvent.coinAmount
-        ci = CostBasisItem(gEvent.txHash, gEvent.timestamp, gEvent.coinType, gEvent.coinAmount, gEvent.fiatType, gEvent.fiatValue)
+        ci = CostBasisItem(gEvent.txHash, gEvent.timestamp, gEvent.coinType, gEvent.coinAmount, gEvent.fiatType, gEvent.fiatValue, gEvent.network)
         cbList.append(ci)
     for qEvent in questEvents:
         if not hasattr(qEvent, 'amountNotAccounted'):
             qEvent.amountNotAccounted = qEvent.rewardAmount
-        ci = CostBasisItem(qEvent.txHash, qEvent.timestamp, qEvent.rewardType, qEvent.rewardAmount, qEvent.fiatType, qEvent.fiatValue)
+        ci = CostBasisItem(qEvent.txHash, qEvent.timestamp, qEvent.rewardType, qEvent.rewardAmount, qEvent.fiatType, qEvent.fiatValue, qEvent.network)
         cbList.append(ci)
     for tEvent in tavernEvents:
         if tEvent.event in ['hire','sale','perished']:
-            ci = CostBasisItem(tEvent.txHash, tEvent.timestamp, tEvent.coinType, tEvent.coinCost, tEvent.fiatType, tEvent.fiatAmount)
+            ci = CostBasisItem(tEvent.txHash, tEvent.timestamp, tEvent.coinType, tEvent.coinCost, tEvent.fiatType, tEvent.fiatAmount, tEvent.network)
             cbList.append(ci)
     for lEvent in lendingEvents:
         if lEvent.event in ['borrow']:
-            ci = CostBasisItem(lEvent.txHash, lEvent.timestamp, lEvent.coinType, lEvent.coinAmount, lEvent.fiatType, lEvent.fiatValue)
+            ci = CostBasisItem(lEvent.txHash, lEvent.timestamp, lEvent.coinType, lEvent.coinAmount, lEvent.fiatType, lEvent.fiatValue, lEvent.network)
             cbList.append(ci)
     # Also run through direct wallet transactions to try and fill remaining gaps in received value accounting
     # This works assuming the asset was purchased on same day it was transferred in, TODO: maybe add to disclaimer/FAQ
     for wEvent in walletEvents:
         if wEvent.action in ['deposit','payment']:
-            ci = CostBasisItem(wEvent.txHash, wEvent.timestamp, wEvent.coinType, wEvent.coinAmount, wEvent.fiatType, wEvent.fiatValue)
+            ci = CostBasisItem(wEvent.txHash, wEvent.timestamp, wEvent.coinType, wEvent.coinAmount, wEvent.fiatType, wEvent.fiatValue, wEvent.network)
             cbList.append(ci)
     cbList = costBasisSort(cbList, costBasis)
 
@@ -696,5 +665,75 @@ def buildPaymentRecords(walletEvents, startDate, endDate):
         v.proceeds = 0
         v.amountNotAccounted = 0
         results.append(v)
+
+    return results
+
+def buildCraftingRecords(swapEvents, startDate, endDate, craftEvents, airdropEvents):
+    results = []
+    swapEvents = sorted(swapEvents, key=lambda x: x.timestamp, reverse=True)
+
+    # Build list of token recieve events to search for cost basis that can all be sorted together
+    logging.info('  setup list for cost basis')
+    cbList = []
+    for sEvent in swapEvents:
+        ci = CostBasisItem(sEvent.txHash, sEvent.timestamp, sEvent.receiveType, sEvent.receiveAmount, sEvent.fiatType, sEvent.fiatReceiveValue, sEvent.network)
+        cbList.append(ci)
+    for aEvent in airdropEvents:
+        # This can be removed after a clean of airdrops cached records
+        if not hasattr(aEvent, 'amountNotAccounted'):
+            aEvent.amountNotAccounted = aEvent.tokenAmount
+        ci = CostBasisItem(aEvent.txHash, aEvent.timestamp, aEvent.tokenReceived, aEvent.tokenAmount, aEvent.fiatType, aEvent.fiatValue, aEvent.network)
+        cbList.append(ci)
+    for cEvent in craftEvents:
+        if not hasattr(cEvent, 'amountNotAccounted'):
+            cEvent.amountNotAccounted = cEvent.craftingAmount
+        ci = CostBasisItem(cEvent.txHash, cEvent.timestamp, cEvent.craftingType, cEvent.craftingAmount, cEvent.fiatType, cEvent.costsFiatValue, cEvent.network)
+        cbList.append(ci)
+
+    cbList = costBasisSort(cbList, 'lifo')
+
+    logging.info('  build events in range')
+    for event in swapEvents:
+        # only care about craftable item sales
+        if event.network == 'harmony':
+            craftValues = contracts.HARMONY_CRAFTABLE
+        elif event.network == 'klaytn':
+            craftValues = contracts.KLAYTN_CRAFTABLE
+        else:
+            craftValues = contracts.DFKCHAIN_CRAFTABLE
+        if event.swapType not in craftValues:
+            continue
+        eventDate = datetime.date.fromtimestamp(event.timestamp)
+        if eventDate >= startDate and eventDate <= endDate:
+            actionStr = 'Sold'
+            ti = TaxItem(event.txHash, event.swapAmount, contracts.getTokenName(event.swapType, event.network), event.receiveAmount, contracts.getTokenName(event.receiveType, event.network), '{4} {0:.5f} {1} for {2:.5f} {3}'.format(event.swapAmount, contracts.getTokenName(event.swapType, event.network), event.receiveAmount, contracts.getTokenName(event.receiveType, event.network), actionStr), 'gains', eventDate, event.fiatType, event.fiatSwapValue)
+            if hasattr(event, 'fiatFeeValue'):
+                ti.txFees = event.fiatFeeValue
+            # Check all transactions for prior time when sold token was received to calc gains
+            for searchEvent in cbList:
+                searchEventDate = datetime.date.fromtimestamp(searchEvent.timestamp)
+                if searchEvent.receiveType == event.swapType and searchEvent.timestamp < event.timestamp and event.swapAmountNotAccounted > 0 and searchEvent.receiveAmountNotAccounted > 0:
+                    # setting date here although it could get overwritten later if multiple recieves are used
+                    # to account for single swap (likely)
+                    if ti.acquiredDate == None:
+                        ti.acquiredDate = searchEventDate
+                    if ti.soldDate - ti.acquiredDate > datetime.timedelta(days=365):
+                        ti.term = "long"
+
+                    if searchEvent.receiveAmountNotAccounted <= event.swapAmountNotAccounted:
+                        # use up all receive transaction amount and update amount left to match still
+                        ti.costs += searchEvent.fiatReceiveValue * Decimal(searchEvent.receiveAmountNotAccounted / searchEvent.receiveAmount)
+                        event.swapAmountNotAccounted -= searchEvent.receiveAmountNotAccounted
+                        searchEvent.receiveAmountNotAccounted = 0
+                    else:
+                        # use up as much of recieve transaction as swap was for and update amount left to account for on receive
+                        ti.costs += Decimal(searchEvent.fiatReceiveValue / searchEvent.receiveAmount) * event.swapAmountNotAccounted
+                        searchEvent.receiveAmountNotAccounted -= event.swapAmountNotAccounted
+                        event.swapAmountNotAccounted = 0
+                        break
+            # Note any amount of cost basis not found for later red flag
+            ti.amountNotAccounted = event.swapAmountNotAccounted
+
+            results.append(ti)
 
     return results

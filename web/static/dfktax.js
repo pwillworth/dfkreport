@@ -498,6 +498,11 @@ const LENDING_ADDRESSES = {
   '0x7af2430eFa179dB0e76257E5208bCAf2407B2468': 'Tranq1USDTLending',
   '0x49d95736FE7f1F32E3ee5deFc26c95bA22834639': 'Tranq1DAILending',
 }
+var usdFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
+var subItems = {};
 crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'];
 event_groups = ['tavern','swaps','trades','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
 paymentsTotal = 0;
@@ -685,6 +690,120 @@ function loadTaxes(results) {
   if ( taxResult.length == 0 ) {
     switchView('transaction')
   }
+}
+
+function getSubItems(rowElm, desc) {
+  for (let k in subItems) {
+    descParts = desc.split(" ");
+    if (descParts.length > 2) {
+      if (k == descParts[2]) {
+        newTitle = rowElm.getAttribute('data-title');
+        if (newTitle == null) {
+          newTitle = '';
+        }
+        for (var i=0; i < subItems[k].length; i++) {
+          newTitle = `${newTitle}\n ${subItems[k][i]}`;
+        }
+        rowElm.setAttribute('data-title', newTitle);
+      }
+    } else {
+      console.log(`skipping invalid description: ${description}`);
+    }
+  }
+}
+function addRowPNL(recordCategory, description, acquiredDate, soldDate, proceeds, costs, gains, accountedString, costBasisItems) {
+  $('#pnl_data').show();
+  var cbi = '';
+  costBasisItems.forEach(item => {
+    ed = new Date(item.timestamp * 1000);
+    if (item.receiveAmount['py/reduce'] != undefined) {
+      receiveAmount = Number(item.receiveAmount['py/reduce'][1]['py/tuple'][0]);
+    } else {
+      receiveAmount = Number(item.receiveAmount);
+    }
+    if (item.fiatReceiveValue['py/reduce'] != undefined) {
+      fiatCosts = Number(item.fiatReceiveValue['py/reduce'][1]['py/tuple'][0]);
+    } else {
+      fiatCosts = Number(item.fiatReceiveValue);
+    }
+    if (item.txFee['py/reduce'] != undefined) {
+      fiatCosts += Number(item.txFee['py/reduce'][1]['py/tuple'][0]);
+    }
+    fiatReceiveValue = usdFormat.format(fiatCosts);
+    cbi = `${cbi}\n  ${item.eventType} (${ed.toUTCString()}) cost: ${receiveAmount} ${getTokenName(item.receiveType, item.network)} - value: ${fiatReceiveValue}`
+  });
+  $('#pnl_data').append(
+    '<tr class="pnlRow" onclick="getSubItems(this, \'' + description + '\');" data-title="' + cbi + '"><td>' + description + '</td>' +
+    '<td>' + acquiredDate + '</td>' +
+    '<td>' + soldDate + '</td>' +
+    '<td>' + usdFormat.format(proceeds) + '</td>' +
+    '<td>' + usdFormat.format(costs) + accountedString + '</td>' +
+    '<td>' + usdFormat.format(gains) + '</td></tr>'
+  );
+}
+
+function loadReportPNL(results, reportType) {
+  var records = results.tax_records;
+  if (records == undefined) {
+    alert('No results - ' + results);
+    return
+  }
+  $("#pnl_header").html(reportType);
+  subItems = {};
+  accountedCount = 0;
+  accountedProceeds = 0;
+  accountedCosts = 0;
+  unaccountedCount = 0;
+  unaccountedProceeds = 0;
+  unaccountedCosts = 0;
+  // Populate the main Report from response
+  for (var i = 0; i < records.length; i++) {
+    recordCategory = records[i].category;
+    if (recordCategory == 'gains') {
+      accountedString = '';
+      if ( records[i].amountNotAccounted > .01 ) {
+        accountedString = '<img src="' + BASE_SCRIPT_URL + 'static/images/alertred.png" style="max-width:24px;float:right; title="Only found Partial Cost Basis for this item."/>';
+        unaccountedCount += 1;
+        unaccountedProceeds += Number(records[i].proceeds);
+        unaccountedCosts += Number(records[i].costs);
+      } else {
+        accountedCount += 1;
+        accountedProceeds += Number(records[i].proceeds);
+        accountedCosts += Number(records[i].costs);
+      }
+      progress = i / records.length;
+      $("#reportProgress").progressbar( "option", "max", 1 );
+      $("#reportProgress").progressbar( "option", "value", progress );
+      $("#reportPercent").html('.:' + (progress * 100).toFixed(0) + '%:.')
+      setTimeout(addRowPNL, 50, recordCategory, records[i].description, records[i].acquiredDate, records[i].soldDate, records[i].proceeds, records[i].costs, records[i].gains, accountedString, records[i].costBasisItems);
+    } else {
+      // save hires, etc into dict for later ref
+      const descParts = records[i].description.split(" ");
+      if (descParts.length > 1) {
+        if (recordCategory == 'income') {
+          itemContent = `${records[i].description}: +${usdFormat.format(records[i].proceeds)}`;
+        } else {
+          itemContent = `${records[i].description}: -${usdFormat.format(records[i].costs)}`;
+        }
+        if ( descParts[1] in subItems ) {
+          subItems[descParts[1]].push(itemContent);
+        } else {
+          subItems[descParts[1]] = [itemContent];
+        }
+      } else {
+        console.log(`description for non gains not matching hero pattern: ${records[i].description}`);
+      }
+    }
+  }
+  $("#pnl_summary").show(500);
+  $("#accountedCount").html(accountedCount);
+  $("#accountedProceeds").html(usdFormat.format(accountedProceeds));
+  $("#accountedCosts").html(usdFormat.format(accountedCosts));
+  $("#accountedGains").html(usdFormat.format(accountedProceeds - accountedCosts));
+  $("#unaccountedCount").html(unaccountedCount);
+  $("#unaccountedProceeds").html(usdFormat.format(unaccountedProceeds));
+  $("#unaccountedCosts").html(usdFormat.format(unaccountedCosts));
+  $("#unaccountedGains").html(usdFormat.format(unaccountedProceeds - unaccountedCosts));
 }
 
 function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount, network, txHash) {
