@@ -23,7 +23,7 @@ def getABI(contractName):
         ABI = f.read()
     return ABI
 
-def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, network, alreadyComplete=0):
+def checkTransactions(txs, wallet, network):
     # Connect to right network that txs are for
     if network == 'klaytn':
         w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
@@ -67,7 +67,7 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
         # Update report tracking record for status every 200 txs
         if txCount % 200 == 0:
             try:
-                db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
+                db.updateWalletStatus(wallet, network, 'complete', txCount)
             except Exception as err:
                 logging.error('Failed to update tx count {0}'.format(str(err)))
 
@@ -526,7 +526,7 @@ def checkTransactions(account, txs, wallet, startDate, endDate, walletHash, netw
 
         txCount += 1
 
-    db.updateReport(account, datetime.datetime.strftime(startDate, '%Y-%m-%d'), datetime.datetime.strftime(endDate, '%Y-%m-%d'), walletHash, 'complete', alreadyComplete + txCount)
+    db.updateWalletStatus(wallet, network, 'complete', txCount)
     return txCount
 
 def lookupEvent(fm, to, account):

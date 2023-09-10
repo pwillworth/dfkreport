@@ -61,12 +61,13 @@ def getResponseJSON(results, contentType, eventGroup='all'):
 
     return response
 
-def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
+def getReportData(formatType, contentType, csvFormat, eventGroup, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
     failure = False
 
-    if contentFile == '':
-        response = '{ "response" : "Error: content file id in contentFile parameter is required to view a report" }'
+    if costBasis not in ['fifo', 'lifo', 'hifo', 'acb']:
+        response = { "response" : "Error: Invalid option specified for cost basis." }
         failure = True
+
 
     if not failure:
         # report is ready
@@ -74,15 +75,7 @@ def getReportData(contentFile, formatType, contentType, csvFormat, eventGroup):
             response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
         else:
             results = {}
-            con = db.aConn()
-            with con.cursor() as cur:
-                cur.execute('SELECT wallets, startDate, endDate, costBasis, includedChains, moreOptions FROM reports WHERE reportContent=%s', (contentFile,))
-                row = cur.fetchone()
-            con.close()
-            if row != None:
-                results = taxmap.buildTaxMap(jsonpickle.loads(row[0]), datetime.strptime(row[1], '%Y-%m-%d').date(), datetime.strptime(row[2], '%Y-%m-%d').date(), row[3], row[4], jsonpickle.loads(row[5]), contentType, eventGroup, formatType)
-            else:
-                response = '{ "response" : "Error: failed to find completed report with that content id" }'
+            results = taxmap.buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup, formatType)
 
             if 'taxes' in results:
                 if formatType == 'csv':

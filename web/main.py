@@ -4,14 +4,19 @@ from flask import render_template
 from flask import make_response
 from markupsafe import escape
 from web3 import Web3
-import jsonpickle
 from datetime import timezone, datetime, date
+import logging
+from flask.logging import default_handler
 import urllib
 import db
 import utils
 import payment
 import generate
 import view
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+root = logging.getLogger()
+root.addHandler(default_handler)
 
 app = Flask('dfkreport')
 
@@ -45,27 +50,6 @@ def about():
 def help():
     return render_template('help.html', BASE_SCRIPT_URL='/')
 
-@app.route("/tax")
-def tax_report():
-    secondsLeft = -1
-    loginState = readAccount(request.args, request.cookies)
-    # get subscription status
-    if loginState[0] > 0:
-        memberStatus = db.getMemberStatus(loginState[1])
-        memberState = memberStatus[0]
-        secondsLeft = memberStatus[1]
-    else:
-        memberState = 0
-    bankState = 'ragmanEmpty'
-    bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-    balance = db.readBalance()
-    bankProgress = '${0:.2f}'.format(balance)
-    if balance >= 30:
-        bankState = 'ragman'
-        bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
-
-    return render_template('tax.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
-
 @app.route("/generate", methods=['GET','POST'])
 def report_generate():
     # Extract query parameters
@@ -73,15 +57,10 @@ def report_generate():
     wallet = request.form.get('walletAddress', '')
     startDate = request.form.get('startDate', '')
     endDate = request.form.get('endDate', '')
-    includeHarmony = request.form.get('includeHarmony', 'on')
-    includeDFKChain = request.form.get('includeDFKChain', 'on')
+    includeHarmony = request.form.get('includeHarmony', 'undefined')
+    includeDFKChain = request.form.get('includeDFKChain', 'undefined')
     includeAvalanche = request.form.get('includeAvalanche', 'false')
-    includeKlaytn = request.form.get('includeKlaytn', 'on')
-    costBasis = request.form.get('costBasis', 'fifo')
-    # can be any event group to return only that group of events instead of all
-    eventGroup = request.form.get('eventGroup', 'all')
-    # Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
-    purchaseAddresses = request.form.get('purchaseAddresses', '')
+    includeKlaytn = request.form.get('includeKlaytn', 'undefined')
 
     loginState = readAccount(request.args, request.cookies)
     # ensure account passed is checksum version when logged in otherwise use wallet
@@ -91,79 +70,7 @@ def report_generate():
         if account == '':
             account = wallet
 
-    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, costBasis, eventGroup, purchaseAddresses)
-
-@app.route("/view", methods=['GET', 'POST'])
-def report_view():
-    contentFile = request.form.get('contentFile', '')
-    # can be set to csv, otherwise json response is returned
-    formatType = request.form.get('formatType', '')
-    # can be tax or transaction, only used for CSV
-    contentType = request.form.get('contentType', '')
-    # can be any event group to return only that group of events instead of all
-    eventGroup = request.form.get('eventGroup', 'all')
-    # can be koinlyuniversal or anything else for default
-    csvFormat = request.args.get('csvFormat', '')
-    if csvFormat != '':
-        formatType = request.args.get('formatType', formatType)
-        contentType = request.args.get('contentType', contentType)
-        contentFile = request.args.get('contentFile', contentFile)
-    contentFile = db.dbInsertSafe(contentFile)
-
-    result = view.getReportData(contentFile, formatType, contentType, csvFormat, eventGroup)
-    if formatType == 'csv':
-        output = make_response(result)
-        output.headers['Content-type'] = 'text/csv'
-        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
-    else:
-        output = result
-
-    return output
-
-@app.route("/report/<contentid>")
-def report_page(contentid=None):
-    # escape input to prevent sql injection
-    contentFile = db.dbInsertSafe(contentid)
-
-    accounts = ''
-    startDate = ''
-    endDate = ''
-    costBasis = ''
-    includedChains = 5
-    purchaseAddresses = ''
-    bankState = 'ragmanEmpty'
-    bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
-    balance = db.readBalance()
-    bankProgress = '${0:.2f}'.format(balance)
-    if balance >= 30:
-        bankState = 'ragman'
-        bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
-    walletGroup = ''
-    # When content file is passed, viewing a pregenerated report and we look up its options to preset the form
-    if contentid != None and contentFile != '':
-        con = db.aConn()
-        with con.cursor() as cur:
-            cur.execute('SELECT account, startDate, endDate, costBasis, includedChains, moreOptions, walletGroup, wallets FROM reports WHERE reportContent=%s', (contentFile,))
-            row = cur.fetchone()
-            if row != None:
-                account = row[0]
-                if row[6] != '':
-                    accounts = '{0}'.format(row[6])
-                wallets = jsonpickle.decode(row[7])
-                for wallet in wallets:
-                    accounts = '{0}\n{1}...{2}'.format(accounts, wallet[0:6], wallet[38:42])
-                startDate = row[1]
-                endDate = row[2]
-                costBasis = row[3]
-                includedChains = row[4]
-                moreOptions = jsonpickle.loads(row[5])
-                purchaseAddresses = moreOptions['purchaseAddresses']
-                walletGroup = row[6]
-        con.close()
-    else:
-        accounts = 'Error: Report content not found'
-
-    return render_template('report.html', BASE_SCRIPT_URL='/', contentFile=contentFile, account=account, startDate=startDate, endDate=endDate, costBasis=costBasis, includedChains=includedChains, purchaseAddresses=purchaseAddresses, walletGroup=walletGroup, wallets=accounts, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
+    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn)
 
 @app.route("/pnl/<content_type>", methods=['GET', 'POST'])
 def pnl(content_type=None):
@@ -176,10 +83,52 @@ def pnl(content_type=None):
     wallet = request.form.get('walletAddress', '')
     startDate = request.form.get('startDate', '')
     endDate = request.form.get('endDate', '')
-    includeHarmony = request.form.get('includeHarmony', 'on')
-    includeDFKChain = request.form.get('includeDFKChain', 'on')
+    includeHarmony = request.form.get('includeHarmony', 'undefined')
+    includeDFKChain = request.form.get('includeDFKChain', 'undefined')
     includeAvalanche = request.form.get('includeAvalanche', 'false')
-    includeKlaytn = request.form.get('includeKlaytn', 'on')
+    includeKlaytn = request.form.get('includeKlaytn', 'undefined')
+    # can be set to csv, otherwise json response is returned
+    formatType = request.form.get('formatType', '')
+    # can be tax or transaction, only used for CSV
+    contentType = request.form.get('contentType', '')
+
+    # can be koinlyuniversal or anything else for default
+    csvFormat = request.args.get('csvFormat', '')
+    if csvFormat != '':
+        formatType = request.args.get('formatType', formatType)
+        contentType = request.args.get('contentType', contentType)
+        account = request.args.get('account', account)
+        wallet = request.args.get('walletAddress', wallet)
+        startDate = request.args.get('startDate', startDate)
+        endDate = request.args.get('endDate', endDate)
+        includeHarmony = request.args.get('includeHarmony', includeHarmony)
+        includeDFKChain = request.args.get('includeDFKChain', includeDFKChain)
+        includeAvalanche = request.args.get('includeAvalanche', includeAvalanche)
+        includeKlaytn = request.args.get('includeKlaytn', includeKlaytn)
+
+    costBasis = request.form.get('costBasis', 'fifo')
+    # can be any event group to return only that group of events instead of all
+    eventGroup = request.form.get('eventGroup', 'all')
+    # Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
+    purchaseAddresses = request.form.get('purchaseAddresses', '')
+    addressList = []
+    otherOptions = db.ReportOptions()
+    if purchaseAddresses != '':
+        purchaseAddresses = urllib.parse.unquote(purchaseAddresses)
+        if ',' in purchaseAddresses:
+            input = purchaseAddresses.split(',')
+        else:
+            input = purchaseAddresses.split()
+        for address in input:
+            address = address.strip()
+            if Web3.is_address(address):
+                addressList.append(Web3.to_checksum_address(address))
+            elif len(address) == 0:
+                continue
+            else:
+                response = ''.join(('{ "response" : "Error: You have an invalid address in the purchase address list ', address, '." }'))
+                failure = True
+        otherOptions['purchaseAddresses'] = addressList
 
     loginState = readAccount(request.args, request.cookies)
     # ensure account passed is checksum version when logged in otherwise use wallet
@@ -232,10 +181,20 @@ def pnl(content_type=None):
             result = view.getCraftingReport(wallets, tmpStart, tmpEnd, includedChains)
         elif content_type == 'nft':
             result = view.getNFTReport(wallets, tmpStart, tmpEnd, includedChains)
+        elif content_type == 'tax':
+            result = view.getReportData(formatType, contentType, csvFormat, eventGroup, wallets, tmpStart, tmpEnd, costBasis, includedChains, otherOptions)
         else:
+            app.logger.info("Invalid report type passed {0}".format(content_type))
             result = { "error" : "Invalid report type" }
 
-    return result
+    if formatType == 'csv':
+        output = make_response(result)
+        output.headers['Content-type'] = 'text/csv'
+        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
+    else:
+        output = result
+
+    return output
 
 @app.route("/getReportList", methods=['POST'])
 def report_list():
@@ -244,9 +203,10 @@ def report_list():
     if loginState[0] > 0:
         memberState = db.getMemberStatus(loginState[1])[0]
         if memberState == 2:
-            listResult = db.getReportList(loginState[1])
+            wallets = db.getWalletGroup(loginState[1])
+            listResult = db.getWalletUpdateList(tuple(wallets))
         else:
-            listResult = 'Error: Subscription not active'
+            listResult = db.getWalletUpdateList(loginState[1])
     else:
         listResult = 'Error: Login first to view reports'
 

@@ -166,15 +166,13 @@ function loadGroups() {
   };
   request.send();
 }
-function viewReport(contentFile) {
-  window.open(`${BASE_SCRIPT_URL}report/${contentFile}`);
-}
+
 function reportTable(data) {
   const reportStatus = ['Created','Processing','Complete','unknown','unknown','unknown','unknown','unknonw','Blockchain Error', 'Site Error'];
   var listElm = document.getElementById('reportList');
   var newRow = document.createElement('tr');
   listElm.innerHTML = '';
-  newRow.innerHTML = '<th>Wallet/Group</th><th>Date Range</th><th>Status</th><th>Transactions</th><th>Percent Complete</th><th>View</th>';
+  newRow.innerHTML = '<th>Wallet</th><th>Network</th><th>Status</th><th>Updated Through</th><th>Transactions</th><th>Percent Complete</th>';
   listElm.appendChild(newRow);
   data['reports'].forEach((report) => {
     if ( report[0].substring(0, 2) == '0x' ) {
@@ -183,27 +181,22 @@ function reportTable(data) {
       var addr = report[0];
     }
     var progress = 0;
-    var status = reportStatus[report[4]];
-    if (report[7] == 0) {
-      progress = Math.min(getProgress('fetchingtx', report[6], report[7], report[5])*100, 100);
-      if ( report[6] > 0 ) {
-        status = 'Finding Transactions';
-      }
-    } else if ( report[4] == 2 ) {
+    var status = reportStatus[report[3]];
+    if (report[3] == 0) {
+      progress = Math.min(getProgress('fetchingtx', report[7], report[8], report[9])*100, 100);
+    } else if ( report[3] == 2 ) {
       progress = 100;
     } else {
-      progress = Math.min(getProgress('generating', report[6], report[7], report[5])*100, 100);
+      progress = Math.min(getProgress('generating', report[9], report[8], report[9])*100, 100);
     }
     var newRow = document.createElement('tr');
-    var actionColumn = '';
-    if (status == 'Complete') {
-      actionColumn = `<input type="button" value="View" onclick="viewReport('${report[8]}');" class="lButton" />`;
-    }
     var pAnimate = '';
-    if (report[4] < 2) {
+    if (report[3] < 2) {
       pAnimate = '<div class="lds-ripple"><div></div><div></div></div>';
     }
-    newRow.innerHTML = `<td>${addr}</td><td>${report[1]} - ${report[2]}</td><td>${status}${pAnimate}</td><td>${report[5]}</td><td>${progress.toFixed(0)}%</td><td>${actionColumn}</td>`;
+    updateThroughTimestamp = Math.max(report[5], report[6]);
+    updateThroughDate = new Date(updateThroughTimestamp * 1000).toLocaleDateString;
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDate}</td><td>${report[9]}</td><td>${progress.toFixed(0)}%</td>`;
     listElm.appendChild(newRow);
   });
 }
@@ -541,7 +534,7 @@ function paymentComplete(txHash) {
       </div>
       <div class="sectionHead"></div>
       <div id="reportPage" style="margin: 12px;">
-        <div class="tableTop ui-widget-header">My Tax Reports</div>
+        <div class="tableTop ui-widget-header">My Transaction Data</div>
         <table id="reportList" class="statusList"></table>
       </div>
     </div>

@@ -212,17 +212,17 @@ input[disabled] {
 }
 .reportLauncher {
 	background-color: #626362;
-	font-size: 28px;
+	font-size: 24px;
 	margin: 8px;
 	padding: 8px;
 	border-radius: 8px;
 	border: 1px solid #ccc;
 	cursor: pointer;
-	width: 240px;
-	height: 80px;
+	width: 224px;
+	height: 72px;
 }
 .reportLauncher img {
-	height:72px;
+	height:64px;
 	padding: 2px;
 	vertical-align: middle;
 }
@@ -394,7 +394,6 @@ input[disabled] {
 	font-size: 16px;
 }
 #loadingSection {
-	height: 300px;
 	width: 100%;
 }
 #loadingMessage a, #loadingMessage a:visited, #loadingMessage a:link, #loadingMessage a:active {

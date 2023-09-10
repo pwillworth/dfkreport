@@ -27,27 +27,27 @@ def getWalletHash(wallets):
         m.update(item.encode('utf-8'))
     return m.hexdigest()
 
-def completeTransactions(wallet, startDate, endDate, walletHash, fileName):
+def completeTransactions(wallet, network):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET reportStatus=1, transactionsContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
+    cur.execute("UPDATE walletstatus SET updateStatus=1 WHERE address=%s and network=%s", (wallet, network))
     con.close()
 
-def updateReport(wallet, startDate, endDate, walletHash, updateType, recordCount):
+def updateWalletStatus(wallet, network, updateType, recordCount):
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
         # sometimes the tx count is not quite right and fetched tx ends up being more, so update if so to avoid invalid progress percentages
-        cur.execute("UPDATE reports SET reportStatus=0, transactionsFetched=%s, transactions=GREATEST(transactions, %s) WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, recordCount, wallet, startDate, endDate, walletHash))
+        cur.execute("UPDATE walletstatus SET updateStatus=0, txUpdateTargetCount=GREATEST(txUpdateTargetCount, %s) WHERE address=%s and network=%s", (recordCount, wallet, network))
     else:
-        cur.execute("UPDATE reports SET reportStatus=1, transactionsComplete=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (recordCount, wallet, startDate, endDate, walletHash))
+        cur.execute("UPDATE walletstatus SET updateStatus=1, txCount=%s WHERE address=%s AND network=%s", (recordCount, wallet, network))
     logging.info('updating report {0} records {1} {2} - found rpt {3}'.format(wallet, updateType, recordCount, cur.rowcount))
     con.close()
 
-def completeReport(wallet, startDate, endDate, walletHash, fileName):
+def completeReport(wallet, network):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=2, reportContent=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (fileName, wallet, startDate, endDate, walletHash))
+    cur.execute("UPDATE walletstatus SET proc=NULL, updateStatus=2 WHERE address=%s AND network=%s", (wallet, network))
     con.close()
 
 def findPriceData(date, token):
@@ -135,10 +135,10 @@ def getLastTransactionTimestamp(account, network):
     else:
         return row[0]
 
-def getRunningReports():
+def getRunningUpdates():
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT Count(*) FROM reports WHERE proc=1")
+    cur.execute("SELECT Count(*) FROM walletstatus WHERE proc IS NOT NULL")
     row = cur.fetchone()
     con.close()
     return row[0]
@@ -165,10 +165,10 @@ def getReportTx(contentFile):
     con.close()
     return result
 
-def updateReportError(wallet, startDate, endDate, walletHash, statusCode=9):
+def updateReportError(wallet, network, statusCode=9):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE reports SET proc=0, reportStatus=%s WHERE account=%s and startDate=%s AND endDate=%s AND walletHash=%s", (statusCode, wallet, startDate, endDate, walletHash))
+    cur.execute("UPDATE walletstatus SET proc=NULL, updateStatus=%s WHERE address=%s and network=%s", (statusCode, wallet, network))
     con.close()
 
 def createDatabase():
@@ -182,6 +182,7 @@ def createDatabase():
     cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL, txHash VARCHAR(127), token VARCHAR(63), amount FLOAT, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')
     cur.execute('CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(40) NOT NULL PRIMARY KEY, account VARCHAR(63) NOT NULL, expires FLOAT, INDEX IX_session_account (account))')
     cur.execute('CREATE TABLE IF NOT EXISTS balances (updateTime TIMESTAMP PRIMARY KEY, balanceData STRING)')
+    cur.execute('CREATE TABLE IF NOT EXISTS walletstatus (address VARCHAR(63), lastOwner VARCHAR(63), network VARCHAR(31), proc INTEGER, lastSavedBlock INTEGER, lastBlockTimestamp INTEGER, lastUpdateStart INTEGER, txUpdateStartCount INTEGER, txCount INTEGER, txUpdateTargetCount INTEGER, updateStatus INT2, PRIMARY KEY (address, network), INDEX IX_walletstatus_status (updateStatus))')
     con.commit()
     con.close()
 

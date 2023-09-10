@@ -505,8 +505,7 @@ var usdFormat = new Intl.NumberFormat('en-US', {
 var subItems = {};
 crystalvale_rewards = ['0x04b9dA42306B023f3572e106B11D82aAd9D32EBb','0x576C260513204392F0eC0bc865450872025CB1cA','0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA','0x75E8D8676d774C9429FbB148b30E304b5542aC3d','0xCd2192521BD8e33559b0CA24f3260fE6A26C28e4','0x7E121418cC5080C96d967cf6A033B0E541935097','0x8D2bC53106063A37bb3DDFCa8CfC1D262a9BDCeB','0xa61Bac689AD6867a605633520D70C49e1dCce853','0x72F860bF73ffa3FC42B97BbcF43Ae80280CFcdc3','0xf2D479DaEdE7F9e270a90615F8b1C52F3C487bC7','0xB78d5580d6D897DE60E1A942A5C1dc07Bc716943','0x848Ac8ddC199221Be3dD4e4124c462B806B6C4Fd','0x0096ffda7A8f8E00e9F8Bbd1cF082c14FA9d642e','0x137995beEEec688296B0118131C1052546475fF3','0x473A41e71618dD0709Ba56518256793371427d79','0x60170664b52c035Fcb32CF5c9694b22b47882e5F','0x97b25DE9F61BBBA2aD51F1b706D4D7C04257f33A','0xe7a1B580942148451E47b92e95aEB8d31B0acA37','0xBcdD90034eB73e7Aec2598ea9082d381a285f63b','0x80A42Dc2909C0873294c5E359e8DF49cf21c74E4','0xc6030Afa09EDec1fd8e63a1dE10fC00E0146DaF3','0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61','0x04B43D632F34ba4D4D72B0Dc2DC4B30402e5Cf88','0xc2Ff93228441Ff4DD904c60Ecbc1CfA2886C76eB','0x68eE50dD7F1573423EE0Ed9c66Fc1A696f937e81','0x7f46E45f6e0361e7B9304f338404DA85CB94E33D','0xd44ee492889C078934662cfeEc790883DCe245f3','0xA7CFd21223151700FB82684Cd9c693596267375D','0x3bcb9A3DaB194C6D8D44B424AF383E7Db51C82BD','0xE7CB27ad646C49dC1671Cb9207176D864922C431','0x60A3810a3963f23Fa70591435bbe93BF8786E202','0x6513757978E89e822772c16B60AE033781A29A4F','0x0776b936344DE7bd58A4738306a6c76835ce5D3F','0xA2cef1763e59198025259d76Ce8F9E60d27B17B5','0x3E022D84D397F18743a90155934aBAC421D5FA4C','0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260','0x04b9dA42306B023f3572e106B11D82aAd9D32EBb'];
 event_groups = ['tavern','swaps','trades','liquidity','gardens','bank','alchemist','quests','wallet','airdrops','lending'];
-paymentsTotal = 0;
-paymentsTotalValue = 0;
+progressIndex = 0;
 var sid='';
 var selectedAccount='';
 const transactionWeight = 18;
@@ -608,9 +607,7 @@ function loadReport(results, contentType, eventGroup='all') {
     loadTaxes(results);
   } else {
     var eventResult = results.event_records;
-    var progressIndex = event_groups.findIndex((element) => {element == eventGroup;});
-    $("#mappingProgress").progressbar( "option", "value", (2000 / event_groups.length) + ((progressIndex+1) * (2000 / event_groups.length)));
-    $("#mappingPercent").html("Loading " + eventGroup + " Events...");
+    $("#mappingPercent").html(`Loading ${eventResult} ${eventGroup} Events...`);
     switch(eventGroup) {
       case 'tavern':
         loadTavernEvents(eventResult[eventGroup]);
@@ -854,6 +851,8 @@ function loadTavernEvents(tavernEvents) {
     tavernTable = tavernTable + '<tr><td>' + k + 's</td><td>' + tavernTotals[k] + '</td><td>' + tavernCosts[k].toFixed(1) + '</td></tr>';
   }
   $("#smy_tavern_data").html(tavernTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / tavernEvents.length) + ((progressIndex+1) * (2000 / tavernEvents.length)));
+  progressIndex += 1;
 }
 
 function addSwapRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network, txHash) {
@@ -907,6 +906,8 @@ function loadSwapEvents(swapEvents) {
     swapTable = swapTable + '<tr><td>' + k + '</td><td>' + swapTotals[k][0].toFixed(0) + '</td><td>' + swapTotals[k][1].toFixed(0) + '</td></tr>';
   }
   $("#smy_swaps_data").html(swapTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / swapEvents.length) + ((progressIndex+1) * (2000 / swapEvents.length)));
+  progressIndex += 1;
 }
 
 function addTradeRow(eventDate, swapType, swapAmount, receiveType, receiveAmount, fiatSwapValue, fiatReceiveValue, network, txHash) {
@@ -960,6 +961,8 @@ function loadTradeEvents(tradeEvents) {
     tradeTable = tradeTable + '<tr><td>' + k + '</td><td>' + tradeTotals[k][0].toFixed(0) + '</td><td>' + tradeTotals[k][1].toFixed(0) + '</td></tr>';
   }
   $("#smy_trades_data").html(tradeTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / tradeEvents.length) + ((progressIndex+1) * (2000 / tradeEvents.length)));
+  progressIndex += 1;
 }
 
 function addLiquidityRow(eventDate, action, poolName, poolAmount, coin1Amount, coin2Amount, coin1FiatValue, coin2FiatValue, network, txHash) {
@@ -1014,6 +1017,8 @@ function loadLiquidityEvents(liquidityEvents) {
     liquidityTable = liquidityTable + '<tr><td>' + k + '</td><td>' + usdFormat.format(liquidityTotals[k][0]) + '</td><td>' + usdFormat.format(liquidityTotals[k][1]) + '</td></tr>';
   }
   $("#smy_liquidity_data").html(liquidityTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / liquidityEvents.length) + ((progressIndex+1) * (2000 / liquidityEvents.length)));
+  progressIndex += 1;
 }
 
 function addGardensRow(eventDate, location, event, coinType, coinAmount, fiatValue, network, txHash) {
@@ -1072,6 +1077,8 @@ function loadGardensEvents(gardensEvents) {
       updatePaymentTotal(Number(coinAmount), Number(fiatValue));
     }
     $('#tx_gardens_count').html(' (' + (i + 1) + ')');
+    $("#mappingProgress").progressbar( "option", "value", (2000 / gardensEvents.length) + ((progressIndex+1) * (2000 / gardensEvents.length)));
+    progressIndex += 1;
   }
   // Add summary data for each event
   var gardensTable = '';
@@ -1142,6 +1149,8 @@ function loadBankEvents(bankEvents) {
     bankTable = bankTable + '<tr><td>' + k + '</td><td>' + bankTotals[k][0].toFixed(3) + '</td><td>' + bankTotals[k][1].toFixed(3) + '</td></tr>';
   }
   $("#smy_bank_data").html(bankTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / bankEvents.length) + ((progressIndex+1) * (2000 / bankEvents.length)));
+  progressIndex += 1;
 }
 
 function addAlchemistRow(eventDate, craftingType, craftedAmount, craftingCosts, fiatCraftedValue, fiatIngredientsValue, network, txHash) {
@@ -1193,6 +1202,8 @@ function loadAlchemistEvents(alchemistEvents) {
     craftingTable = craftingTable + '<tr><td>' + k + '</td><td>' + craftingTotals[k][0].toFixed(0) + '</td><td>' + usdFormat.format(craftingTotals[k][1]) + '</td><td>' + usdFormat.format(craftingTotals[k][2]) + '</td></tr>';
   }
   $("#smy_alchemist_data").html(craftingTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / alchemistEvents.length) + ((progressIndex+1) * (2000 / alchemistEvents.length)));
+  progressIndex += 1;
 }
 
 function addAirdropRow(eventDate, location, tokenReceived, tokenAmount, fiatValue, network, txHash) {
@@ -1252,6 +1263,8 @@ function loadAirdropEvents(airdropEvents) {
     airdropTable = airdropTable + '<tr><td>' + k + '</td><td>' + airdropTotals[k].toFixed(3) + '</td><td>' + usdFormat.format(airdropValues[k]) + '</td></tr>';
   }
   $("#smy_airdrops_data").html(airdropTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / airdropEvents.length) + ((progressIndex+1) * (2000 / airdropEvents.length)));
+  progressIndex += 1;
 }
 
 function addLendingRow(eventDate, address, event, coinType, tokenAmount, fiatValue, network, txHash) {
@@ -1324,6 +1337,8 @@ function loadLendingEvents(lendingEvents) {
     lendingTable = lendingTable + '<tr><td>' + k + '</td><td>' + lendingTotals[k][0].toFixed(2) + '</td><td>' + lendingTotals[k][1].toFixed(2) + '</td><td>' + lendingTotals[k][2].toFixed(2) + '</td><td>' + lendingTotals[k][3].toFixed(2) + '</td><td>' + lendingTotals[k][4].toFixed(2) + '</td></tr>';
   }
   $("#smy_lending_data").html(lendingTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / lendingEvents.length) + ((progressIndex+1) * (2000 / lendingEvents.length)));
+  progressIndex += 1;
 }
 
 function addQuestRow(eventDate, questLocation, rewardType, rewardAmount, fiatValue, network, txHash) {
@@ -1376,6 +1391,8 @@ function loadQuestEvents(questEvents) {
     questTable = questTable + '<tr><td>' + k + '</td><td>' + questTotals[k].toFixed(3) + '</td></tr>';
   }
   $("#smy_quests_data").html(questTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / questEvents.length) + ((progressIndex+1) * (2000 / questEvents.length)));
+  progressIndex += 1;
 }
 
 function addWalletRow(eventDate, action, address, coinType, coinAmount, fiatValue, network, txHash) {
@@ -1433,6 +1450,8 @@ function loadWalletEvents(walletEvents) {
     walletTable = walletTable + '<tr><td>' + k + '</td><td>' + walletTotals[k][0].toFixed(0) + '</td><td>' + walletTotals[k][1].toFixed(0) + '</td></tr>';
   }
   $("#smy_wallet_data").html(walletTable + '</table>');
+  $("#mappingProgress").progressbar( "option", "value", (2000 / walletEvents.length) + ((progressIndex+1) * (2000 / walletEvents.length)));
+  progressIndex += 1;
 }
 function docHeight() {
   var body = document.body,

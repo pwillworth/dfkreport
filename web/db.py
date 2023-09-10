@@ -61,26 +61,24 @@ def readBalance():
         updatedAt = results['updatedAt']
     return balance
 
-def findReport(account, startDate, endDate, walletHash):
+def findWalletStatus(wallet, network):
     con = aConn()
-    existRow = None
     with con.cursor() as cur:
-        cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND startDate=%s AND endDate=%s AND walletHash=%s", (account, startDate, endDate, walletHash))
+        cur.execute("SELECT address, network, proc, updateStatus, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, txUpdateStartCount, txCount, txUpdateTargetCount, lastOwner FROM walletstatus WHERE address=%s AND network=%s", (wallet, network))
         row = cur.fetchone()
-        # Make sure they don't already have a report running for other range
-        if not settings.CONCURRENT_REPORTS:
-            cur.execute("SELECT account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash FROM reports WHERE account=%s AND proc=1 AND (startDate!=%s OR endDate!=%s OR walletHash!=%s)", (account, startDate, endDate, walletHash))
-            existRow = cur.fetchone()
-    con.close()
-    if existRow != None:
-        return existRow
-    else:
-        return row
 
-def createReport(account, startDate, endDate, now, txCount, costBasis, includedChains, wallets, group, walletHash, proc=None, moreOptions=None, txCounts=[]):
+    con.close()
+    return row
+
+def createWalletStatus(wallet, network, account):
+    maxTS = 0
     con = aConn()
     with con.cursor() as cur:
-        cur.execute("INSERT INTO reports (account, startDate, endDate, generatedTimestamp, transactions, reportStatus, transactionsFetched, transactionsComplete, transactionsContent, reportContent, proc, costBasis, includedChains, moreOptions, txCounts, wallets, walletGroup, walletHash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (account, startDate, endDate, now, txCount, 0, 0, 0, '', '', proc, costBasis, includedChains, moreOptions, txCounts, jsonpickle.encode(wallets), group, walletHash))
+        cur.execute("SELECT Max(blockTimestamp) FROM transactions WHERE account=%s AND network=%s AND eventType != 'tavern'", (wallet, network))
+        row = cur.fetchone()
+        if row != None and row[0] != None:
+            maxTS = row[0]
+        cur.execute("INSERT INTO walletstatus (address, lastOwner, network, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, updateStatus) VALUES (%s, %s, %s, 0, %s, 0, %s)", (wallet, account, network, maxTS, 0))
     con.close()
 
 def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, walletHash, moreOptions=None, txCounts=[]):
@@ -158,18 +156,22 @@ def getEventData(wallet, eventType, networks):
         logging.info('Skipping data lookup due to db conn failure.')
     return events
 
-def getWalletGroup(account, group):
+def getWalletGroup(account, group=None):
     results = []
     nowStamp = datetime.now(timezone.utc).timestamp()
     con = aConn()
-    cur = con.cursor()
-    cur.execute("SELECT wallets FROM groups INNER JOIN members ON groups.account = members.account WHERE members.expiresTimestamp > %s AND groups.account=%s AND groupName=%s", (nowStamp,account,group))
-    row = cur.fetchone()
-    if row != None:
-        results = jsonpickle.decode(row[0])
+    with con.cursor() as cur:
+        if group == None:
+            cur.execute("SELECT wallets FROM groups INNER JOIN members ON groups.account = members.account WHERE members.expiresTimestamp > %s AND groups.account=%s", (nowStamp,account))
+        else:
+            cur.execute("SELECT wallets FROM groups INNER JOIN members ON groups.account = members.account WHERE members.expiresTimestamp > %s AND groups.account=%s AND groupName=%s", (nowStamp,account,group))
+        row = cur.fetchone()
+        while row != None:
+            results += jsonpickle.decode(row[0])
+            row = cur.fetchone()
     con.close()
 
-    return results
+    return list(set(results))
 
 def getMemberStatus(account):
     memberState = 0
@@ -268,14 +270,14 @@ def getAccountNonce(account):
 
     return result
 
-def getReportList(account):
+def getWalletUpdateList(wallets):
     result = []
     con = aConn()
     cur = con.cursor()
-    cur.execute("SELECT CASE WHEN walletGroup = '' THEN account ELSE walletGroup END, startDate, endDate, generatedTimestamp, reportStatus, transactions, transactionsFetched, transactionsComplete, reportContent FROM reports WHERE account = %s ORDER BY generatedTimestamp DESC", (account,))
+    cur.execute("SELECT address, network, proc, updateStatus, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, txUpdateStartCount, txCount, txUpdateTargetCount, lastOwner FROM walletstatus WHERE address IN %s ORDER BY address, network", (wallets,))
     row = cur.fetchone()
     while row != None:
-        result.append([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]])
+        result.append([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10]])
         row = cur.fetchone()
     con.close()
 

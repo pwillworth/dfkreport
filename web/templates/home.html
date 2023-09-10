@@ -22,6 +22,20 @@ $(document).ready(function() {
       dateFormat: "yy-mm-dd"
     });
     optionsReset();
+    $('.txHeader').hover(function() {
+      $( this ).addClass('goldBorder');
+    }, function() {
+      $( this ).removeClass('goldBorder');
+    });
+    $('.txHeader').click(function() {
+      $( this ).next('div').toggle(500);
+      imgInd = $( this ).find('img');
+      if ( $( imgInd ).attr('src') == '{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png') {
+        $( this ).find('img.txIndicator').attr('src', '{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png');
+      } else {
+        $( this ).find('img.txIndicator').attr('src', '{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png');
+      }
+    });
 });
 window.ethereum.on('accountsChanged', function (accounts) {
   console.log(`wallet changed to ${accounts[0]}!`);
@@ -39,7 +53,6 @@ function optionsReset() {
   $("#optHarmony").prop('checked', true);
   $("#optDFKChain").prop('checked', true);
   $("optKlaytn").prop('checked', true);
-  $("#optAvalanche").prop('checked', false);
   // Default to last year if it is early in year, this year otherwise
   var dt = new Date();
   var setYear = dt.getFullYear();
@@ -48,6 +61,10 @@ function optionsReset() {
   }
   $("#startDate").val(setYear + "-01-01");
   $("#endDate").val(setYear + "-12-31");
+  $("#fifo").attr('checked', 'checked');
+  $("#manual").attr('checked', 'checked');
+  $("#purchaseAddresses").val('');
+  $('#addressEntry').hide();
 }
 function refreshLists() {
   if (sid != '' && '{{ memberState }}' == '2') {
@@ -79,6 +96,32 @@ function loadGroupSel() {
     }, "json"
   );
 }
+function checkData() {
+  $("#loadingSection").css("display","block");
+  $.post(BASE_SCRIPT_URL + "generate", {
+    walletAddress: $('#ethAddress').val(),
+    includeHarmony: $('input[name=optHarmony]:checked').val(),
+    includeDFKChain: $('input[name=optDFKChain]:checked').val(),
+    includeKlaytn: $('input[name=optKlaytn]:checked').val(),
+    startDate: $('#startDate').val(),
+    endDate: $('#endDate').val(),
+    account: selectedAccount,
+    sid: sid}, function( data ) {
+      if (data.response.status != undefined) {
+        if (data.response.status == 'complete') {
+          $("#loadingSection").css("display","none");
+          return True;
+        } else {
+          walletRecords = data.response.wallet_records;
+          reportTable(walletRecords);
+        }
+      } else {
+        alert(data.response);
+      }
+    }, "json"
+  );
+  return false;
+}
 function getReport(reportType) {
   $("#loadingSection").css("display","block");
   $.post(BASE_SCRIPT_URL + "pnl/" + reportType,{
@@ -86,7 +129,6 @@ function getReport(reportType) {
     includeHarmony: $('input[name=optHarmony]:checked').val(),
     includeDFKChain: $('input[name=optDFKChain]:checked').val(),
     includeKlaytn: $('input[name=optKlaytn]:checked').val(),
-    includeAvalanche: $('input[name=optAvalanche]:checked').val(),
     startDate: $('#startDate').val(),
     endDate: $('#endDate').val(),
     account: selectedAccount,
@@ -98,13 +140,137 @@ function getReport(reportType) {
   );
   return false;
 }
+// Load the old report in two steps after it is done, first tax report, then events
+function viewReport(account, contentType, generateAddress, generateStart, generateEnd, includeHarmony='false', includeDFKChain='false', includeKlaytn='false', eventGroup='all') {
+  $.post(BASE_SCRIPT_URL + "pnl/tax",{
+        account: account,
+        walletAddress: generateAddress,
+        includeHarmony: includeHarmony,
+        includeDFKChain: includeDFKChain,
+        includeKlaytn: includeKlaytn,
+        startDate: generateStart,
+        endDate: generateEnd,
+        contentType: contentType,
+        eventGroup: eventGroup,
+        sid: sid}, function( data ) {
+          var delay = 0;
+          if (contentType == 'tax' || eventGroup == 'all') {
+            reportRecords = data.response.tax_records;
+            if (contentType == 'tax') {
+              loadReport(data.response, contentType);
+            } else {
+              $("#mappingSection").css("display","block");
+            }
+            for (let i = 0; i < event_groups.length; i++) {
+              delay = i*2000;
+              setTimeout(`viewReport("${account}","transaction","${generateAddress}","${generateStart}","${generateEnd}","${includeHarmony}","${includeDFKChain}","${includeKlaytn}","${event_groups[i]}")`, delay);
+            }
+          } else {
+            reportRecords = data.response.event_records;
+            if (reportRecords != 'undefined') {
+              loadReport(data.response, contentType, eventGroup);
+              if (eventGroup == event_groups[event_groups.length-1]) {
+                $("#mappingSection").css("display","none");
+                $("#mappingProgress").progressbar( "option", "value", false);
+                $("#mappingMessage").html("Loading Transactions...");
+              }
+            }
+          }
+        }, "json"
+    );
+    return false;
+}
+function reportTable(data) {
+  const reportStatus = ['Created','Processing','Complete','unknown','unknown','unknown','unknown','unknonw','Blockchain Error', 'Site Error'];
+  var listElm = document.getElementById('reportList');
+  var newRow = document.createElement('tr');
+  listElm.innerHTML = '';
+  newRow.innerHTML = '<th>Wallet</th><th>Network</th><th>Status</th><th>Updated Through</th><th>Transactions</th><th>Percent Complete</th>';
+  listElm.appendChild(newRow);
+  data.forEach((reporto) => {
+    if (reporto['py/tuple'] != undefined) {
+      var report = reporto['py/tuple'];
+    } else {
+      var report = reporto;
+    }
+    if ( report[0].substring(0, 2) == '0x' ) {
+      var addr = report[0].substring(0, 6) + '...' + report[0].substring(38, 42);
+    } else {
+      var addr = report[0];
+    }
+    var progress = 0;
+    var status = reportStatus[report[3]];
+    if (report[3] == 0) {
+      progress = Math.min(getProgress('fetchingtx', report[7], report[8], report[9])*100, 100);
+    } else if ( report[3] == 2 ) {
+      progress = 100;
+    } else {
+      progress = Math.min(getProgress('generating', report[9], report[8], report[9])*100, 100);
+    }
+    var newRow = document.createElement('tr');
+    var pAnimate = '';
+    if (report[3] < 2) {
+      pAnimate = '<div class="lds-ripple"><div></div><div></div></div>';
+    }
+    updateThroughTimestamp = Math.max(report[5], report[6]);
+    updateThroughDate = new Date(updateThroughTimestamp * 1000).toLocaleDateString();
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDate}</td><td>${report[9]}</td><td>${progress.toFixed(0)}%</td>`;
+    listElm.appendChild(newRow);
+  });
+}
+// Switch between Export, PNL Summary, and Transaction report views
+function switchView(view) {
+  if (view == 'export') {
+    currentView = 'export';
+    $("#viewTransaction").removeClass('tabSelect');
+    $("#viewSummary").removeClass('tabSelect');
+    $("#viewExport").addClass('tabSelect');
+    $("#transactionReport").hide(500);
+    $("#reportContent").hide(500);
+    $("#exportContent").show(500);
+  } else if (view == 'transaction') {
+    currentView = 'transaction';
+    $("#viewTax").removeClass('tabSelect');
+    $("#viewSummary").removeClass('tabSelect');
+    $("#viewTransaction").addClass('tabSelect');
+    $("#exportContent").hide(500);
+    $("#reportContent").hide(500);
+    $("#transactionReport").show(500);
+  } else {
+    currentView = 'pnl';
+    $("#viewSummary").addClass('tabSelect');
+    $("#viewTax").removeClass('tabSelect');
+    $("#viewTransaction").removeClass('tabSelect');
+    $("#exportContent").hide(500);
+    $("#transactionReport").hide(500);
+    $("#reportContent").show(500);
+  }
+}
+async function exportData(format) {
+  $("#exportCSV").prop('disabled', true);
+  $("#loadingCSV").show();
+  var walletAddress = encodeURIComponent($('#ethAddress').val());
+  var includeHarmony = $('input[name=optHarmony]:checked').val();
+  var includeDFKChain = $('input[name=optDFKChain]:checked').val();
+  var includeKlaytn = $('input[name=optKlaytn]:checked').val();
+  var startDate = $('#startDate').val();
+  var endDate = $('#endDate').val();
+  var account = encodeURIComponent(selectedAccount);
+  var csvFormat = $('input[name=csvf]:checked').val();
+  var url = `${BASE_SCRIPT_URL}pnl/tax?formatType=${format}&contentType=transaction&csvFormat=${csvFormat}&walletAddress=${walletAddress}&account=${account}&includeHarmony=${includeHarmony}&includeDFKChain=${includeDFKChain}&includeKlaytn=${includeKlaytn}&startDate=${startDate}&endDate=${endDate}&sid=${sid}`;
+  var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
+  document.getElementById('frame_box').innerHTML = htm;
+}
+function downloadDone() {
+  $("#exportCSV").prop('disabled', false);
+  $("#loadingCSV").hide();
+}
 </script>
 <body>
 <div>
   <h1><span id="dfkrptTitle">DeFi Kingdoms: Lila's Ledger</span>
     <div style="float:right;margin-top:-16px;" id="loginBlock"><input id="connectWallet" type="button" value="Connect Wallet" onclick="connect();" class="lButton"><span id="member"></span><input id="loginButton" type="button" value="Login" onclick="login(true);" class="lButton" style="display:none;"><input id="logoutButton" type="button" value="Logout" onclick="logout();" class="lButton" style="display:none;"></div>
     <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}member" title="go to member setup page"><img src="{{ BASE_SCRIPT_URL }}static/images/account.png" style="max-width:48px;margin-right:14px;"/></a></div>
-    <div style="float:right;"><a href="{{ BASE_SCRIPT_URL }}tax" title="go to legacy tax report gen"><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" style="width:48px;margin-right:14px;"/></a></div>
   </h1>
 </div>
 <div id="mainContent" class="wrapper">
@@ -120,7 +286,7 @@ function getReport(reportType) {
         or
       </div>
       <label for="ethAddress">Eth Address:</label>
-      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;" size=40 placeholder="Wallet Address 0x..." />
+      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
       <div class="sectionHead"></div>
       <fieldset class="chainSelect">
         <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
@@ -129,8 +295,6 @@ function getReport(reportType) {
         <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
         <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
         <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
-        <input type="checkbox" id="optAvalanche" name="optAvalanche"/>
-        <label for="optAvalanche" title="Toggle to include Avalanche data"><img src="{{ BASE_SCRIPT_URL }}static/images/avalanche.png" class="chainButton"/></label>
       </fieldset>
       <div class="sectionHead"></div>
       <fieldset id="dateRangeSet">
@@ -164,19 +328,25 @@ function getReport(reportType) {
       </div>
       <div id="reportInfo">
         <div id="generateSection">
-          <div id="tokens_report" class="inlineBlock reportLauncher" onclick="getReport('tokens')">
+          <div id="tokens_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('tokens')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" /><span>Tokens</span>
           </div>
-          <div id="crafting_report" class="inlineBlock reportLauncher" onclick="getReport('crafting')">
+          <div id="crafting_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('crafting')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" /><span>Crafting</span>
           </div>
-          <div id="nft_report" class="inlineBlock reportLauncher" onclick="getReport('nft')">
+          <div id="nft_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('nft')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" /><span>NFTs</span>
+          </div>
+          <div id="tx_report" class="inlineBlock reportLauncher" onclick="switchView('transaction');viewReport(selectedAccount, 'transaction', $('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val())">
+            <img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" /><span>Transactions</span>
+          </div>
+          <div id="csv_report" class="inlineBlock reportLauncher" onclick="switchView('export')">
+            <img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" /><span>CSV Export</span>
           </div>
         </div>
         <div id="loadingSection" style="display: none;">
-          <div id="reportProgress"></div>
-          <div id="reportPercent"></div>
+          <p>Data for the Wallet(s) and Date Range you have selected is not up to date.  Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
+          <table id="reportList" class="statusList reportPage"></table>
         </div>
       </div>
       <div id="reportContent" class="reportPage">
@@ -189,6 +359,90 @@ function getReport(reportType) {
         <table id="pnl_data" class="taxTable" style="display: none;">
           <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
         </table>
+      </div>
+      <div id="exportContent" style="display: none;">
+        <div id="exportSection">
+          <div class="sectionHead"></div>
+          <div style="padding: 4px;">
+            <fieldset id="csvFormatSet" class="multiToggle">
+              <legend style="font-weight: bold;">CSV Format:</legend>
+              <input type="radio" name="csvf" id="coinledgeruniversal" value="coinledgeruniversal">
+              <label for="coinledgeruniversal">CoinLedger Universal</label>
+              <input type="radio" name="csvf" id="koinlyuniversal" value="koinlyuniversal">
+              <label for="koinlyuniversal">Koinly Universal</label>
+              <input type="radio" name="csvf" id="tokentax" value="tokentax">
+              <label for="tokentax">Token Tax</label>
+              <input type="radio" name="csvf" id="turbotax" value="turbotax">
+              <label for="turbotax">TurboTax Universal</label>
+              <input type="radio" name="csvf" id="manual" value="manual">
+              <label for="manual">Manual</label>
+            </fieldset>
+          </div>
+          <div class="sectionHead"></div>
+          <button id="exportCSV" type=button value="Export CSV" class="ui-button" onclick="exportData('csv');" style="margin-left:20px;top: -2px;">Export CSV</button>
+          <div id="loadingCSV" style="display:none;">Preparing CSV...<div class="lds-ripple"><div></div><div></div></div></div>
+        </div>
+      </div>
+      <div id="transactionReport" class="reportPage" style="display: none;">
+        <div id="mappingSection" style="display: none;">
+          <div id="mappingProgress"></div>
+          <div id="mappingMessage">Loading Transactions...</div>
+        </div>
+        <h2 id="tx_tavern_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>NFTs</span><span id="tx_tavern_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_tavern_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_swaps_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Trader</span><span id="tx_swaps_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_swaps_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_trades_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bazaar</span><span id="tx_trades_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bazaar.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_trades_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_liquidity_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Liquidity</span><span id="tx_liquidity_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_liquidity_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_gardens_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Gardens</span><span id="tx_gardens_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_gardens_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_bank_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Bank</span><span id="tx_bank_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_bank_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_alchemist_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Crafting</span><span id="tx_alchemist_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_alchemist_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_quests_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Quest (if 1 week range or less)</span><span id="tx_quests_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_quests_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_wallet_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/rightArrowGrey16.png" class="txIndicator" /><span>Wallet</span><span id="tx_wallet_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="txIcon" /></h2>
+        <div style="display: none;">
+          <table id="tx_wallet_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_airdrops_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png" class="txIndicator" /><span>Airdrop</span><span id="tx_airdrops_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="txIcon" /></h2>
+        <div>
+          <table id="tx_airdrops_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
+        <h2 id="tx_lending_header" class="txHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/downArrowGrey16.png" class="txIndicator" /><span>Lending</span><span id="tx_lending_count"></span><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="txIcon" /></h2>
+        <div>
+          <table id="tx_lending_data" class="transactionTable" style="display: none;">
+          </table>
+        </div>
       </div>
     </div>
     <div id="releaseNotes" class="ghWidgetBox ui-widget-content">
