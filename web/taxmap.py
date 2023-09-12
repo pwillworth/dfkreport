@@ -323,12 +323,7 @@ def buildTavernRecords(tavernEvents, startDate, endDate):
                     v.proceeds = event.fiatAmount
                     ti.txFees += v.txFees
             results.append(ti)
-    for k, v in petExpenses.items():
-        results.append(v)
-    for k, v in landExpenses.items():
-        results.append(v)
-    for k, v in heroExpenses.items():
-        results.append(v)
+
     for k, v in heroIncome.items():
         results.append(v)
     return results
