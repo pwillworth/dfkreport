@@ -44,7 +44,7 @@ def updateWalletStatus(wallet, network, updateType, recordCount):
     logging.info('updating report {0} records {1} {2} - found rpt {3}'.format(wallet, updateType, recordCount, cur.rowcount))
     con.close()
 
-def completeReport(wallet, network):
+def completeWalletUpdate(wallet, network):
     con = aConn()
     cur = con.cursor()
     cur.execute("UPDATE walletstatus SET proc=NULL, updateStatus=2 WHERE address=%s AND network=%s", (wallet, network))
@@ -189,7 +189,6 @@ def createDatabase():
 def main():
     # Initialize database
     createDatabase()
-
 
 if __name__ == "__main__":
 	main()

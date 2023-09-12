@@ -36,7 +36,7 @@ def main():
     # With transaction list, we now generate the events and tax map
     txSaved = events.checkTransactions(txData, args.wallet, args.network)
 
-    db.completeReport(args.wallet, args.network)
+    db.completeWalletUpdate(args.wallet, args.network)
 
 
 if __name__ == "__main__":

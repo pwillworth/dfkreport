@@ -22,6 +22,9 @@ $(document).ready(function() {
       dateFormat: "yy-mm-dd"
     });
     optionsReset();
+    let interval = setInterval(() => {
+      refreshLists();
+    }, 60000);
     $('.txHeader').hover(function() {
       $( this ).addClass('goldBorder');
     }, function() {
@@ -72,6 +75,9 @@ function refreshLists() {
     $('#multiWalletSelect').show();
   } else {
     $('#multiWalletSelect').hide();
+  }
+  if ($('#loadingSection').css('display') == 'block') {
+    checkData();
   }
 }
 function loadGroupSel() {
@@ -209,12 +215,16 @@ function reportTable(data) {
     }
     var newRow = document.createElement('tr');
     var pAnimate = '';
+    var txString = report[9];
     if (report[3] < 2) {
       pAnimate = '<div class="lds-ripple"><div></div><div></div></div>';
+      var updateThroughTimestamp = report[5]
+      txString = `${report[8]}/${report[9]}`;
+    } else {
+      var updateThroughTimestamp = Math.max(report[5], report[6]);
     }
-    updateThroughTimestamp = Math.max(report[5], report[6]);
     updateThroughDate = new Date(updateThroughTimestamp * 1000).toLocaleDateString();
-    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDate}</td><td>${report[9]}</td><td>${progress.toFixed(0)}%</td>`;
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDate}</td><td>${report[8]}/${report[9]}</td><td>${progress.toFixed(0)}%</td>`;
     listElm.appendChild(newRow);
   });
 }

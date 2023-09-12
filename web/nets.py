@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 HARMONY=1
 AVALANCHE=2
 DFKCHAIN=4
@@ -18,3 +19,15 @@ klaytn_public_web3 = 'https://public-node-api.klaytnapi.com/v1/cypress'
 covalent = 'https://api.covalenthq.com/v1'
 bitquery = 'https://graphql.bitquery.io'
 glacier = 'https://glacier-api.avax.network/v1'
+
+def getNetworkList(includedChains):
+    networks = ()
+    if includedChains & HARMONY > 0:
+        networks = networks + ('harmony',)
+    if includedChains & DFKCHAIN > 0:
+        networks = networks + ('dfkchain',)
+    if includedChains & KLAYTN > 0:
+        networks = networks + ('klaytn',)
+    if includedChains & AVALANCHE > 0:
+        networks = networks + ('avalanche',)
+    return networks

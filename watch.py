@@ -19,7 +19,7 @@ def main():
             with con.cursor() as cur:
                 try:
                     checkTime = datetime.now(timezone.utc).timestamp()
-                    cur.execute("SELECT address, lastOwner, network, proc, updateStatus FROM walletstatus LEFT JOIN members ON walletstatus.lastOwner = members.account WHERE updateStatus<1 AND proc IS NULL AND (lastUpdateStart IS NULL OR expiresTimestamp > %s AND lastUpdateStart < %s-%s)", (checkTime, checkTime, updateInterval))
+                    cur.execute("SELECT address, lastOwner, network, proc, updateStatus FROM walletstatus LEFT JOIN members ON walletstatus.lastOwner = members.account WHERE proc IS NULL AND (lastUpdateStart IS NULL OR expiresTimestamp > %s AND lastUpdateStart < %s-%s)", (checkTime, checkTime, updateInterval))
                     row = cur.fetchone()
                 except Exception as err:
                     logging.error('report lookup db failure {0}'.format(str(err)))
@@ -30,6 +30,7 @@ def main():
                 except Exception as err:
                     logging.error('db error looking up running reports {0}'.format(str(err)))
                     reportCount = 99999
+                logging.info("running reports: {0} max reports: {1}".format(reportCount, settings.MAX_REPORTS))
                 if reportCount < settings.MAX_REPORTS:
                     logging.info('starting main.py {0} --network {1}'.format(row[0], row[2]))
                     with con.cursor() as cur2:
