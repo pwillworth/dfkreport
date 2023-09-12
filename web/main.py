@@ -5,12 +5,18 @@ from flask import make_response
 from markupsafe import escape
 from web3 import Web3
 import jsonpickle
+import logging
+from flask.logging import default_handler
 import urllib
 import db
 import utils
 import payment
 import generate
 import view
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+root = logging.getLogger()
+root.addHandler(default_handler)
 
 app = Flask('dfkreport')
 

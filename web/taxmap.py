@@ -103,7 +103,7 @@ def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOpti
             eventMap['bank'] += db.getEventData(wallet, 'bank', networks)
         if contentType == 'tax' or eventGroup in ['all','gardens']:
             eventMap['gardens'] += db.getEventData(wallet, 'gardens', networks)
-        if contentType == 'tax' or formatType == 'csv' or (endDate - startDate) < datetime.timedelta(days=8):
+        if formatType == 'csv' or (contentType == 'tax' and (endDate - startDate) < datetime.timedelta(days=8)):
             eventMap['quests'] += db.getEventData(wallet, 'quests', networks)
         if contentType == 'tax' or eventGroup in ['all','alchemist']:
             eventMap['alchemist'] += db.getEventData(wallet, 'alchemist', networks)
