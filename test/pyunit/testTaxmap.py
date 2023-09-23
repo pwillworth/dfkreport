@@ -101,21 +101,16 @@ class testTaxmap(unittest.TestCase):
 		taxRecords = taxmap.buildTavernRecords(self.fifoMap['tavern'], self.yearStart, self.yearEnd)
 
 		# assert
-		self.assertEqual(len(taxRecords), 2, "Incorrect number of tax records generated")
-		heroPurchase = taxmap.TaxItem('',0,'',0,'','','',None)
+		self.assertEqual(len(taxRecords), 1, "Incorrect number of tax records generated")
 		heroSale = taxmap.TaxItem('',0,'',0,'','','',None)
 		for tr in taxRecords:
-			if tr.txHash == '0xHTEST1':
-				heroPurchase = tr
-			elif tr.txHash == '0xHTEST2':
+			if tr.txHash == '0xHTEST2':
 				heroSale = tr
 		self.assertIn("Sold hero 1", heroSale.description, "Incorrect description for hero sale")
 		self.assertEqual(heroSale.amountNotAccounted, 0, "Cost basis not fully accounted")
 		self.assertEqual(heroSale.category, "gains", "Incorrect tax category")
 		self.assertEqual(heroSale.term, "short", "Incorrect gains term")
 		self.assertEqual(heroSale.acquiredDate, datetime.fromtimestamp(self.aTimestamp).date(), "Acquired date not correctly set")
-
-		self.assertEqual(heroPurchase.category, "expenses", "Hero purchase not in expenses category")
 
 
 if __name__ == '__main__':

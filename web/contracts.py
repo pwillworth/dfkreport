@@ -152,6 +152,7 @@ address_map = {
     '0xA7F9B7B0f729Dc98ae748f5505497909aFfdfa8A': 'Bridge to Serendale',
     '0x36829ba54e6a0f11fb6e5a45ac5ad2742ec86a0b': 'Bridge Pets to Serendale',
     '0x501cdc4ef10b63219704bf6adb785dfccb06dee2': 'Item Bridge Serendale',
+    '0x6d5B86EaC9097EA4a94B2b69Cd4854678B89f839': 'Item Bridge to Crystalvale',
     '0x57Dec9cC7f492d6583c773e2E7ad66dcDc6940Fb': 'CrystalvaleGardener',
     '0x51577EC9644853c5d1B99d5045C133BBfa9a6a60': 'Gen0 Reroll',
     '0x123165B3a30fdA3655B30cfC10135C1CA3C21bFC': 'Airdrop Crystalvale',
@@ -758,7 +759,9 @@ DFKCHAIN_GOLD_VALUES = {
     '0x8FfF0f5A660b4D38441DDF6127bca42D7a2755a9': 0, #Greater Fortune Stone
     '0x7643ADB5AaF129A424390CB055d6e23231fFd690': 0, #Lesser Chaos Stone
     '0x1ED1a6Ed588945C59227f7a0c622Ad564229d3d6': 0, #Chaos Stone
-    '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 0 #Greater Chaos Stone
+    '0xEd4Bf3008afE47FE01CcC7a6648a24E326667eee': 0, #Greater Chaos Stone
+    '0xAcDa84fAb3d3cdB38078b04901a26c103C37E7F4': 0, #Regular Pet Treat
+    '0x8Df3fFa5a677ba9737CE8Afcb8dd15Bd74085adD': 0 #Premium Pet Treat
 }
 
 DFKCHAIN_CRAFTABLE = {
@@ -1015,7 +1018,9 @@ KLAYTN_GOLD_VALUES = {
     '0x91aced74b0CEE03EF8902f13E97F6e308941E6Bd': 0, #'Greater Fortune Stone',
     '0x38bDed7C399bbD214a19De35260766b130cAFd2F': 0, #'Lesser Chaos Stone',
     '0x880cb941AAb394775f54F2b6468035bbdD0B81dF': 0, #'Chaos Stone',
-    '0x932049DF7f09DeE7cF5Aefe03f373810EBbdDDc7': 0 #'Greater Chaos Stone',
+    '0x932049DF7f09DeE7cF5Aefe03f373810EBbdDDc7': 0, #'Greater Chaos Stone',
+    '0x2F11e335224C5aBd3418B99922A9fe442F5696E9': 0, #Regular Pet Treat
+    '0xEec86C39e061B3Dec44f608Ff0ADA8053B8fFaDb': 0 #Premium Pet Treat
 }
 
 KLAYTN_CRAFTABLE = {
