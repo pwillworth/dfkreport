@@ -20,17 +20,31 @@ def main():
     txData = []
 
     logging.info('new update request {0} {1}'.format(args.wallet, args.network))
-    # Scale up default page size for very large accounts
-    txCount = transactions.getTransactionCount(args.wallet, args.network)
-    if txCount > page_size*50:
-        page_size = min(1000, page_size*5)
 
-    txData = transactions.getTransactionList(args.wallet, args.network, page_size)
+    txCount = transactions.getTransactionCount(args.wallet, args.network)
+    if type(txCount) is not str:
+        db.updateWalletStatus(args.wallet, args.network, 'initiated', txCount)
+        # Scale up default page size for very large accounts
+        if txCount > page_size*50:
+            page_size = min(1000, page_size*5)
+    else:
+        db.updateReportError(args.wallet, args.network)
+
+    # Get list of transactions that need to be parsed
+    try:
+        txData = transactions.getTransactionList(args.wallet, args.network, page_size)
+    except Exception as err:
+        logging.error('Wallet update failure during tx listing: {0}'.format(err))
+        db.updateReportError(args.wallet, args.network)
 
     db.completeTransactions(args.wallet, args.network)
 
-    # With transaction list, we now generate the events and tax map
-    txSaved = events.checkTransactions(txData, args.wallet, args.network, txCount)
+    # With transaction list, we now generate and store event data
+    try:
+        txSaved = events.checkTransactions(txData, args.wallet, args.network, txCount)
+    except Exception as err:
+        logging.error('Wallet update failure during event parsing: {0}'.format(err))
+        db.updateReportError(args.wallet, args.network)
 
     db.completeWalletUpdate(args.wallet, args.network, txSaved)
 

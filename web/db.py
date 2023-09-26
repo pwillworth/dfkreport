@@ -3,16 +3,20 @@ import psycopg2
 import decimal
 import dfkInfo
 import logging
-import settings
+import records
+import csvFormats
 import jsonpickle
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 import time
 import os
 from web3 import Web3
 from hexbytes import HexBytes
 from eth_account.messages import encode_defunct
 import random
+import csv
+from io import StringIO
+
 
 def ReportOptions():
     return {
@@ -155,6 +159,43 @@ def getEventData(wallet, eventType, networks):
     else:
         logging.info('Skipping data lookup due to db conn failure.')
     return events
+
+def getEventDataCSV(wallets, networks, csvFormat, startDate, endDate):
+    line = StringIO()
+    writer = csv.writer(line)
+    try:
+        con = aConn()
+        cur = con.cursor()
+    except Exception as err:
+        logging.error('DB error trying to look up event data. {0}'.format(str(err)))
+    if con != None and not con.closed:
+        cur.execute("SELECT * FROM transactions WHERE account IN %s AND network IN %s", (wallets, networks))
+        rows = cur.fetchmany(500)
+        while len(rows) > 0:
+            events = records.EventsMap()
+            for row in rows:
+                # restrict to desired date range - TODO make index on blockTimestamp and add to query
+                itemDate = date.fromtimestamp(row[1])
+                if itemDate < startDate or itemDate > endDate or len(row[3]) < 2:
+                    continue
+
+                r = jsonpickle.decode(row[3])
+                if type(r) is list:
+                    for evt in r:
+                        events[row[2]].append(evt)
+                else:
+                    events[row[2]].append(r)
+            result = csvFormats.getResponseCSV(events, csvFormat)
+            for cLine in result:
+                writer.writerow(cLine)
+                line.seek(0)
+                yield line.read()
+                line.truncate(0)
+                line.seek(0)
+            rows = cur.fetchmany(500)
+        con.close()
+    else:
+        logging.info('Skipping data lookup due to db conn failure.')
 
 def getWalletGroup(account, group=None):
     results = []
@@ -326,23 +367,7 @@ def removeGroupList(account, groupName):
 
     return result
 
-def createDatabase():
-    con = aConn()
-    cur = con.cursor()
-    cur.execute('CREATE TABLE IF NOT EXISTS prices (date VARCHAR(31), token VARCHAR(63), prices STRING, marketcap STRING, volume STRING, INDEX IX_price_date_token (date, token))')
-    cur.execute('CREATE TABLE IF NOT EXISTS transactions (txHash VARCHAR(127), blockTimestamp INTEGER, eventType VARCHAR(15), events STRING, account VARCHAR(63), network VARCHAR(31), fee FLOAT, feeValue FLOAT, PRIMARY KEY (txHash, account), INDEX IX_tx_account_type (account, eventType), INDEX IX_account_network (account, network))')
-    cur.execute('CREATE TABLE IF NOT EXISTS reports (account VARCHAR(63), startDate VARCHAR(15), endDate VARCHAR(15), generatedTimestamp INTEGER, transactions INTEGER, reportStatus INT2, transactionsFetched INTEGER, transactionsComplete INTEGER, transactionsContent VARCHAR(63), reportContent VARCHAR(63), proc INTEGER, costBasis VARCHAR(7), includedChains INTEGER DEFAULT 3, moreOptions STRING, txCounts VARCHAR(10230), wallets STRING, walletGroup VARCHAR(63), walletHash VARCHAR(63), PRIMARY KEY (account, startDate, endDate, walletHash), INDEX IX_rpt_status (reportStatus))')
-    cur.execute('CREATE TABLE IF NOT EXISTS groups (account VARCHAR(63), groupName VARCHAR(255), wallets STRING, generatedTimestamp TIMESTAMP NOT NULL, updatedTimestamp TIMESTAMP, PRIMARY KEY (account, groupName))')
-    cur.execute('CREATE TABLE IF NOT EXISTS members (account VARCHAR(63) PRIMARY KEY, nonce INTEGER, generatedTimestamp INTEGER, expiresTimestamp INTEGER, lastLogin INTEGER)')
-    cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL, txHash VARCHAR(127), token VARCHAR(63), amount FLOAT, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')
-    cur.execute('CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(40) NOT NULL PRIMARY KEY, account VARCHAR(63) NOT NULL, expires FLOAT, INDEX IX_session_account (account))')
-    cur.execute('CREATE TABLE IF NOT EXISTS balances (updateTime TIMESTAMP PRIMARY KEY, balanceData STRING)')
-    con.commit()
-    con.close()
-
 def main():
-    # Initialize database
-    createDatabase()
     con = aConn()
     cur = con.cursor()
     #cur.execute("DELETE FROM reports")

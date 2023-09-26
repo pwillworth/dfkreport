@@ -1,4 +1,19 @@
 # Records objects
+def EventsMap():
+    return {
+        'tavern': [],
+        'swaps': [],
+        'trades': [],
+        'liquidity': [],
+        'wallet': [],
+        'bank': [],
+        'gardens': [],
+        'quests': [],
+        'alchemist': [],
+        'airdrops': [],
+        'lending': [],
+        'gas': 0
+    }
 
 # Records for Capital Gains
 class TavernTransaction:

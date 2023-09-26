@@ -36,9 +36,11 @@ def completeTransactions(wallet, network):
 def updateWalletStatus(wallet, network, updateType, recordCount, blockNumber=None, blockTimestamp=None):
     con = aConn()
     cur = con.cursor()
-    if updateType == 'fetched':
+    if updateType == 'initiated':
+        cur.execute("UPDATE walletstatus SET updateStatus=0, txUpdateTargetCount=%s WHERE address=%s and network=%s", (recordCount, wallet, network))
+    elif updateType == 'fetched':
         # sometimes the tx count is not quite right and fetched tx ends up being more, so update if so to avoid invalid progress percentages
-        cur.execute("UPDATE walletstatus SET updateStatus=0, txUpdateTargetCount=GREATEST(txUpdateTargetCount, %s) WHERE address=%s and network=%s", (recordCount, wallet, network))
+        cur.execute("UPDATE walletstatus SET updateStatus=0, txCount=%s WHERE address=%s and network=%s", (recordCount, wallet, network))
     else:
         cur.execute("UPDATE walletstatus SET updateStatus=1, txCount=%s, lastSavedBlock=%s, lastBlockTimestamp=%s WHERE address=%s AND network=%s", (recordCount, blockNumber, blockTimestamp, wallet, network))
     logging.info('updating report {0} {1} records {2} {3} - found rpt {4}'.format(wallet, network, updateType, recordCount, cur.rowcount))

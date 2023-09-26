@@ -7,21 +7,6 @@ from decimal import *
 import contracts
 import nets
 
-def EventsMap():
-    return {
-        'tavern': [],
-        'swaps': [],
-        'trades': [],
-        'liquidity': [],
-        'wallet': [],
-        'bank': [],
-        'gardens': [],
-        'quests': [],
-        'alchemist': [],
-        'airdrops': [],
-        'lending': [],
-        'gas': 0
-    }
 
 # Record for final tax report data
 class TaxItem:
@@ -86,9 +71,9 @@ def inReportRange(item, startDate, endDate):
 
 
 # Scrape all events and build the Tax Report from it
-def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup, formatType='json'):
+def buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup):
     # Generate map of all events from transaction list
-    eventMap = EventsMap()
+    eventMap = records.EventsMap()
     networks = getNetworkList(includedChains)
 
     logging.info('Start Event map build')

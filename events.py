@@ -35,11 +35,11 @@ def checkTransactions(txs, wallet, network, totalTx):
         w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
     else:
         logging.error('could not check transactions for unsupported network: {0}'.format(network))
-        return 'Error: Blockchain connection failure'
+        raise Exception('Blockchain connection Failure.')
 
     if not w3.is_connected():
         logging.error('Error: Critical w3 connection failure for {0}'.format(network))
-        return 'Error: Blockchain connection failure.'
+        raise Exception('Blockchain connection Failure.')
 
     # difference between total wallet tx and length of unsaved tx need to check should be number already saved in DB or starting point
     txCount = totalTx - len(txs)

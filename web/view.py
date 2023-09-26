@@ -4,12 +4,11 @@
  Copyright 2023 Paul Willworth <ioscode@gmail.com>
 
 """
-from datetime import datetime
 import jsonpickle
 import logging
 import db
 import taxmap
-import csvFormats
+import records
 
 
 def getResponseJSON(results, contentType, eventGroup='all'):
@@ -61,7 +60,7 @@ def getResponseJSON(results, contentType, eventGroup='all'):
 
     return response
 
-def getReportData(formatType, contentType, csvFormat, eventGroup, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
+def getReportData(contentType, eventGroup, wallets, startDate, endDate, costBasis, includedChains, moreOptions):
     failure = False
 
     if costBasis not in ['fifo', 'lifo', 'hifo', 'acb']:
@@ -75,14 +74,10 @@ def getReportData(formatType, contentType, csvFormat, eventGroup, wallets, start
             response = '{ "response" : {\n  "status" : "complete",\n  "message" : "Report ready send contentType parameter as tax or transaction to get results."\n  }\n}'
         else:
             results = {}
-            results = taxmap.buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup, formatType)
+            results = taxmap.buildTaxMap(wallets, startDate, endDate, costBasis, includedChains, moreOptions, contentType, eventGroup)
 
             if 'taxes' in results:
-                if formatType == 'csv':
-                    logging.info('Getting response CSV')
-                    response = csvFormats.getResponseCSV(results, contentType, csvFormat)
-                else:
-                    response = getResponseJSON(results, contentType, eventGroup)
+                response = getResponseJSON(results, contentType, eventGroup)
             else:
                 response = '{ "response" : "Error: content file corrupted or empty.  You may need to regenerate the report" }'
                 failure = True
@@ -96,8 +91,8 @@ def getTokensReport(wallets, startDate, endDate, includedChains):
     for wallet in wallets:
         swapData += db.getEventData(wallet, 'swaps', networks)
         tradeData += db.getEventData(wallet, 'trades', networks)
-    tokensRecords = taxmap.buildSwapRecords(swapData+tradeData, startDate, endDate, [], [], [], [], [], [], 'fifo', [])
-    response = getResponseJSON({'taxes': tokensRecords, 'events': taxmap.EventsMap() }, 'tax')
+    tokensRecords = taxmap.buildSwapRecords(swapData+tradeData, startDate, endDate, [], [], [], [], [], [], 'lifo', [])
+    response = getResponseJSON({'taxes': tokensRecords, 'events': records.EventsMap() }, 'tax')
     return response
 
 def getCraftingReport(wallets, startDate, endDate, includedChains):
@@ -112,7 +107,7 @@ def getCraftingReport(wallets, startDate, endDate, includedChains):
         craftData += db.getEventData(wallet, 'alchemist', networks)
         airdropData += db.getEventData(wallet, 'airdrops', networks)
     craftingRecords = taxmap.buildCraftingRecords(swapData+tradeData, startDate, endDate, craftData, airdropData)
-    response = getResponseJSON({'taxes': craftingRecords, 'events': taxmap.EventsMap() }, 'tax')
+    response = getResponseJSON({'taxes': craftingRecords, 'events': records.EventsMap() }, 'tax')
     return response
 
 def getDuelsReport(wallets, startDate, endDate, includedChains):
@@ -124,7 +119,7 @@ def getDuelsReport(wallets, startDate, endDate, includedChains):
         airdropData += db.getEventData(wallet, 'airdrops', networks)
     logging.info('taver {0} airdrop {1}'.format(len(tavernData), len(airdropData)))
 
-    duelsRecords = taxmap.EventsMap()
+    duelsRecords = records.EventsMap()
     logging.info(str(airdropData[10].__dict__))
     logging.info(str(tavernData[2345].__dict__))
     airdropData = [x for x in airdropData if (taxmap.inReportRange(x, startDate, endDate))]
@@ -142,7 +137,7 @@ def getNFTReport(wallets, startDate, endDate, includedChains):
     for wallet in wallets:
         tavernData += db.getEventData(wallet, 'tavern', networks)
     tavernRecords = taxmap.buildTavernRecords(tavernData, startDate, endDate)
-    response = getResponseJSON({'taxes': tavernRecords, 'events': taxmap.EventsMap() }, 'tax')
+    response = getResponseJSON({'taxes': tavernRecords, 'events': records.EventsMap() }, 'tax')
     return response
 
 def getPetsReport(wallets, startDate, endDate, includedChains):

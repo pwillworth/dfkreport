@@ -53,17 +53,20 @@ $( function() {
   } );
 // Restore defaults for options
 function optionsReset() {
-  $("#optHarmony").prop('checked', true);
+  $("#optHarmony").prop('checked', false);
   $("#optDFKChain").prop('checked', true);
   $("optKlaytn").prop('checked', true);
-  // Default to last year if it is early in year, this year otherwise
+  // Default to month start to yesterday or last month if the 1st
   var dt = new Date();
-  var setYear = dt.getFullYear();
-  if (dt.getMonth() < 5) {
-    setYear = setYear -1;
+  var setMonth = dt.getMonth()+1;
+  if (dt.getDate() == 1) {
+    dt.setTime(dt.getTime() - (24*60*60*1000));
+    setMonth = dt.getMonth();
   }
-  $("#startDate").val(setYear + "-01-01");
-  $("#endDate").val(setYear + "-12-31");
+  setMonth = ('0' + setMonth).slice(-2);
+  var setDay = ('0' + (dt.getDate()-1)).slice(-2);
+  $("#startDate").val(dt.getFullYear() + "-" + setMonth + "-01");
+  $("#endDate").val(dt.getFullYear() + "-" + setMonth + "-" + setDay);
   $("#fifo").attr('checked', 'checked');
   $("#manual").attr('checked', 'checked');
   $("#purchaseAddresses").val('');
@@ -272,7 +275,7 @@ async function exportData(format) {
   var endDate = $('#endDate').val();
   var account = encodeURIComponent(selectedAccount);
   var csvFormat = $('input[name=csvf]:checked').val();
-  var url = `${BASE_SCRIPT_URL}pnl/tax?formatType=${format}&contentType=transaction&csvFormat=${csvFormat}&walletAddress=${walletAddress}&account=${account}&includeHarmony=${includeHarmony}&includeDFKChain=${includeDFKChain}&includeKlaytn=${includeKlaytn}&startDate=${startDate}&endDate=${endDate}&sid=${sid}`;
+  var url = `${BASE_SCRIPT_URL}csv?formatType=${format}&csvFormat=${csvFormat}&walletAddress=${walletAddress}&account=${account}&includeHarmony=${includeHarmony}&includeDFKChain=${includeDFKChain}&includeKlaytn=${includeKlaytn}&startDate=${startDate}&endDate=${endDate}&sid=${sid}`;
   var htm = '<iframe src="' + url + '" onload="downloadDone()"></iframe>';
   document.getElementById('frame_box').innerHTML = htm;
 }
@@ -301,25 +304,23 @@ function downloadDone() {
         or
       </div>
       <label for="ethAddress">Eth Address:</label>
-      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
+      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;margin-bottom:16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
       <div class="sectionHead"></div>
       <fieldset class="chainSelect">
-        <input type="checkbox" id="optHarmony" name="optHarmony" checked="checked"/>
+        <input type="checkbox" id="optHarmony" name="optHarmony"/>
         <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
         <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked"/>
         <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
         <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
         <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
       </fieldset>
-      <div class="sectionHead"></div>
+      <div class="sectionHead" style="clear:both;"></div>
       <fieldset id="dateRangeSet">
-        <legend style="font-weight: bold;margin-top:56px;">Date Range Included:</legend>
-        <div id="dateSetBox" class="fieldContainer">
+        <div id="dateSetBox">
           <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 /></div>
           <div class="sectionHead"></div>
           <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 /></div>
         </div>
-        <div class="sectionHead"></div>
       </fieldset>
       <div class="sectionHead"></div>
       <div class="searchInput" style="text-align:center">
@@ -327,6 +328,9 @@ function downloadDone() {
       </div>
       </form>
       <div id="opaqueIcon"><img src="{{ BASE_SCRIPT_URL }}static/images/favicon.png" style="max-width: 64px;opacity: 50%;" /></div>
+    </div>
+    <div id="csv_report" class="ghWidgetBox" onclick="switchView('export')">
+      <img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" /><span>CSV Export</span>
     </div>
     <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
       <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage | safe }}</h3>
@@ -358,11 +362,9 @@ function downloadDone() {
           <div id="tx_report" class="inlineBlock reportLauncher" onclick="switchView('transaction');viewReport(selectedAccount, 'transaction', $('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val())">
             <img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" /><span>Transactions</span>
           </div>
-          <div id="csv_report" class="inlineBlock reportLauncher" onclick="switchView('export')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" /><span>CSV Export</span>
-          </div>
         </div>
         <div id="loadingSection" style="display: none;">
+          Preparing Report...<div class="lds-ripple"><div></div><div></div></div>
           <p id="needDataLoad" style="display:none;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
           <table id="reportList" class="statusList reportPage"></table>
         </div>

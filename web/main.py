@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, Response, redirect, url_for
 from flask import render_template
 from flask import make_response
 from markupsafe import escape
@@ -13,6 +13,7 @@ import utils
 import payment
 import generate
 import view
+import nets
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 root = logging.getLogger()
@@ -33,12 +34,12 @@ def index():
     else:
         memberState = 0
     bankState = 'ragmanEmpty'
-    bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal not reached, please help fill the ragmans crates!</span>'
+    bankMessage = '<span style="color:red;">Warning!</span> <span style="color:white;">Monthly hosting fund goal of $30 not reached, please help fill the ragmans crates!</span>'
     balance = db.readBalance()
     bankProgress = '${0:.2f}'.format(balance)
     if balance >= 30:
         bankState = 'ragman'
-        bankMessage = 'Thank You!  The ragmans crates are full and the hosting bill can be paid this month!'
+        bankMessage = 'Thank You!  The ragmans crates are full and the $30 hosting bill can be paid this month!'
 
     return render_template('home.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
 
@@ -72,6 +73,75 @@ def report_generate():
 
     return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn)
 
+@app.route("/csv", methods=['GET', 'POST'])
+def csv():
+    failure = False
+    includedChains = 0
+    walletGroup = ''
+    wallets = []
+
+    # can be koinlyuniversal or anything else for default
+    csvFormat = request.args.get('csvFormat', '')
+    account = request.args.get('account', '')
+    wallet = request.args.get('walletAddress', '')
+    startDate = request.args.get('startDate', '')
+    endDate = request.args.get('endDate', '')
+    includeHarmony = request.args.get('includeHarmony', 'undefined')
+    includeDFKChain = request.args.get('includeDFKChain', 'undefined')
+    includeAvalanche = request.args.get('includeAvalanche', 'false')
+    includeKlaytn = request.args.get('includeKlaytn', 'undefined')
+
+    loginState = readAccount(request.args, request.cookies)
+    # ensure account passed is checksum version when logged in otherwise use wallet
+    if loginState[0] > 0:
+        account = loginState[1]
+    else:
+        if account == '':
+            account = wallet
+
+    try:
+        tmpStart = datetime.strptime(startDate, '%Y-%m-%d').date()
+        tmpEnd = datetime.strptime(endDate, '%Y-%m-%d').date()
+    except ValueError:
+        response = '{ "response" : "Error: You must provide dates in the format YYYY-MM-DD" }'
+        failure = True
+
+    if not Web3.is_address(wallet):
+        # If address not passed, check if it is one of users multi wallet groups
+        if loginState[0] > 0:
+            wallets = db.getWalletGroup(account, wallet)
+        if type(wallets) is list and len(wallets) > 0:
+            walletGroup = wallet
+        else:
+            response = { "response" : "Error: {0} is not a valid address.  Make sure you enter the version that starts with 0x".format(wallet) }
+            failure = True
+    else:
+        # Ensure consistent checksum version of address incase they enter lower case
+        wallet = Web3.to_checksum_address(wallet)
+        wallets = [wallet]
+
+    # Build up the bitwise integer of chains to be included
+    if includeHarmony == 'on':
+        includedChains += 1
+    if includeAvalanche == 'on':
+        includedChains += 2
+    if includeDFKChain == 'on':
+        includedChains += 4
+    if includeKlaytn == 'on':
+        includedChains += 8
+    if includedChains < 1:
+        response = { "response" : "Error: You have to select at least 1 blockchain to include." }
+        failure = True
+
+    if failure == True:
+        output = response
+    else:
+        networks = nets.getNetworkList(includedChains)
+        output = Response(db.getEventDataCSV(tuple(wallets), networks, csvFormat, tmpStart, tmpEnd), mimetype='text/csv')
+        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
+
+    return output
+
 @app.route("/pnl/<content_type>", methods=['GET', 'POST'])
 def pnl(content_type=None):
     failure = False
@@ -87,26 +157,8 @@ def pnl(content_type=None):
     includeDFKChain = request.form.get('includeDFKChain', 'undefined')
     includeAvalanche = request.form.get('includeAvalanche', 'false')
     includeKlaytn = request.form.get('includeKlaytn', 'undefined')
-    # can be set to csv, otherwise json response is returned
-    formatType = request.form.get('formatType', '')
-    # can be tax or transaction, only used for CSV
-    contentType = request.form.get('contentType', '')
-
-    # can be koinlyuniversal or anything else for default
-    csvFormat = request.args.get('csvFormat', '')
-    if csvFormat != '':
-        formatType = request.args.get('formatType', formatType)
-        contentType = request.args.get('contentType', contentType)
-        account = request.args.get('account', account)
-        wallet = request.args.get('walletAddress', wallet)
-        startDate = request.args.get('startDate', startDate)
-        endDate = request.args.get('endDate', endDate)
-        includeHarmony = request.args.get('includeHarmony', includeHarmony)
-        includeDFKChain = request.args.get('includeDFKChain', includeDFKChain)
-        includeAvalanche = request.args.get('includeAvalanche', includeAvalanche)
-        includeKlaytn = request.args.get('includeKlaytn', includeKlaytn)
-
     costBasis = request.form.get('costBasis', 'fifo')
+    contentType = request.form.get('contentType', '')
     # can be any event group to return only that group of events instead of all
     eventGroup = request.form.get('eventGroup', 'all')
     # Allow for specifying addresses that transfers to should be considered purchases and thus taxable events
@@ -184,19 +236,12 @@ def pnl(content_type=None):
         elif content_type == 'nft':
             result = view.getNFTReport(wallets, tmpStart, tmpEnd, includedChains)
         elif content_type == 'tax':
-            result = view.getReportData(formatType, contentType, csvFormat, eventGroup, wallets, tmpStart, tmpEnd, costBasis, includedChains, otherOptions)
+            result = view.getReportData(contentType, eventGroup, wallets, tmpStart, tmpEnd, costBasis, includedChains, otherOptions)
         else:
             app.logger.info("Invalid report type passed {0}".format(content_type))
             result = { "error" : "Invalid report type" }
 
-    if formatType == 'csv':
-        output = make_response(result)
-        output.headers['Content-type'] = 'text/csv'
-        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
-    else:
-        output = result
-
-    return output
+    return result
 
 @app.route("/getReportList", methods=['POST'])
 def report_list():

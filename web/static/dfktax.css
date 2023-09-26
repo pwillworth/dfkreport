@@ -76,6 +76,7 @@ ul li {
 .searchInput {
 	margin-top: 8px;
 }
+
 input.lButton[disabled] {
 	color: #666;
 	cursor: default;
@@ -120,7 +121,7 @@ input[disabled] {
 	position: absolute;
 	height: 64px;
 	bottom: 0px;
-	left: 0px;
+	right: 0px;
 	z-index: 100;
 }
 .reportPage {
@@ -225,6 +226,21 @@ input[disabled] {
 	vertical-align: middle;
 }
 .reportLauncher:hover {
+	background: #125a9b;
+	color: #d9f1f7;
+}
+#csv_report {
+	background-color: #787c38;
+	color: #d9f1f7;
+	font-size: 24px;
+	cursor: pointer;
+}
+#csv_report img {
+	height:64px;
+	padding: 2px;
+	vertical-align: middle;
+}
+#csv_report:hover {
 	background: #125a9b;
 	color: #d9f1f7;
 }
@@ -423,12 +439,12 @@ input[disabled] {
 	border: 1px solid #ccc;
 	border-radius: 4px;
 	padding: 8px;
+	margin: 16px;
 }
-
 .chainSelect {
 	padding-right: 6px;
 	border: none;
-	float: right;
+	float: left;
 }
 .chainSelect input[type="checkbox"] {
 	opacity: 0;
@@ -442,7 +458,7 @@ input[disabled] {
 	padding: 5px;
 	margin: 0px;
 	height: 36px;
-	float: right;
+	float: left;
 }
 .chainSelect input[type="checkbox"]:checked + label {
     border: solid 2px yellow;
