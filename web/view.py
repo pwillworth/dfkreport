@@ -115,6 +115,27 @@ def getCraftingReport(wallets, startDate, endDate, includedChains):
     response = getResponseJSON({'taxes': craftingRecords, 'events': taxmap.EventsMap() }, 'tax')
     return response
 
+def getDuelsReport(wallets, startDate, endDate, includedChains):
+    tavernData = []
+    airdropData = []
+    networks = taxmap.getNetworkList(includedChains)
+    for wallet in wallets:
+        tavernData += db.getEventData(wallet, 'tavern', networks)
+        airdropData += db.getEventData(wallet, 'airdrops', networks)
+    logging.info('taver {0} airdrop {1}'.format(len(tavernData), len(airdropData)))
+
+    duelsRecords = taxmap.EventsMap()
+    logging.info(str(airdropData[10].__dict__))
+    logging.info(str(tavernData[2345].__dict__))
+    airdropData = [x for x in airdropData if (taxmap.inReportRange(x, startDate, endDate))]
+    tavernData = [x for x in tavernData if (taxmap.inReportRange(x, startDate, endDate))]
+    logging.info('t {0} airdrop {1}'.format(len(duelsRecords['tavern']), len(duelsRecords['airdrops'])))
+    duelsRecords['airdrops'] = [x for x in airdropData if (x.address in ['0x0000000000000000000000000000000000000000','0x89789a580fdE00319493BdCdB6C65959DAB1e517','0xb0f423BCB1F4396781e21ad9E0BC151d29Ac020C'])]
+    duelsRecords['tavern'] = [x for x in tavernData if (x.event in ['pvpfee','pvpreward'])]
+    response = getResponseJSON({'taxes': [], 'events': duelsRecords }, 'transaction')
+    logging.info('taverevm {0} airdrop {1}'.format(len(duelsRecords['tavern']), len(duelsRecords['airdrops'])))
+    return response
+
 def getNFTReport(wallets, startDate, endDate, includedChains):
     tavernData = []
     networks = taxmap.getNetworkList(includedChains)

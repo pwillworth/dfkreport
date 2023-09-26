@@ -33,21 +33,22 @@ def completeTransactions(wallet, network):
     cur.execute("UPDATE walletstatus SET updateStatus=1 WHERE address=%s and network=%s", (wallet, network))
     con.close()
 
-def updateWalletStatus(wallet, network, updateType, recordCount):
+def updateWalletStatus(wallet, network, updateType, recordCount, blockNumber=None, blockTimestamp=None):
     con = aConn()
     cur = con.cursor()
     if updateType == 'fetched':
         # sometimes the tx count is not quite right and fetched tx ends up being more, so update if so to avoid invalid progress percentages
         cur.execute("UPDATE walletstatus SET updateStatus=0, txUpdateTargetCount=GREATEST(txUpdateTargetCount, %s) WHERE address=%s and network=%s", (recordCount, wallet, network))
     else:
-        cur.execute("UPDATE walletstatus SET updateStatus=1, txCount=%s WHERE address=%s AND network=%s", (recordCount, wallet, network))
-    logging.info('updating report {0} records {1} {2} - found rpt {3}'.format(wallet, updateType, recordCount, cur.rowcount))
+        cur.execute("UPDATE walletstatus SET updateStatus=1, txCount=%s, lastSavedBlock=%s, lastBlockTimestamp=%s WHERE address=%s AND network=%s", (recordCount, blockNumber, blockTimestamp, wallet, network))
+    logging.info('updating report {0} {1} records {2} {3} - found rpt {4}'.format(wallet, network, updateType, recordCount, cur.rowcount))
     con.close()
 
-def completeWalletUpdate(wallet, network):
+def completeWalletUpdate(wallet, network, txCount):
     con = aConn()
     cur = con.cursor()
-    cur.execute("UPDATE walletstatus SET proc=NULL, updateStatus=2 WHERE address=%s AND network=%s", (wallet, network))
+    cur.execute("UPDATE walletstatus SET proc=NULL, updateStatus=2, txCount=%s WHERE address=%s AND network=%s", (txCount, wallet, network))
+    logging.info('updating report {0} {1} - found rpt {2}'.format(wallet, network, cur.rowcount))
     con.close()
 
 def findPriceData(date, token):

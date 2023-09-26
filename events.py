@@ -23,7 +23,7 @@ def getABI(contractName):
         ABI = f.read()
     return ABI
 
-def checkTransactions(txs, wallet, network):
+def checkTransactions(txs, wallet, network, totalTx):
     # Connect to right network that txs are for
     if network == 'klaytn':
         w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
@@ -41,7 +41,10 @@ def checkTransactions(txs, wallet, network):
         logging.error('Error: Critical w3 connection failure for {0}'.format(network))
         return 'Error: Blockchain connection failure.'
 
-    txCount = 0
+    # difference between total wallet tx and length of unsaved tx need to check should be number already saved in DB or starting point
+    txCount = totalTx - len(txs)
+    block = 0
+    timestamp = 0
     heroCrystals = {}
     petEggs = {}
     savedTx = []
@@ -64,16 +67,16 @@ def checkTransactions(txs, wallet, network):
             tx = txn
         txList.append(tx)
         eventsFound = False
-        # Update report tracking record for status every 200 txs
-        if txCount % 200 == 0:
-            try:
-                db.updateWalletStatus(wallet, network, 'complete', txCount)
-            except Exception as err:
-                logging.error('Failed to update tx count {0}'.format(str(err)))
 
         # No need to process tx if already saved
         checkCache = savedTx.get(tx, None)
         if checkCache != None:
+            # Update report tracking record for status every 200 txs
+            if txCount % 200 == 0:
+                try:
+                    db.updateWalletStatus(wallet, network, 'complete', txCount, block, checkCache[1])
+                except Exception as err:
+                    logging.error('Failed to update tx count {0}'.format(str(err)))
             savedTx.pop(tx)
             txCount += 1
             continue
@@ -95,8 +98,13 @@ def checkTransactions(txs, wallet, network):
                 logging.error('Got invalid block {0} {1}'.format(block, str(err)))
                 time.sleep(1)
                 continue
-        blockDate = datetime.date.fromtimestamp(timestamp)
-        #TODO return list of failed transaction lookups as discrepancies for investigation
+        # Update report tracking record for status every 200 txs
+        if txCount % 200 == 0:
+            try:
+                db.updateWalletStatus(wallet, network, 'complete', txCount, block, timestamp)
+            except Exception as err:
+                logging.error('Failed to update tx count {0}'.format(str(err)))
+
         try:
             receipt = w3.eth.get_transaction_receipt(tx)
         except Exception as err:
@@ -195,7 +203,7 @@ def checkTransactions(txs, wallet, network):
                     if results[1] != None:
                         db.saveTransaction(tx, timestamp, 'lending', jsonpickle.encode(results[1]), wallet, network, 0, 0)
             elif 'Airdrop' in action:
-                results = extractAirdropResults(w3, tx, wallet, timestamp, receipt, network)
+                results = extractAirdropResults(w3, tx, wallet, timestamp, receipt, network, result['to'])
                 if len(results) > 0:
                     results[0].fiatFeeValue = feeValue
                     eventsFound = True
@@ -477,8 +485,8 @@ def checkTransactions(txs, wallet, network):
                 logging.debug('DFK Duel activity: {0}'.format(tx))
                 results = extractDFKDuelResults(w3, tx, wallet, timestamp, receipt, result['input'], network)
                 eventsFound = True
-                if results != None:
-                    results.fiatFeeValue = feeValue
+                if len(results) > 0 and results[0] != None:
+                    results[0].fiatFeeValue = feeValue
                     db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results), wallet, network, txFee, feeValue)
                 else:
                     if db.findTransaction(tx, wallet) == None:
@@ -526,7 +534,7 @@ def checkTransactions(txs, wallet, network):
 
         txCount += 1
 
-    db.updateWalletStatus(wallet, network, 'complete', txCount)
+    db.updateWalletStatus(wallet, network, 'complete', txCount, block, timestamp)
     return txCount
 
 def lookupEvent(fm, to, account):
@@ -1298,14 +1306,14 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs, network)
     rcvdAmount = []
     sentToken = []
     sentAmount = []
-    r = None
+    results = []
     for log in decoded_logs:
         # Token Transfers
         if 'to' in log['args'] and 'from' in log['args']:
-            if log['args']['to'] == account and log['address'] == contracts.RAFFLE_TIX_TOKENS[network]:
+            if log['args']['to'] == account:
                 rcvdToken.append(log['address'])
                 rcvdAmount.append(contracts.valueFromWei(log['args']['value'], log['address'], network))
-            elif log['args']['from'] == account and log['address'] == contracts.POWER_TOKENS[network]:
+            elif log['args']['from'] == account:
                 sentToken.append(log['address'])
                 sentAmount.append(contracts.valueFromWei(log['args']['value'], log['address'], network))
             else:
@@ -1322,18 +1330,21 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs, network)
             duelId = input_data[1]['_duelId']
     except Exception as err:
         logging.error('Failed to decode DFKDuel input data tx {0}: {1}'.format(txn, err))
-    # TODO maybe account for the gold too, seems minimal as winner gets it back anyway
-    # if received items, it was pvp complete rewards, otherwise initiation costs/fees
-    if len(rcvdToken) > 0:
-        r = records.TavernTransaction(txn, network, 'hero', duelId, 'pvpreward', timestamp, rcvdToken[0], rcvdAmount[0])
-        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[0], network)
-    elif len(sentToken) > 0:
+    if len(sentToken) > 0:
         decoded_logs = contract.events.DuelEntryCreated().process_receipt(receipt, errors=DISCARD)
         for log in decoded_logs:
             entryId = log['args']['id']
-        r = records.TavernTransaction(txn, network, 'hero', entryId, 'pvpfee', timestamp, sentToken[0], sentAmount[0])
-        r.fiatValue = prices.priceLookup(timestamp, sentToken[0], network)
-    return r
+
+    # if received items, it was pvp complete rewards, otherwise initiation costs/fees
+    for rcvdIndex in range(len(rcvdToken)):
+        r = records.TavernTransaction(txn, network, 'hero', duelId, 'pvpreward', timestamp, rcvdToken[rcvdIndex], rcvdAmount[rcvdIndex])
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[rcvdIndex], network)
+        results.append(r)
+    for sentIndex in range(len(sentToken)):
+        r = records.TavernTransaction(txn, network, 'hero', entryId, 'pvpfee', timestamp, sentToken[sentIndex], sentAmount[sentIndex])
+        r.fiatValue = prices.priceLookup(timestamp, sentToken[sentIndex], network)
+        results.append(r)
+    return results
 
 def extractBridgeResults(w3, txn, account, timestamp, receipt, network):
     # Record token bridging as a wallet event

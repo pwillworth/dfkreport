@@ -179,6 +179,8 @@ def pnl(content_type=None):
             result = view.getTokensReport(wallets, tmpStart, tmpEnd, includedChains)
         elif content_type == 'crafting':
             result = view.getCraftingReport(wallets, tmpStart, tmpEnd, includedChains)
+        elif content_type == 'duels':
+            result = view.getDuelsReport(wallets, tmpStart, tmpEnd, includedChains)
         elif content_type == 'nft':
             result = view.getNFTReport(wallets, tmpStart, tmpEnd, includedChains)
         elif content_type == 'tax':
@@ -273,6 +275,17 @@ def post_group_list():
     print('Content-type: text/json\n')
     if failure == False:
         listResult = db.addGroupList(loginState[1], groupName, addressList)
+        # Ensure all wallets for members are in wallet status table to initiate data processing
+        walletRows = []
+        for wallet in addressList:
+            for network in ['harmony','dfkchain','klaytn']:
+                reportRow = db.findWalletStatus(wallet, network)
+                if reportRow != None:
+                    walletRows.append(reportRow)
+                else:
+                    logging.debug('start new wallet row')
+                    db.createWalletStatus(wallet, network, loginState[1])
+                    walletRows.append([wallet, network, None, 0, None, 0, 0, None, None, None, loginState[1]])
         response = ''.join(('{ "updated": ', str(listResult), ' }'))
 
     return response

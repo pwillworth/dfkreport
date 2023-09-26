@@ -116,8 +116,10 @@ function checkData() {
       if (data.response.status != undefined) {
         if (data.response.status == 'complete') {
           $("#loadingSection").css("display","none");
-          return True;
+          $("#needDataLoad").css("display","none");
+          return true;
         } else {
+          $("#needDataLoad").css("display","block");
           walletRecords = data.response.wallet_records;
           reportTable(walletRecords);
         }
@@ -139,8 +141,11 @@ function getReport(reportType) {
     endDate: $('#endDate').val(),
     account: selectedAccount,
     sid: sid}, function( data ) {
-      reportRecords = data.response.tax_records;
-      loadReportPNL(data.response, reportType);
+      if (reportType == 'duels') {
+        loadReportDuels(data.response);
+      } else {
+        loadReportPNL(data.response, reportType);
+      }
       $("#loadingSection").css("display","none");
     }, "json"
   );
@@ -257,7 +262,7 @@ function switchView(view) {
   }
 }
 async function exportData(format) {
-  $("#exportCSV").prop('disabled', true);
+  document.getElementById("exportCSV").disabled = true;
   $("#loadingCSV").show();
   var walletAddress = encodeURIComponent($('#ethAddress').val());
   var includeHarmony = $('input[name=optHarmony]:checked').val();
@@ -272,7 +277,7 @@ async function exportData(format) {
   document.getElementById('frame_box').innerHTML = htm;
 }
 function downloadDone() {
-  $("#exportCSV").prop('disabled', false);
+  document.getElementById("exportCSV").disabled = false;
   $("#loadingCSV").hide();
 }
 </script>
@@ -347,6 +352,9 @@ function downloadDone() {
           <div id="nft_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('nft')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" /><span>NFTs</span>
           </div>
+          <div id="duels_report" class="inlineBlock reportLauncher" onclick="switchView('transaction');getReport('duels')">
+            <img src="{{ BASE_SCRIPT_URL }}static/images/s2-warr-trophy.png" /><span>Duels</span>
+          </div>
           <div id="tx_report" class="inlineBlock reportLauncher" onclick="switchView('transaction');viewReport(selectedAccount, 'transaction', $('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val())">
             <img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" /><span>Transactions</span>
           </div>
@@ -355,9 +363,68 @@ function downloadDone() {
           </div>
         </div>
         <div id="loadingSection" style="display: none;">
-          <p>Data for the Wallet(s) and Date Range you have selected is not up to date.  Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
+          <p id="needDataLoad" style="display:none;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
           <table id="reportList" class="statusList reportPage"></table>
         </div>
+      </div>
+      <div id="summaryReport" style="display: none;">
+        <div id="paymentsTotal" class="summaryBox" style="width:95%;height:40px;" title="Totals your Jewel income from payments, airdrops, staking, and quests.">
+          <h3 style="font-size:28px;">
+          <span>Total Income from Payments: </span>
+          <span id="paymentsTotalValue"></span>
+          </h3>
+        </div>
+        <div id="gasTotal" class="summaryBox" style="width:95%;height:40px;display:none;" title="Totals fiat value total of all network transaction fees you paid.">
+          <h3 style="font-size:28px;">
+          <span>Total Transaction Gas Fees Paid: </span>
+          <span id="gasTotalValue"></span>
+          </h3>
+        </div>
+        <div id="quests_summary" class="summaryBox" style="display: none;">
+          <div id="smy_quests_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/quest.png" class="smyIcon" /><span>Quest (if 1 week range or less)</span></div>
+          <div id="smy_quests_data"></div>
+        </div>
+        <div id="swaps_summary" class="summaryBox" style="display: none;">
+          <div id="smy_swaps_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/trader.png" class="smyIcon" /><span>Trader</span></div>
+          <div id="smy_swaps_data"></div>
+        </div>
+        <div id="trades_summary" class="summaryBox" style="display: none;">
+          <div id="smy_trades_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bazaar.png" class="smyIcon" /><span>Bazaar</span></div>
+          <div id="smy_trades_data"></div>
+        </div>
+        <div id="liquidity_summary" class="summaryBox" style="display: none;">
+          <div id="smy_liquidity_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/liquidity.png" class="smyIcon" /><span>Liquidity</span></div>
+          <div id="smy_liquidity_data"></div>
+        </div>
+        <div id="tavern_summary" class="summaryBox" style="display: none;">
+          <div id="smy_tavern_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" class="smyIcon" /><span>NFTs</span></div>
+          <div id="smy_tavern_data"></div>
+        </div>
+        <div id="gardens_summary" class="summaryBox" style="display: none;">
+          <div id="smy_gardens_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/gardens.png" class="smyIcon" /><span>Gardens</span></div>
+          <div id="smy_gardens_data"></div>
+        </div>
+        <div id="bank_summary" class="summaryBox" style="display: none;">
+          <div id="smy_bank_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="smyIcon" /><span>Bank</span></div>
+          <div id="smy_bank_data"></div>
+        </div>
+        <div id="alchemist_summary" class="summaryBox" style="display: none;">
+          <div id="smy_alchemist_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" class="smyIcon" /><span>Crafting</span></div>
+          <div id="smy_alchemist_data"></div>
+        </div>
+        <div id="airdrops_summary" class="summaryBox" style="display: none;">
+          <div id="smy_airdrops_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" class="smyIcon" /><span>Airdrop</span></div>
+          <div id="smy_airdrops_data"></div>
+        </div>
+        <div id="wallet_summary" class="summaryBox" style="display: none;">
+          <div id="smy_wallet_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/wallet.png" class="smyIcon" /><span>Wallet</span></div>
+          <div id="smy_wallet_data"></div>
+        </div>
+        <div id="lending_summary" class="summaryBox" style="display: none;">
+          <div id="smy_lending_header" class="smyHeader"><img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" class="smyIcon" /><span>Lending</span></div>
+          <div id="smy_lending_data"></div>
+        </div>
+        <div class="footer"></div>
       </div>
       <div id="reportContent" class="reportPage">
         <h2 id="pnl_header"></h2>

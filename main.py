@@ -3,12 +3,9 @@ import transactions
 import events
 import db
 import settings
-import datetime
 import argparse
-import uuid
 import logging
 import logging.handlers
-import traceback
 
 
 def main():
@@ -20,7 +17,6 @@ def main():
     args = parser.parse_args()
 
     page_size = settings.TX_PAGE_SIZE
-    txResult = []
     txData = []
 
     logging.info('new update request {0} {1}'.format(args.wallet, args.network))
@@ -34,9 +30,9 @@ def main():
     db.completeTransactions(args.wallet, args.network)
 
     # With transaction list, we now generate the events and tax map
-    txSaved = events.checkTransactions(txData, args.wallet, args.network)
+    txSaved = events.checkTransactions(txData, args.wallet, args.network, txCount)
 
-    db.completeWalletUpdate(args.wallet, args.network)
+    db.completeWalletUpdate(args.wallet, args.network, txSaved)
 
 
 if __name__ == "__main__":

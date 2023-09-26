@@ -213,7 +213,7 @@ def getGlacierTxList(chainID, address, network, page_size=settings.TX_PAGE_SIZE)
     blockFilter = ""
     lowerBound = db.getLastTransactionTimestamp(address, network)
     if network == 'dfkchain' and lowerBound > 1648710000:
-        w3 = Web3(Web3.HTTPProvider(nets.dfk_pokt))
+        w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
         # middleware used to allow for interpreting longer data length for get_block on dfkchain
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         if not w3.is_connected():

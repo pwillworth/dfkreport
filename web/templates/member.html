@@ -191,12 +191,19 @@ function reportTable(data) {
     }
     var newRow = document.createElement('tr');
     var pAnimate = '';
+    var updateThroughTimestamp = '-';
+    var updateRecords = '0';
     if (report[3] < 2) {
       pAnimate = '<div class="lds-ripple"><div></div><div></div></div>';
+      updateThroughTimestamp = report[5];
+      updateRecords = `${report[8]}/${report[9]}`;
+    } else {
+      updateThroughTimestamp = Math.max(report[5], report[6]);
+      updateRecords = report[9];
     }
-    updateThroughTimestamp = Math.max(report[5], report[6]);
-    updateThroughDate = new Date(updateThroughTimestamp * 1000).toLocaleDateString;
-    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDate}</td><td>${report[9]}</td><td>${progress.toFixed(0)}%</td>`;
+    updateThroughDate = new Date(updateThroughTimestamp * 1000);
+    updateThroughDateTime = `${updateThroughDate.toLocaleDateString()} ${updateThroughDate.toLocaleTimeString()}`;
+    newRow.innerHTML = `<td>${addr}</td><td>${report[1]}</td><td>${status}${pAnimate}</td><td>${updateThroughDateTime}</td><td>${updateRecords}</td><td>${progress.toFixed(0)}%</td>`;
     listElm.appendChild(newRow);
   });
 }
@@ -227,6 +234,7 @@ function createGroup(groupName, walletList) {
     alert('you need to connect a wallet first!');
     return;
   }
+  document.getElementById("createGroup").disabled = true;
   const account = web3.eth.accounts;
   const wAddress = account.givenProvider.selectedAddress;
   var request = new XMLHttpRequest();
@@ -245,6 +253,7 @@ function createGroup(groupName, walletList) {
         loadGroups();
       }
     }
+    document.getElementById("createGroup").disabled = false;
   };
   request.send();
 }

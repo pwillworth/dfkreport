@@ -746,6 +746,7 @@ function loadReportPNL(results, reportType) {
     return
   }
   $("#pnl_header").html(reportType);
+  $("#pnl_data").html('<tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
   subItems = {};
   accountedCount = 0;
   accountedProceeds = 0;
@@ -801,6 +802,37 @@ function loadReportPNL(results, reportType) {
   $("#unaccountedProceeds").html(usdFormat.format(unaccountedProceeds));
   $("#unaccountedCosts").html(usdFormat.format(unaccountedCosts));
   $("#unaccountedGains").html(usdFormat.format(unaccountedProceeds - unaccountedCosts));
+}
+// Duels season start dates:
+// Season 1: 6/15/2022 -
+// Season 2: cv 12/14/2022 sd 1/4/2023 - 2/8/2023
+// Season 3: 2/22/2023 - 4/19/2023
+// Season 4: 5/10/2023 -
+// Season 5: 8/15/2023 - 10/10/2023
+// Group activity from season and off season following it together
+function getDuelSeason(eventTimestamp) {
+  if (eventTimestamp < 1671004800) {
+    return 1;
+  } else if (eventTimestamp < 1677052800) {
+    return 2;
+  } else if (eventTimestamp < 1683702000) {
+    return 3;
+  } else if (eventTimestamp < 1692082800) {
+    return 4;
+  } else {
+    return 5;
+  }
+}
+
+function loadReportDuels(results) {
+  var airdropRecords = results.event_records.airdrops;
+  var tavernRecords = results.event_records.tavern;
+
+  loadTavernEvents(tavernRecords);
+  loadAirdropEvents(airdropRecords);
+  $('#summaryReport').show();
+  $('#tavern_summary').show();
+  $('#airdrops_summary').show();
 }
 
 function addTavernRow(seller, eventDate, itemType, itemID, event, coinType, coinCost, fiatAmount, network, txHash) {
