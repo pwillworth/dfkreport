@@ -652,8 +652,12 @@ function loadReport(results, contentType, eventGroup='all') {
 }
 
 function addTaxRow(recordCategory, description, acquiredDate, soldDate, proceeds, costs, gains, accountedString) {
-  $('#tax_' + recordCategory + '_data').show();
-  $('#tax_' + recordCategory + '_data').append(
+  var tableSelector = '#pnl_data';
+  if (recordCategory == 'income') {
+    tableSelector = '#tax_income_data';
+  }
+  $(tableSelector).show();
+  $(tableSelector).append(
     '<tr><td>' + description + '</td>' +
     '<td>' + acquiredDate + '</td>' +
     '<td>' + soldDate + '</td>' +

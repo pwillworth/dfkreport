@@ -156,6 +156,7 @@ function getReport(reportType) {
 }
 // Load the old report in two steps after it is done, first tax report, then events
 function viewReport(account, contentType, generateAddress, generateStart, generateEnd, includeHarmony='false', includeDFKChain='false', includeKlaytn='false', eventGroup='all') {
+  $("#loadingSection").css("display","block");
   $.post(BASE_SCRIPT_URL + "pnl/tax",{
         account: account,
         walletAddress: generateAddress,
@@ -169,15 +170,15 @@ function viewReport(account, contentType, generateAddress, generateStart, genera
         sid: sid}, function( data ) {
           var delay = 0;
           if (contentType == 'tax' || eventGroup == 'all') {
-            reportRecords = data.response.tax_records;
             if (contentType == 'tax') {
+              $('#pnl_data').show();
               loadReport(data.response, contentType);
             } else {
               $("#mappingSection").css("display","block");
-            }
-            for (let i = 0; i < event_groups.length; i++) {
-              delay = i*2000;
-              setTimeout(`viewReport("${account}","transaction","${generateAddress}","${generateStart}","${generateEnd}","${includeHarmony}","${includeDFKChain}","${includeKlaytn}","${event_groups[i]}")`, delay);
+              for (let i = 0; i < event_groups.length; i++) {
+                delay = i*2000;
+                setTimeout(`viewReport("${account}","transaction","${generateAddress}","${generateStart}","${generateEnd}","${includeHarmony}","${includeDFKChain}","${includeKlaytn}","${event_groups[i]}")`, delay);
+              }
             }
           } else {
             reportRecords = data.response.event_records;
@@ -190,6 +191,7 @@ function viewReport(account, contentType, generateAddress, generateStart, genera
               }
             }
           }
+          $("#loadingSection").css("display","none");
         }, "json"
     );
     return false;
@@ -307,19 +309,19 @@ function downloadDone() {
       <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;margin-bottom:16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
       <div class="sectionHead"></div>
       <fieldset class="chainSelect">
-        <input type="checkbox" id="optHarmony" name="optHarmony"/>
+        <input type="checkbox" id="optHarmony" name="optHarmony" onchange="checkData();"/>
         <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
-        <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked"/>
+        <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked" onchange="checkData();"/>
         <label for="optDFKChain" title="Toggle to include DFK Chain (Crystalvale) data"><img src="{{ BASE_SCRIPT_URL }}static/images/dfk-chain.png" class="chainButton"/></label>
-        <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked"/>
+        <input type="checkbox" id="optKlaytn" name="optKlaytn" checked="checked" onchange="checkData();"/>
         <label for="optKlaytn" title="Toggle to include Klaytn data"><img src="{{ BASE_SCRIPT_URL }}static/images/klaytn.png" class="chainButton"/></label>
       </fieldset>
       <div class="sectionHead" style="clear:both;"></div>
       <fieldset id="dateRangeSet">
         <div id="dateSetBox">
-          <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 /></div>
+          <div>Start Date: <input class="dateBox" type="text" id="startDate" size=10 onchange="checkData();" /></div>
           <div class="sectionHead"></div>
-          <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 /></div>
+          <div>End Date: <input class="dateBox" type="text" id="endDate" size=10 onchange="checkData();" /></div>
         </div>
       </fieldset>
       <div class="sectionHead"></div>
@@ -343,7 +345,10 @@ function downloadDone() {
   <div id="rightMainContent" class="ghCol">
     <div id="reportContainer" class="ghWidgetBox ui-widget-content">
       <div class="boxHeader ui-widget-header" style="height:24px;">
-        <div id="results_title" style="float:left;">Market Performance Reports</div>
+        <div id="results_title" style="float:left;">Select Report</div>
+        <div id="tax_report" style="float:right;font-size:16px;font-weight:normal;cursor:pointer;" onclick="switchView('pnl');viewReport(selectedAccount, 'tax', $('#ethAddress').val(), $('#startDate').val(), $('#endDate').val(), $('input[name=optHarmony]:checked').val(), $('input[name=optDFKChain]:checked').val(), $('input[name=optKlaytn]:checked').val());">
+          [legacy Tax report]
+        </div>
       </div>
       <div id="reportInfo">
         <div id="generateSection">
@@ -437,6 +442,9 @@ function downloadDone() {
         </table>
         <table id="pnl_data" class="taxTable" style="display: none;">
           <tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
+        </table>
+        <table id="tax_income_data" class="taxTable" style="display: none;padding-top:32px;">
+          <tr><th>Description</th><th>Acquired Date</th><th>Income Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>
         </table>
       </div>
       <div id="exportContent" style="display: none;">

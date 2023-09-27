@@ -139,21 +139,22 @@ def getEventData(wallet, eventType, networks):
         logging.error('DB error trying to look up event data. {0}'.format(str(err)))
     if con != None and not con.closed:
         cur.execute("SELECT * FROM transactions WHERE account=%s AND eventType=%s AND network IN %s", (wallet, eventType, networks))
-        row = cur.fetchone()
-        while row != None:
-            r = jsonpickle.decode(row[3])
-            if type(r) is list:
-                for evt in r:
-                    evt.txHash = row[0]
-                    evt.network = row[5]
-                    events.append(evt)
-            else:
-                # cache records saved before feb 2022 did not have txHash property
-                r.txHash = row[0]
-                # cache records saved before dec 2022 did not have network property
-                r.network = row[5]
-                events.append(r)
-            row = cur.fetchone()
+        rows = cur.fetchmany(100)
+        while len(rows) > 0:
+            for row in rows:
+                r = jsonpickle.decode(row[3])
+                if type(r) is list:
+                    for evt in r:
+                        evt.txHash = row[0]
+                        evt.network = row[5]
+                        events.append(evt)
+                else:
+                    # cache records saved before feb 2022 did not have txHash property
+                    r.txHash = row[0]
+                    # cache records saved before dec 2022 did not have network property
+                    r.network = row[5]
+                    events.append(r)
+            rows = cur.fetchmany(100)
 
         con.close()
     else:
