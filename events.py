@@ -1338,11 +1338,11 @@ def extractDFKDuelResults(w3, txn, account, timestamp, receipt, inputs, network)
     # if received items, it was pvp complete rewards, otherwise initiation costs/fees
     for rcvdIndex in range(len(rcvdToken)):
         r = records.TavernTransaction(txn, network, 'hero', duelId, 'pvpreward', timestamp, rcvdToken[rcvdIndex], rcvdAmount[rcvdIndex])
-        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[rcvdIndex], network)
+        r.fiatValue = prices.priceLookup(timestamp, rcvdToken[rcvdIndex], network) * rcvdAmount[rcvdIndex]
         results.append(r)
     for sentIndex in range(len(sentToken)):
         r = records.TavernTransaction(txn, network, 'hero', entryId, 'pvpfee', timestamp, sentToken[sentIndex], sentAmount[sentIndex])
-        r.fiatValue = prices.priceLookup(timestamp, sentToken[sentIndex], network)
+        r.fiatValue = prices.priceLookup(timestamp, sentToken[sentIndex], network) * sentAmount[sentIndex]
         results.append(r)
     return results
 

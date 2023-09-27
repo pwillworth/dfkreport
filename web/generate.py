@@ -82,7 +82,7 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
 
         generateTime = datetime.now(timezone.utc)
         minDate = int(datetime.timestamp(generateTime))
-        logging.info("included chains {0}".format(includedChains))
+
         status = getWalletStatus(account, includedChains, wallets)
         for item in status:
             minDate = min(minDate, max(item[5], item[6]))

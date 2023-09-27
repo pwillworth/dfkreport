@@ -271,6 +271,9 @@ var DFKCHAIN_TOKENS = {
   '0x694D5bfe9EC280708891B34ef17eA8A0d3a6B1aF': 'Duels Trophy S2 Solo',
   '0x7532Bbf5ea43cc2B561893dd0f72a6Ac1E03f193': 'Duels Trophy S2 Squad',
   '0x9d12adfbF8884D320Bc36393AF661DfFA3E78aB8': 'Duels Trophy S2 Warr',
+  '0x6FCfa7c5F14de887d574895D04034FA179559c77': 'Duels Trophy S2 Solo',
+  '0x7646e21932C6769cf719d91c674Ad559B9Ef1cBD': 'Duels Trophy S5 Squad',
+  '0x758c9EB8927a1d80CA0391c34c45645f3abEc7ad': 'Duels Trophy S5 Warr',
   '0x591853e01EcFDcF1Bdc9f093423C197BfBBd1A4f': 'Health Vial',
   '0x5948dd8Df6afEFE05B033AD8f3ae513a9Cd4F1Dc': 'Full Health Potion',
   '0x240da5314B05E84392e868aC8f2b80ad6becadd4': 'Mana Vial',
@@ -400,6 +403,8 @@ var KLAYTN_TOKENS = {
   '0xe52fceF6083e3d2E43D1113FC06caA6bAc9D3db9': 'Duels Trophy S2 Solo',
   '0xE7d77E157672864B500727551633E4Cc453964A9': 'Duels Trophy S2 Squad',
   '0x2C9A39E85D4b3900a63B903113DE103FB448e578': 'Duels Trophy S2 Warr',
+  '0xAdE8f21d33654444b0A6f01647994682eB69ab4e': 'Duels Trophy S5 Solo',
+  '0x168cE065510c2494AAE61159B41B0abf70315eCF': 'Duels Trophy S5 Squad',
   '0xa27C1429a676db902B9f0360686eDbB57d0A7B01': 'Health Vial',
   '0xf710244462431b9962706B46826AFB3B38376c7b': 'Full Health Potion',
   '0x8639d64A2088500EC4f20fB5C41A995fE4f1d85a': 'Mana Vial',
@@ -591,14 +596,6 @@ function getProgress(stage, fetched, complete, total) {
   } else if ( stage == 'generating' ) {
     return ( total + (complete * transactionWeight ) ) / ( total + (total * transactionWeight ) );
   }
-}
-
-// Update running total summary of airdrop/payment income
-function updatePaymentTotal(addAmount, addValue) {
-  paymentsTotal += addAmount;
-  paymentsTotalValue += addValue;
-  $("#paymentsTotalValue").html(paymentsTotal.toFixed(3) + " Jewel (" + usdFormat.format(paymentsTotalValue) + ")");
-  $("#paymentsTotal").show();
 }
 
 // Populates the transaction data that was generated into the page
@@ -872,19 +869,21 @@ function loadTavernEvents(tavernEvents) {
 
     setTimeout(addTavernRow, 50, tavernEvents[i].seller, eventDate, tavernEvents[i].itemType, tavernEvents[i].itemID, tavernEvents[i].event, tavernEvents[i].coinType, coinCost, fiatAmount, tavernEvents[i].network, tavernEvents[i].txHash);
 
-    if ( tavernEvents[i].event in tavernTotals ) {
-      tavernTotals[tavernEvents[i].event] += 1;
-      tavernCosts[tavernEvents[i].event] += coinCost
+    // Add row data for summary totals
+    if ( `${tavernEvents[i].event}|${tavernEvents[i].coinType}|${tavernEvents[i].network}` in tavernTotals ) {
+      tavernTotals[`${tavernEvents[i].event}|${tavernEvents[i].coinType}|${tavernEvents[i].network}`] += fiatAmount;
+      tavernCosts[`${tavernEvents[i].event}|${tavernEvents[i].coinType}|${tavernEvents[i].network}`] += coinCost
     } else {
-      tavernTotals[tavernEvents[i].event] = 1;
-      tavernCosts[tavernEvents[i].event] = coinCost
+      tavernTotals[`${tavernEvents[i].event}|${tavernEvents[i].coinType}|${tavernEvents[i].network}`] = fiatAmount;
+      tavernCosts[`${tavernEvents[i].event}|${tavernEvents[i].coinType}|${tavernEvents[i].network}`] = coinCost
     }
     $('#tx_tavern_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each event
-  var tavernTable = '<table><tr><th>Event</th><th>Count</th><th>Total Token Amt</th></tr>';
+  var tavernTable = '<table><tr><th>Event</th><th>Token</th><th>USD Value</th><th>Total Token Amt</th></tr>';
   for (let k in tavernTotals) {
-    tavernTable = tavernTable + '<tr><td>' + k + 's</td><td>' + tavernTotals[k] + '</td><td>' + tavernCosts[k].toFixed(1) + '</td></tr>';
+    keyPair = k.split('|')
+    tavernTable = tavernTable + '<tr><td>' + keyPair[0] + 's</td><td>' + getTokenName(keyPair[1], keyPair[2]) + '</td><td>' + tavernTotals[k].toFixed(2) + '</td><td>' + tavernCosts[k].toFixed(1) + '</td></tr>';
   }
   $("#smy_tavern_data").html(tavernTable + '</table>');
   $("#mappingProgress").progressbar( "option", "value", (2000 / tavernEvents.length) + ((progressIndex+1) * (2000 / tavernEvents.length)));
@@ -1108,10 +1107,7 @@ function loadGardensEvents(gardensEvents) {
     } else {
       gardensTotals[lpName + ' ' + gardensEvents[i].event] = Number(coinAmount);
     }
-    // Maintain header total of Jewel income
-    if (fiatValue > 0 && gardensEvents[i].coinType in JEWEL_ADDRESSES) {
-      updatePaymentTotal(Number(coinAmount), Number(fiatValue));
-    }
+
     $('#tx_gardens_count').html(' (' + (i + 1) + ')');
     $("#mappingProgress").progressbar( "option", "value", (2000 / gardensEvents.length) + ((progressIndex+1) * (2000 / gardensEvents.length)));
     progressIndex += 1;
@@ -1287,10 +1283,7 @@ function loadAirdropEvents(airdropEvents) {
     } else {
       airdropValues[rcvdName] = Number(fiatValue);
     }
-    // Maintain header total of Jewel income
-    if (fiatValue > 0 && airdropEvents[i].tokenReceived in JEWEL_ADDRESSES) {
-      updatePaymentTotal(Number(tokenAmount), Number(fiatValue));
-    }
+
     $('#tx_airdrops_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin
@@ -1415,10 +1408,7 @@ function loadQuestEvents(questEvents) {
     } else {
       questTotals[rewardName] = rewardAmount;
     }
-    // Maintain header total of Jewel income
-    if (fiatValue > 0 && questEvents[i].rewardType in JEWEL_ADDRESSES) {
-      updatePaymentTotal(Number(rewardAmount), Number(fiatValue));
-    }
+
     $('#tx_quests_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each reward type
@@ -1474,10 +1464,7 @@ function loadWalletEvents(walletEvents) {
         walletTotals[coinName] = [0, coinAmount];
       }
     }
-    // Maintain header total of jewel income
-    if (walletEvents[i].action == 'payment' && walletEvents[i].coinType in JEWEL_ADDRESSES && fiatValue > 0) {
-      updatePaymentTotal(Number(coinAmount), Number(fiatValue));
-    }
+
     $('#tx_wallet_count').html(' (' + (i + 1) + ')');
   }
   // Add summary data for each coin type
