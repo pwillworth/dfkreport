@@ -746,7 +746,6 @@ function loadReportPNL(results, reportType) {
     alert('No results - ' + results);
     return
   }
-  $("#pnl_header").html(reportType);
   $("#pnl_data").html('<tr><th>Description</th><th>Acquired Date</th><th>Sold Date</th><th>Proceeds</th><th>Costs</th><th>Gains</th></tr>');
   subItems = {};
   accountedCount = 0;
@@ -831,7 +830,6 @@ function loadReportDuels(results) {
 
   loadTavernEvents(tavernRecords);
   loadAirdropEvents(airdropRecords);
-  $('#summaryReport').show();
   $('#tavern_summary').show();
   $('#airdrops_summary').show();
 }

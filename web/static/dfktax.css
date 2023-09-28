@@ -8,7 +8,7 @@ html {
 	height: 100%;
 }
 body {
-	background-color: #626362;
+	background-color: #112700;
 	font-family: Inter, sans-serif;
 	display: flex;
 	flex-direction: column;
@@ -122,7 +122,6 @@ input[disabled] {
 	height: 64px;
 	bottom: 0px;
 	right: 0px;
-	z-index: 100;
 }
 .reportPage {
 	background-image: url(images/parchment.jpg);
@@ -229,8 +228,10 @@ input[disabled] {
 	background: #125a9b;
 	color: #d9f1f7;
 }
+.reportLauncherActive {
+	background-color: #91ca82;
+}
 #csv_report {
-	background-color: #787c38;
 	color: #d9f1f7;
 	font-size: 24px;
 	cursor: pointer;
@@ -514,12 +515,14 @@ input[disabled] {
 .summaryTable {
 	width: 100%;
 	border-collapse: collapse;
-	background-color: #626362;
-	color: #d9f1f7;
+	color: #001101;
+	background-color: #91ca82;
 }
 .summaryTable th {
 	font-weight: bold;
 	font-size: 1.2em;
+	background-color: #626362;
+	color: #d9f1f7;
 	border: 1px solid #333333;
 	padding: 8px;
 }
@@ -546,9 +549,6 @@ input[disabled] {
 	border-left: 1px solid #ccc;
 	border-right: 1px solid #ccc;
 	background-color: #285c00;
-}
-.tabSelect {
-	background-color: #91ca82;
 }
 
 .sectionHead {

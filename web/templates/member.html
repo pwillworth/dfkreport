@@ -43,9 +43,17 @@ window.onload = (event) => {
   if (window.innerHeight > 200) {
     document.getElementById('accountDetails').style.height = window.innerHeight - 130;
   }
+  setTimeout(refreshTokens, 2000);
+};
+window.ethereum.on('accountsChanged', function (accounts) {
+  window.location.reload();
+});
+ethereum.on('chainChanged', (chainId) => {
+  window.location.reload();
+});
+function refreshTokens() {
   var tokenSel = document.getElementById('tokenSelect');
   tokenSel.innerHTML = '<option value="0">Select token...</option>';
-
   switch (ethereum.networkVersion) {
     case '53935':
       tokens = dfkcTokens;
@@ -54,6 +62,7 @@ window.onload = (event) => {
       tokens = klayTokens;
       break;
     default:
+      console.log(`Unsupported chain: ${ethereum.networkVersion}`);
       var statusElm = document.getElementById('chainStatus');
       statusElm.innerHTML = 'Error: Must be connected to DFKChain or Klaytn.';
       tokens = {};
@@ -64,14 +73,7 @@ window.onload = (event) => {
     opt.text = value;
     tokenSel.add(opt);
   }
-};
-window.ethereum.on('accountsChanged', function (accounts) {
-  window.location.reload();
-});
-ethereum.on('chainChanged', (chainId) => {
-  window.location.reload();
-});
-
+}
 function switchView(memberState) {
   //0=not loggged in, 1=inactive, 2=active
   memberState = memberState.toString();

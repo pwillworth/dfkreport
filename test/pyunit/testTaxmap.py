@@ -22,7 +22,7 @@ class testTaxmap(unittest.TestCase):
 
 	def getEventMap(self):
 		# Build an events map to use for testing tax mapping methods
-		em = taxmap.EventsMap()
+		em = records.EventsMap()
 		self.aTimestamp = datetime.now().timestamp()
 		self.yearStart = datetime(datetime.now().year, 1, 1).date()
 		self.yearEnd = datetime(datetime.now().year, 12, 31).date()
