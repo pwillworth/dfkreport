@@ -79,7 +79,7 @@ function refreshLists() {
   } else {
     $('#multiWalletSelect').hide();
   }
-  if ($('#loadingSection').css('display') == 'block') {
+  if ($('#generateSection').css('display') == 'block') {
     checkData();
   }
 }
@@ -105,33 +105,39 @@ function loadGroupSel() {
     }, "json"
   );
 }
-function checkData() {
-  $("#loadingSection").css("display","block");
-  $.post(BASE_SCRIPT_URL + "generate", {
-    walletAddress: $('#ethAddress').val(),
-    includeHarmony: $('input[name=optHarmony]:checked').val(),
-    includeDFKChain: $('input[name=optDFKChain]:checked').val(),
-    includeKlaytn: $('input[name=optKlaytn]:checked').val(),
-    startDate: $('#startDate').val(),
-    endDate: $('#endDate').val(),
-    account: selectedAccount,
-    sid: sid}, function( data ) {
-      if (data.response.status != undefined) {
-        if (data.response.status == 'complete') {
-          $("#loadingSection").css("display","none");
-          $("#needDataLoad").css("display","none");
-          return true;
+function checkData(startUpdate=false) {
+  if ($('#ethAddress').val() != '') {
+    if (startUpdate) {
+      $("#dataUpdatingMessage").show(500);
+    }
+    $("#generateSection").css("display","block");
+    $.post(BASE_SCRIPT_URL + "generate", {
+      triggerUpdate: startUpdate,
+      walletAddress: $('#ethAddress').val(),
+      includeHarmony: $('input[name=optHarmony]:checked').val(),
+      includeDFKChain: $('input[name=optDFKChain]:checked').val(),
+      includeKlaytn: $('input[name=optKlaytn]:checked').val(),
+      startDate: $('#startDate').val(),
+      endDate: $('#endDate').val(),
+      account: selectedAccount,
+      sid: sid}, function( data ) {
+        if (data.response.status != undefined) {
+          if (data.response.status == 'complete') {
+            $("#generateSection").css("display","none");
+            $("#needDataLoad").css("display","none");
+            return true;
+          } else {
+            $("#needDataLoad").css("display","block");
+            walletRecords = data.response.wallet_records;
+            reportTable(walletRecords);
+          }
         } else {
-          $("#needDataLoad").css("display","block");
-          walletRecords = data.response.wallet_records;
-          reportTable(walletRecords);
+          alert(data.response);
         }
-      } else {
-        alert(data.response);
-      }
-    }, "json"
-  );
-  return false;
+      }, "json"
+    );
+    return false;
+  }
 }
 function setActiveLauncher(launcher) {
   $(".reportLauncher").removeClass('reportLauncherActive');
@@ -222,6 +228,9 @@ function reportTable(data) {
     }
     var progress = 0;
     var status = reportStatus[report[3]];
+    if (report[6] == 0) {
+      status = 'Pending'
+    }
     if (report[3] == 0) {
       progress = Math.min(getProgress('fetchingtx', report[7], report[8], report[9])*100, 100);
     } else if ( report[3] == 2 ) {
@@ -352,7 +361,7 @@ function downloadDone() {
         </div>
       </div>
       <div id="reportInfo">
-        <div id="generateSection">
+        <div id="selectReportSection">
           <div id="tokens_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('tokens')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" /><span>Tokens</span>
           </div>
@@ -371,7 +380,11 @@ function downloadDone() {
         </div>
         <div id="loadingSection" style="display: none;">
           Preparing Report...<div class="lds-ripple"><div></div><div></div></div>
-          <p id="needDataLoad" style="display:none;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
+        </div>
+        <div id="generateSection" style="display: none;">
+          <h2 id="needDataLoad" style="display:none;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Click "Update Now" to trigger a data refresh for the wallet.</h2>
+          <input type="button" value="Update Now" class="ui-button" onclick="checkData(true);"/>
+          <p id="dataUpdatingMessage" style="display:none;">Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
           <table id="reportList" class="statusList reportPage"></table>
         </div>
       </div>

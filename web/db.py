@@ -85,6 +85,12 @@ def createWalletStatus(wallet, network, account):
         cur.execute("INSERT INTO walletstatus (address, lastOwner, network, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, updateStatus) VALUES (%s, %s, %s, 0, %s, 0, %s)", (wallet, account, network, maxTS, 0))
     con.close()
 
+def forceWalletUpdate(wallet, network):
+    con = aConn()
+    with con.cursor() as cur:
+        cur.execute("UPDATE walletstatus SET lastUpdateStart=NULL WHERE address=%s and network=%s", (wallet, network))
+    con.close()
+
 def resetReport(wallet, startDate, endDate, now, txCount, costBasis, includedChains, transactionFile, reportFile, walletHash, moreOptions=None, txCounts=[]):
     con = aConn()
     cur = con.cursor()

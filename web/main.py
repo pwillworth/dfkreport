@@ -54,6 +54,7 @@ def help():
 @app.route("/generate", methods=['GET','POST'])
 def report_generate():
     # Extract query parameters
+    triggerUpdate = request.form.get('triggerUpdate', 'false')
     account = request.form.get('account', '')
     wallet = request.form.get('walletAddress', '')
     startDate = request.form.get('startDate', '')
@@ -71,7 +72,7 @@ def report_generate():
         if account == '':
             account = wallet
 
-    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn)
+    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, triggerUpdate)
 
 @app.route("/csv", methods=['GET', 'POST'])
 def csv():
