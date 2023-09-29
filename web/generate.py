@@ -86,17 +86,23 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
 
         generateTime = datetime.now(timezone.utc)
         minDate = int(datetime.timestamp(generateTime))
+        processing = 0
 
         status = getWalletStatus(account, includedChains, wallets, triggerUpdate)
         for item in status:
             if item[5] != None and item[6] != None:
-                minDate = min(minDate, max(item[5], item[6]))
+                if item[2] != 1:
+                    minDate = min(minDate, max(item[5], item[6]))
+                else:
+                    minDate = min(minDate, item[5])
+                    processing = 1
             else:
                 minDate = 0
 
         if datetime.fromtimestamp(minDate) <= datetime(tmpEnd.year, tmpEnd.month, tmpEnd.day):
             response = '{ "response" : {\n'
             response += '  "status" : "generating",\n   '
+            response += "  \"processing\" : {0},\n  ".format(processing)
             response += '  "wallet_records" : \n   '
             response += jsonpickle.encode(status, make_refs=False)
             response += '  }\n}'

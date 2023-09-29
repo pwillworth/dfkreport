@@ -46,7 +46,7 @@ window.ethereum.on('accountsChanged', function (accounts) {
   handleAccountsChanged(accounts);
 });
 $( function() {
-    $( "#reportProgress, #mappingProgress" ).progressbar({
+    $( "#mappingProgress" ).progressbar({
       value: false,
       max: 2000
     });
@@ -126,6 +126,11 @@ function checkData(startUpdate=false) {
             $("#generateSection").css("display","none");
             $("#needDataLoad").css("display","none");
             return true;
+          } else if (data.response.processing == 1) {
+            $("#needDataLoad").css("display","none");
+            $("#dataUpdatingMessage").css("display","block");
+            walletRecords = data.response.wallet_records;
+            reportTable(walletRecords);
           } else {
             $("#needDataLoad").css("display","block");
             walletRecords = data.response.wallet_records;
@@ -310,15 +315,17 @@ function downloadDone() {
       <div class="boxHeader ui-widget-header">Report Options
         <a href="{{ BASE_SCRIPT_URL }}help" alt="read documentation"><img src="{{ BASE_SCRIPT_URL }}static/images/help.png" style="max-width: 22px;float:right;"/></a></href>
       </div>
-      <div id="multiWalletSelect" style="display:none;">
+      <div id="multiWalletSelect" style="display:none;margin: 8px;">
         <label for="groupSel">Multi-Wallet:</label>
         <select name="groupSel" id="groupSel" class="popSel" onchange="$('#ethAddress').val($(this).val())"></select>
-        or
+        <span style="font-weight: 800;">or</span>
       </div>
-      <label for="ethAddress">Eth Address:</label>
-      <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;margin-bottom:16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
+      <div style="margin: 8px;">
+        <label for="ethAddress">Eth Address:</label>
+        <input type=text id="ethAddress" name="ethAddress" style="font-size: 16px;margin-bottom:16px;" size=40 placeholder="Wallet Address 0x..." onchange="checkData();"/>
+      </div>
       <div class="sectionHead"></div>
-      <fieldset class="chainSelect">
+      <fieldset class="chainSelect" style="margin:8px;">
         <input type="checkbox" id="optHarmony" name="optHarmony" onchange="checkData();"/>
         <label for="optHarmony" title="Toggle to include Harmony data"><img src="{{ BASE_SCRIPT_URL }}static/images/harmony.png" class="chainButton"/></label>
         <input type="checkbox" id="optDFKChain" name="optDFKChain" checked="checked" onchange="checkData();"/>
@@ -382,9 +389,10 @@ function downloadDone() {
           Preparing Report...<div class="lds-ripple"><div></div><div></div></div>
         </div>
         <div id="generateSection" style="display: none;">
-          <h2 id="needDataLoad" style="display:none;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Click "Update Now" to trigger a data refresh for the wallet.</h2>
-          <input type="button" value="Update Now" class="ui-button" onclick="checkData(true);"/>
-          <p id="dataUpdatingMessage" style="display:none;">Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
+          <h3 id="needDataLoad" style="display:none;margin: 8px;">Data for the Wallet(s) and Date Range you have selected is not up to date.  Click "Update Now" to trigger a data refresh for the wallet.
+            <input type="button" value="Update Now" class="ui-button" onclick="checkData(true);"/>
+          </h3>
+          <p id="dataUpdatingMessage" style="display:none;margin:8px;">Progress will be displayed below.  You should wait to choose a report until data is updated or choose an older date range that data is available for.</p>
           <table id="reportList" class="statusList reportPage"></table>
         </div>
       </div>
