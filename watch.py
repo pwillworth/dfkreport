@@ -22,7 +22,7 @@ def main():
                 if row == None:
                     try:
                         checkTime = datetime.now(timezone.utc).timestamp()
-                        cur.execute("SELECT address, lastOwner, network, proc, updateStatus, fromIP FROM walletstatus LEFT JOIN members ON walletstatus.lastOwner = members.account WHERE proc IS NULL AND (lastUpdateStart IS NULL OR (expiresTimestamp > %s AND lastUpdateStart < %s-%s AND network != 'harmony'))", (checkTime, checkTime, updateInterval))
+                        cur.execute("SELECT address, lastOwner, network, proc, updateStatus, fromIP FROM walletstatus LEFT JOIN members ON walletstatus.lastOwner = members.account WHERE proc IS NULL AND (lastUpdateStart IS NULL OR (expiresTimestamp > %s AND lastUpdateStart < %s AND network != 'harmony'))", (checkTime, checkTime - updateInterval))
                         row = cur.fetchone()
                     except Exception as err:
                         logging.error('report lookup db failure {0}'.format(str(err)))
