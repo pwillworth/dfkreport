@@ -185,7 +185,7 @@ def createDatabase():
     cur.execute('CREATE TABLE IF NOT EXISTS payments (account VARCHAR(63), generatedTimestamp TIMESTAMP NOT NULL, txHash VARCHAR(127), token VARCHAR(63), amount FLOAT, previousExpires INTEGER, newExpires INTEGER, network VARCHAR(31), PRIMARY KEY (network, txHash), INDEX IX_pay_account (account))')
     cur.execute('CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(40) NOT NULL PRIMARY KEY, account VARCHAR(63) NOT NULL, expires FLOAT, INDEX IX_session_account (account))')
     cur.execute('CREATE TABLE IF NOT EXISTS balances (updateTime TIMESTAMP PRIMARY KEY, balanceData STRING)')
-    cur.execute('CREATE TABLE IF NOT EXISTS walletstatus (address VARCHAR(63), lastOwner VARCHAR(63), network VARCHAR(31), proc INTEGER, lastSavedBlock INTEGER, lastBlockTimestamp INTEGER, lastUpdateStart INTEGER, txUpdateStartCount INTEGER, txCount INTEGER, txUpdateTargetCount INTEGER, updateStatus INT2, PRIMARY KEY (address, network), INDEX IX_walletstatus_status (updateStatus))')
+    cur.execute('CREATE TABLE IF NOT EXISTS walletstatus (address VARCHAR(63), lastOwner VARCHAR(63), network VARCHAR(31), proc INTEGER, lastSavedBlock INTEGER, lastBlockTimestamp INTEGER, lastUpdateStart INTEGER, txUpdateStartCount INTEGER, txCount INTEGER, txUpdateTargetCount INTEGER, updateStatus INT2, fromIP VARCHAR(31), PRIMARY KEY (address, network), INDEX IX_walletstatus_status (updateStatus))')
     con.commit()
     con.close()
 

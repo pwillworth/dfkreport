@@ -72,7 +72,7 @@ def report_generate():
         if account == '':
             account = wallet
 
-    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, triggerUpdate)
+    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, request.remote_addr, triggerUpdate)
 
 @app.route("/csv", methods=['GET', 'POST'])
 def csv():
@@ -330,7 +330,7 @@ def post_group_list():
                     walletRows.append(reportRow)
                 else:
                     logging.debug('start new wallet row')
-                    db.createWalletStatus(wallet, network, loginState[1])
+                    db.createWalletStatus(wallet, network, loginState[1], request.remote_addr)
                     walletRows.append([wallet, network, None, 0, None, 0, 0, None, None, None, loginState[1]])
         response = ''.join(('{ "updated": ', str(listResult), ' }'))
 

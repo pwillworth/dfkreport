@@ -74,7 +74,7 @@ def findWalletStatus(wallet, network):
     con.close()
     return row
 
-def createWalletStatus(wallet, network, account):
+def createWalletStatus(wallet, network, account, fromIP):
     maxTS = 0
     con = aConn()
     with con.cursor() as cur:
@@ -82,7 +82,7 @@ def createWalletStatus(wallet, network, account):
         row = cur.fetchone()
         if row != None and row[0] != None:
             maxTS = row[0]
-        cur.execute("INSERT INTO walletstatus (address, lastOwner, network, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, updateStatus) VALUES (%s, %s, %s, 0, %s, 0, %s)", (wallet, account, network, maxTS, 0))
+        cur.execute("INSERT INTO walletstatus (address, lastOwner, network, lastSavedBlock, lastBlockTimestamp, lastUpdateStart, updateStatus, fromIP) VALUES (%s, %s, %s, 0, %s, 0, %s, %s)", (wallet, account, network, maxTS, 0, fromIP))
     con.close()
 
 def forceWalletUpdate(wallet, network):

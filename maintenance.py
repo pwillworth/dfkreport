@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 # Maintenace module to periodically clear old generated report data
 import db
-import settings
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import logging
 import logging.handlers
-import os
+import jsonpickle
 
-# Delete saved reports and their data files older than a timestamp
-def cleanReports(beforeTimestamp):
-    cleanCount = 0
+
+def getActiveAccountWallets():
+    wallets = []
     nowstamp = int(datetime.now(timezone.utc).timestamp())
     con = db.aConn()
-    cur = con.cursor()
-    cur.execute("SELECT reports.account, startDate, endDate, transactionsContent, reportContent, walletHash FROM reports LEFT JOIN members on reports.account = members.account WHERE proc=0 and reports.generatedTimestamp < %s AND (members.expiresTimestamp < %s OR members.expiresTimestamp IS NULL)", (beforeTimestamp,nowstamp))
-    row = cur.fetchone()
-    while row != None:
-        db.deleteReport(row[0], row[1], row[2], row[5], row[3], row[4])
-        cleanCount += 1
+    # assemble array of all wallet addresses in all wallet groups of active members
+    with con.cursor() as cur:
+        cur.execute("SELECT account FROM members WHERE expiresTimestamp > %s", (nowstamp,))
         row = cur.fetchone()
+        while row != None:
+            with con.cursor() as cur2:
+                cur2.execute("SELECT wallets FROM groups WHERE account=%s", (row[0],))
+                row2 = cur2.fetchone()
+                while row2 != None:
+                    wallets.append(jsonpickle.decode(row2[0]))
+                    row2 = cur2.fetchone()
+            row = cur.fetchone()
     con.close()
-    logging.info('Cleaned up {0} old reports'.format(cleanCount))
+    return wallets
 
 # Delete saved transaction data for any account that has not run a report recently enough to still be saved
 def cleanTransactions():
@@ -46,11 +50,10 @@ def cleanTransactions():
             row = cur2.fetchone()
     logging.info('{0} accounts have saved transactions'.format(len(cleanAccounts)))
     # clean tx data for inactive accounts except tavern sale/hires populated by block crawler
+    activeWallets = getActiveAccountWallets()
     with con.cursor() as cur3:
         for account in cleanAccounts:
-            cur3.execute("SELECT expiresTimestamp FROM members WHERE account=%s", (account,))
-            row3 = cur3.fetchone()
-            if row3 == None or row3[0] == None or row3[0] < nowstamp:
+            if account not in activeWallets:
                 cur3.execute("DELETE FROM transactions WHERE account=%s and (eventType != 'tavern' or fee != 0)", (account,))
                 logging.info('Cleaned {0} transactions for account {1}'.format(cur3.rowcount, account))
     
@@ -62,10 +65,7 @@ def main():
     handler = logging.handlers.RotatingFileHandler('maintenance.log', maxBytes=33554432, backupCount=10)
     logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-    # clean up old reports
-    maxAgeDate = datetime.now() - timedelta(days=settings.MAX_REPORT_AGE_DAYS)
-    logging.warning('Cleaning report records older than {0}'.format(maxAgeDate.isoformat()))
-    cleanReports(datetime.timestamp(maxAgeDate))
+    # clean up old tx
     cleanTransactions()
 
 

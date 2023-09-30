@@ -14,7 +14,7 @@ import nets
 
 
 # Get existing wallet group records or create a new one and return rows
-def getWalletStatus(account, includedChains, wallets, triggerUpdate='false'):
+def getWalletStatus(account, includedChains, wallets, fromIP, triggerUpdate='false'):
     walletRows = []
     lastUpdateValue = 0
     for wallet in wallets:
@@ -27,11 +27,11 @@ def getWalletStatus(account, includedChains, wallets, triggerUpdate='false'):
                 walletRows.append(reportRow)
             else:
                 logging.debug('start new wallet row')
-                db.createWalletStatus(wallet, network, account)
+                db.createWalletStatus(wallet, network, account, fromIP)
                 walletRows.append([wallet, network, None, 0, None, 0, lastUpdateValue, None, None, None, account])
     return walletRows
 
-def generation(account, loginState, wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, triggerUpdate='false'):
+def generation(account, loginState, wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, fromIP, triggerUpdate='false'):
     failure = False
     includedChains = 0
     walletGroup = ''
@@ -88,7 +88,7 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
         minDate = int(datetime.timestamp(generateTime))
         processing = 0
 
-        status = getWalletStatus(account, includedChains, wallets, triggerUpdate)
+        status = getWalletStatus(account, includedChains, wallets, fromIP, triggerUpdate)
         for item in status:
             if item[5] != None and item[6] != None:
                 if item[2] != 1:
