@@ -5,7 +5,7 @@
 
 """
 
-from datetime import timezone, datetime, date
+from datetime import timezone, datetime, date, timedelta
 from web3 import Web3
 import jsonpickle
 import logging
@@ -99,7 +99,8 @@ def generation(account, loginState, wallet, startDate, endDate, includeHarmony, 
             else:
                 minDate = 0
 
-        if datetime.fromtimestamp(minDate) <= datetime(tmpEnd.year, tmpEnd.month, tmpEnd.day):
+        endTime = datetime(tmpEnd.year, tmpEnd.month, tmpEnd.day) + timedelta(days=1)
+        if datetime.fromtimestamp(minDate) < endTime:
             response = '{ "response" : {\n'
             response += '  "status" : "generating",\n   '
             response += "  \"processing\" : {0},\n  ".format(processing)
