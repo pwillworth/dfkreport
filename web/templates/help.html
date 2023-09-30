@@ -22,55 +22,74 @@
 <div class="reportPage" id="helpPage">
     <h2 style="text-align: center;">Guide to Lila's Transaction History Service</h2>
     <div><img style="display: block;margin-left: auto;margin-right:auto;margin-top: 20px;margin-bottom: 20px;" src="{{ BASE_SCRIPT_URL }}static/images/defi-kingdoms-logo.png" /></div>
-    <h3 style="text-align: center;">Lila's Ledger contains helpful transaction history for your wallet across Harmony and Avalanche networks.</h3>
+    <h3 style="text-align: center;">Lila's Ledger contains helpful transaction history for your wallet across DFKChain, Klaytn, and Harmony networks.</h3>
     <h3 class="helpTopic">General Usage</h3>
     <ul>
-        <li>Just put in your wallet address at the top on the homepage, click Generate, and wait to get your report.</li>
-        <li>After your report is generated, it will launch in a new window with three tabs.  Default view is Tax Report, but you can click on the Transactions tab to see the detailed transaction data or Summary tab to see other stats about transactions.</li>
-        <li>An Export CSV button will also appear after generation, clicking it will send you a comma separated data file of the data for the tab you are viewing.</li>
-        <li>Change the report options on the left to customize how the report is generated.</li>
-        <li>If you have a lot of transactions, it can take a long time to generate your report, but later reports you run after the first one should run quicker.  At least tax time only comes once a year!</li>
+        <li>Just put in your wallet address at the top on the homepage, adjust blockchain and date options if needed to get started.</li>
+        <li>If you are not a member, or have not used the site recently, a table will appear saying your wallet data is not updated, otherwise, select a report to view.</li>
+        <li>Instead of viewing a report, you can also choose CSV Export on the left to just export your transaction data in your preferred format.</li>
+        <li>If you have a lot of transactions as is the case with many DFK wallets, the data update process can take a very long time the first time.  You can leave the site and check back on progress the next day.</li>
     </ul>
     <h3 class="helpTopic">Report Options</h3>
     <ul>
         <li>Date Range: Only events in this range will be included in the report.  Older transactions will still be searched to look for cost basis.</li>
         <li>Blockchain icons: click to include/exclude data from that chain before you generate.</li>
-        <li>Cost Basis: Three options are provided to adjust how cost basis is discovered.  If you are not familiar with these tax accounting related terms, the default choice of First in - First out is most commonly used. <br/><span style="font-style: italic;">Note: For Canadian Adjusted Cost Basis option, superficial capital loss rules are not applied automatically so it is up to you to decide how these apply.</span></li>
-        <li>CSV Format: Manual option is best if you plan to put the data directly into your tax forms.  Other available formats in this option may be better for input to another tax event aggregation tool like Koinly.  NOTE: It is recommended to use CSV export from detailed transactions tab when exporting for tax aggregation tools.</li>
-        <li>Add Wallet Purchase Addresses: This button allows you to enter one or more addresses separated by a comma or line.  When generating your report, withdrawals from your wallet to any of those addresses will be counted as a taxable event and be recorded in the gains section of the tax report.  This option can be useful if you make purchases by sending to certain addresses.</li>
-        <li>Future Options Coming THooon: Cost Basis cutoff Date, Exclude wallet Transfers for Cost Basis, Non-USD Fiat Currency Types.</li>
+        <li>CSV Format: Displayed when you click CSV Export button, select the format for the system you plan to import the data to.</li>
     </ul>
-    <h3 class="helpTopic">Tax Report</h3>
+    <h3 class="helpTopic">Token Swaps</h3>
     <ul>
-        <li>Tax reporting requirements vary in different areas, but this report is meant to help you with accounting for things that are commonly required.</li>
-        <li>The Capital Gains section will list detected NFT and Token Sales, and attempt to calculate the cost basis/gains for them where possible.</li>
-        <li>The Income section will list detected events that are commonly categorized as income like bank interest and rewards.</li>
-        <li>The Expenses section will list various costs you have incurred that may be helpful in filling gaps in your cost basis in some situations.  If you send an amount to a known charitable donation address, that will also be reported here.</li>
-        <li>If you see the warning icon <img src="{{ BASE_SCRIPT_URL }}static/images/alertred.png" style="height:16px;"/> in the costs column on the tax report, it means that Lila could not find a source for all of the cost basis of that item.  You can find more details in the CSV export to see how much it was partially accounted if any.</li>
-        <li>Cost basis for NFT sales will be set by adding up any costs you have incurred for that NFT including Purchasing it, summoning it, or leveling it up.</li>
-        <li>If cost basis for tokens sales is not found in the history of other swaps, other wallet transfers that are detected will be used to fill in remaining cost basis if possible.  Keep in mind that the price of those transferred tokens is calculated as of the time they were transferred to your address which is accurate if you purchased them that day.</li>
+        <li>View your performance on recent token trades.</li>
+        <li>For each token trade you do, a cost basis is found for the most recent trades where you acquired that token to determine a gain/loss</li>
+        <li>The top of the report summarizes all of the gains and losses, separating values where full cost basis was not found.</li>
+        <li>Some tokens may not have cost basis found, or use very old cost basis if you acquire the tokens by other means like questing, transfering in from elsewhere, etc.</li>
     </ul>
-    <h3 class="helpTopic">Summary</h3>
+    <h3 class="helpTopic">Crafting</h3>
     <ul>
-        <li>The summary tab provides some summarized facts about your transactions.</li>
-        <li>These items are just informational curiousities and not necessarily useful for tax accounting.</li>
-        <li>If you have gained Jewel through Payments, Airdrops, Staking, or Quests, the total value of this is featured at the top of the Summary to give you an idea of your income for the period.</li>
-        <li>A total value of gas fees you paid is show as well.  Note that gas fees are already deducted from the gains listed on the tax report.  You can see the fee for each transaction in the transactions CSV export.</li>
-        <li>Ever wonder how many bloaters you caught last month?</li>
+        <li>View your performance on recent crafted item sales.</li>
+        <li>For each craftable item trade you do, a cost basis is found for the most recent crafting activity or trades where you acquired that item to determine a gain/loss</li>
+        <li>The top of the report summarizes all of the gains and losses, separating values where full cost basis was not found.</li>
+        <li>Some tokens may not have cost basis found, or use very old cost basis if you acquire the tokens by other means like questing, transfering in from elsewhere, etc.</li>
     </ul>
-    <h3 class="helpTopic">Transaction Report</h3>
+    <h3 class="helpTopic">Hero/Pet Sales</h3>
     <ul>
-        <li>The transactions tab summarizes all activity for your wallet including things that are not included in the tax report.</li>
-        <li>NFTs: All records related to hero, pet and land NFTs like buy/sell/hire, perish, summon, enhance, and level up.  For pet hatching transactions, jewel costs are associated with the 'incubate' event, and all other item costs including the egg itself are associated to the 'crack' event.</li>
-        <li>Trader: Records of swaps make with trader or vendor in marketplace, or on Avalanche Pangolin.</li>
+        <li>View your performance on recent Hero/Pet sales.</li>
+        <li>For each NFT sale you do, a cost basis is found for the NFT from all NFT activity on it you did such as summon costs, level ups, purchase, etc. and a gain or loss is calculated.</li>
+        <li>The top of the report summarizes all of the gains and losses, separating values where full cost basis was not found.</li>
+        <li>Cost Basis is considered full if a purchase or summon cost was found for the hero.</li>
+        <li>Some NFTs may not have cost basis found, typically if you acquired it on a different wallet you did not include on the report.</li>
+    </ul>
+    <h3 class="helpTopic">Duels</h3>
+    <ul>
+        <li>View your summarized DFK Duels activity.</li>
+        <li>A summary is shown of all Duels Fees you paid and Rewards you got for the basic Duel fights.</li>
+        <li>A summary of all of the Airdrops you claimed during the period is shown as well, which will include your Duels tier rewards or raffle wins.</li>
+        <li>Note: If you claim other airdrops from non-Duels contests, they will show here as well.</li>
+        <li>Detailed transaction list of the summarized data is also shown below it.</li>
+    </ul>
+    <h3 class="helpTopic">Transactions</h3>
+    <ul>
+        <li>Just a detailed list of all wallet transactions grouped by type.</li>
+        <li>NFTs: All records related to hero, pet and land NFTs like buy/sell/hire, perish, summon, enhance, and level up.  For pet hatching transactions, power token costs are associated with the 'incubate' event, and all other item costs including the egg itself are associated to the 'crack' event.</li>
+        <li>Trader: Records of swaps make with trader or vendor in marketplace.</li>
+        <li>Bazaar: Records of trades made on Bazaar.</li>
         <li>Liquidity: Records of swapping for LP seeds from the druid, and Entering and Withdrawing from liquidity pools.</li>
         <li>Gardens: Events of claiming rewards from your LP seeds in the gardens.</li>
         <li>Bank: Records of your bank deposits and withdrawals.</li>
-        <li>Alchemist: Any crafting you have done at the Alchemist.</li>
-        <li>Quests: All of your rewards from sending heroes on quests.</li>
+        <li>Crafting: Any crafting you have done at the Alchemist or Stone Carver.</li>
+        <li>Quests: All of your rewards from sending heroes on quests. NOTE: If your date range is greater than 1 week, this will be empty.  If you want long periods of quest data, please do a CSV export.</li>
         <li>Wallet: Any miscellanous transfers to/from your wallet to non-game related addresses.</li>
         <li>Airdrop: Any Jewel airdrops you have received.</li>
         <li>Lending: Records of lending and borrowing tokens on Tranquil Finance.  Note that interest paid and recieved through this platform is not recorded in the Tax Report income.  Also, when liqudations are recorded, the token listed is what you paid to liquidate a position.  The token you recieved for the liquidation will show up as a redeem transaction when you redeem it because you recieve the asset as actively lended.</li>
+    </ul>
+    <h3 class="helpTopic">Legacy Tax Report</h3>
+    <ul>
+        <li>You can still find the old original tax gains report, but it is of limited use considering the variety of tax juristictions, you are betting off importing your transactions to real tax software.</li>
+        <li>Tax reporting requirements vary in different areas, but this report is meant to help you with accounting for things that are commonly required.</li>
+        <li>The Capital Gains section will list detected NFT and Token Sales, and attempt to calculate the cost basis/gains for them where possible.</li>
+        <li>The Income section will list detected events that are commonly categorized as income like bank interest and rewards.</li>
+        <li>If you see the warning icon <img src="{{ BASE_SCRIPT_URL }}static/images/alertred.png" style="height:16px;"/> in the costs column on the tax report, it means that Lila could not find a source for all of the cost basis of that item.  You can find more details in the CSV export to see how much it was partially accounted if any.</li>
+        <li>Cost basis for NFT sales will be set by adding up any costs you have incurred for that NFT including Purchasing it, summoning it, or leveling it up.</li>
+        <li>If cost basis for tokens sales is not found in the history of other swaps, other wallet transfers that are detected will be used to fill in remaining cost basis if possible.  Keep in mind that the price of those transferred tokens is calculated as of the time they were transferred to your address which is accurate if you purchased them that day.</li>
     </ul>
     <h3 class="helpTopic">Price Data</h3>
     <ul>
@@ -87,7 +106,7 @@
 </div>
 <div class="footer">
 	<a href="{{ BASE_SCRIPT_URL }}" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help" title="Get help">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about" title="Support us and get info">About</a>
-	<p style="padding: 4px;font-weight:normal;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
+	<p style="padding: 4px;font-weight:normal;">This utility is intended to help summarize and/or export transaction activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>
 </body></html>

@@ -210,7 +210,8 @@ input[disabled] {
 }
 .reportLauncher {
 	background-color: #626362;
-	font-size: 24px;
+	font-size: 18px;
+	font-weight: 700;
 	margin: 8px;
 	padding: 8px;
 	border-radius: 8px;

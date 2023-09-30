@@ -370,13 +370,13 @@ function downloadDone() {
       <div id="reportInfo">
         <div id="selectReportSection">
           <div id="tokens_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('tokens')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" /><span>Tokens</span>
+            <img src="{{ BASE_SCRIPT_URL }}static/images/bank.png" /><span>Token Swaps</span>
           </div>
           <div id="crafting_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('crafting')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/alchemist.png" /><span>Crafting</span>
           </div>
           <div id="nft_report" class="inlineBlock reportLauncher" onclick="switchView('pnl');getReport('nft')">
-            <img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" /><span>NFTs</span>
+            <img src="{{ BASE_SCRIPT_URL }}static/images/beer.png" /><span>Hero/Pet Sales</span>
           </div>
           <div id="duels_report" class="inlineBlock reportLauncher" onclick="switchView('transaction');getReport('duels')">
             <img src="{{ BASE_SCRIPT_URL }}static/images/s2-warr-trophy.png" /><span>Duels</span>
@@ -551,7 +551,14 @@ function downloadDone() {
       <h3>Latest Updates</h3>
       <div class="sectionHead"></div>
       <ul>
-        <li><span style="font-style:italic;">2023-09-30:</span> Added new set of report for different focus areas.  Changed data update method to be triggered on criteria update if needed or automatic daily for member wallets.</li>
+        <li><span style="font-style:italic;">2023-09-30:</span> New Report Bundle Release!
+          <ul>
+            <li>Added new set of report for different focus areas.  </li>
+            <li>Decoupled Data update from report launching.  Now just put in your criteria, and a table will display if data update is needed, and you can trigger it.</li>
+            <li>Allow exporting CSV data without running any report.</li>
+            <li>Subscribers page now displays all of your wallets data update status rather than list of old reports.</li>
+          </ul>
+        </li>
         <li><span style="font-style:italic;">2023-08-04:</span> Added Bazaar Trades.</li>
         <li><span style="font-style:italic;">2023-04-03:</span> Added TurboTax Universal CSV format export.</li>
         <li><span style="font-style:italic;">2023-02-20:</span> Improve DFKChain tx list lookup performance and fix progress tracking for multi wallet.</li>
@@ -587,7 +594,7 @@ function downloadDone() {
 </div>
 <div class="footer">
 	<a href="{{ BASE_SCRIPT_URL }}" title="Report page">Home</a> | <a href="{{ BASE_SCRIPT_URL }}help" title="Get help" target="_blank">Help</a> | <a href="https://github.com/pwillworth/dfkreport" title="Open Source Code for the application" target="_blank">Source</a> | <a href="https://github.com/pwillworth/dfkreport/discussions" title="Ask questions or submit ideas" target="_blank">Contact</a> | <a href="{{ BASE_SCRIPT_URL }}about" title="Support us and get info" target="_blank">About</a>
-	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help quantify potential taxable events for account activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.  It makes no claims at being a full accounting of your tax liablity.</p>
+	<p style="padding: 4px;font-weight:normal;font-size: .7em;">This utility is intended to help summarize and/or export transaction activity within the <a href="https://defikingdoms.com">DeFi Kingdoms</a> game.</p>
 </div>
 <div id="frame_box" style="display:none;"></div>
 </body></html>
