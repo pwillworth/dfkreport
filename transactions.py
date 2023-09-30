@@ -115,18 +115,19 @@ def getBitqueryTxList(network, address, page_size=settings.TX_PAGE_SIZE):
                 ethereum(network: %s) {
                     transactions(
                         txSender: {is: "%s"}
-                        options: {limit: %s, offset: %s}
+                        options: {asc: "block.height", limit: %s, offset: %s}
                         time: {since: "%s"}
                     ) {
-                    hash
-                    block {
-                        timestamp {
-                        unixtime
+                        hash
+                        block {
+                            height
+                            timestamp {
+                                unixtime
+                            }
                         }
                     }
-                    }
                 }
-                }
+            }
         """
         data = query % (network, address, page_size, startKey, sinceDateTimeStr)
 
@@ -229,9 +230,9 @@ def getGlacierTxList(chainID, address, network, page_size=settings.TX_PAGE_SIZE)
 
     while tx_end == False:
         if nextPageToken != '':
-            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}{4}&pageToken={5}".format(chainID, address, nets.glacier, page_size, blockFilter, nextPageToken)
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?sortOrder=asc&pageSize={3}{4}&pageToken={5}".format(chainID, address, nets.glacier, page_size, blockFilter, nextPageToken)
         else:
-            rURL = "{2}/chains/{0}/addresses/{1}/transactions?pageSize={3}{4}".format(chainID, address, nets.glacier, page_size, blockFilter)
+            rURL = "{2}/chains/{0}/addresses/{1}/transactions?sortOrder=asc&pageSize={3}{4}".format(chainID, address, nets.glacier, page_size, blockFilter)
         logging.info(rURL)
 
         try:
