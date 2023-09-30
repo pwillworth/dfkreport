@@ -44,6 +44,7 @@ def refreshAccount(w3, con, account):
 
 # Update the gas transaction fee amount and value assuming tx is on Harmony
 def addFee(w3, con, tx, eventType, events, account):
+    pd = prices.PriceData()
     # don't want to add gas to payment service tx or tavern sales/hires because gas is paid by other account
     if  (eventType != 'airdrops' or '0x6Ca68D6Df270a047b12Ba8405ec688B5dF42D50C' not in events) and (eventType != 'tavern' or ('sale' not in events and 'hire' not in events)):
         try:
@@ -56,7 +57,7 @@ def addFee(w3, con, tx, eventType, events, account):
         block = result['blockNumber']
         timestamp = w3.eth.get_block(block)['timestamp']
         txFee = Web3.fromWei(result['gasPrice'], 'ether') * receipt['gasUsed']
-        feeValue = prices.priceLookup(timestamp, '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a') * txFee
+        feeValue = pd.priceLookup(timestamp, '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a') * txFee
         logging.info('updating gas data {0}: - {1}/{2}'.format(tx, txFee, feeValue))
         # Update each event object inside
         if events != None and events != '':

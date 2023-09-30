@@ -7,6 +7,7 @@ from web3 import Web3
 sys.path.append("../../")
 import records
 import events
+import prices
 import nets
 import base64
 
@@ -20,6 +21,7 @@ class testEvents(unittest.TestCase):
 	@patch("prices.priceLookup")
 	def test_extractSwapResults(self, mockMethod):
 		# arrange
+		pd = prices.PriceData()
 		# load receipt for swap 5000 DFKGOLD for Jewel tx
 		with open('swapReceipts/0x2e347d595069f2f1b08f3048d03b4570519265bda0a82479f0f5e73e7aa39c9a', 'rb') as rf:
 			sr = pickle.load(rf)
@@ -27,7 +29,7 @@ class testEvents(unittest.TestCase):
 		mockMethod.return_value = Decimal(0.01)
 
 		# act
-		result = events.extractSwapResults(self.w3, '0x2e347d595069f2f1b08f3048d03b4570519265bda0a82479f0f5e73e7aa39c9a', self.subject, '0x9014B937069918bd319f80e8B3BB4A2cf6FAA5F7', 1645305183, sr, 0, 'harmony')
+		result = events.extractSwapResults(self.w3, '0x2e347d595069f2f1b08f3048d03b4570519265bda0a82479f0f5e73e7aa39c9a', self.subject, '0x9014B937069918bd319f80e8B3BB4A2cf6FAA5F7', 1645305183, sr, 0, 'harmony', pd)
 
 		# assert
 		self.assertTrue(type(result) is records.TraderTransaction, "Wrong object type returned for swap")

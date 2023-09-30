@@ -17,6 +17,7 @@ def main():
     args = parser.parse_args()
 
     page_size = settings.TX_PAGE_SIZE
+    txSaved = 0
     txData = []
 
     logging.info('new update request {0} {1}'.format(args.wallet, args.network))
@@ -29,6 +30,7 @@ def main():
             page_size = min(1000, page_size*5)
     else:
         db.updateReportError(args.wallet, args.network)
+        exit(1)
 
     # Get list of transactions that need to be parsed
     try:
@@ -36,6 +38,7 @@ def main():
     except Exception as err:
         logging.error('Wallet update failure during tx listing: {0}'.format(err))
         db.updateReportError(args.wallet, args.network)
+        exit(1)
 
     db.completeTransactions(args.wallet, args.network)
 
@@ -45,6 +48,7 @@ def main():
     except Exception as err:
         logging.error('Wallet update failure during event parsing: {0}'.format(err))
         db.updateReportError(args.wallet, args.network)
+        exit(1)
 
     db.completeWalletUpdate(args.wallet, args.network, txSaved)
 

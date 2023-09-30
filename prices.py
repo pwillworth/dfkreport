@@ -63,163 +63,11 @@ decimal_units = {
     30: 'tether',
 }
 
-today_prices = {}
-
 def getABI(contractName):
     location = os.path.abspath(__file__)
     with open('{0}/abi/{1}.json'.format('/'.join(location.split('/')[0:-1]), contractName), 'r') as f:
         ABI = f.read()
     return ABI
-
-def priceLookup(timestamp, token, network, fiatType='usd'):
-    lookupDate = datetime.date.fromtimestamp(timestamp).strftime('%d-%m-%Y')
-    if network == 'harmony':
-        goldValues = contracts.HARMONY_GOLD_VALUES
-    elif network == 'klaytn':
-        goldValues = contracts.KLAYTN_GOLD_VALUES
-    else:
-        goldValues = contracts.DFKCHAIN_GOLD_VALUES
-    # if token is in map, switch to gecko token name instead
-    if token in token_map:
-        token = token_map[token]
-    # Calculate based on gold price if convertible to gold
-    if token in goldValues and goldValues[token] > 0:
-        return decimal.Decimal(getPrice(contracts.GOLD_TOKENS[network], lookupDate, fiatType) * goldValues[token])
-    else:
-        return decimal.Decimal(getPrice(token, lookupDate, fiatType))
-
-# Date format DD-MM-YYYY for da gecko api
-def fetchPriceData(token, date):
-    realDate = datetime.datetime.strptime(date, '%d-%m-%Y')
-    prices = None
-    # Coin Gecko only has prices from October 20th 2021 forward for JEWEL
-    if (realDate > datetime.datetime.strptime('19-10-2021', '%d-%m-%Y') or token != 'defi-kingdoms') and token[0] != '0':
-        gecko_uri = "https://api.coingecko.com/api/v3/coins/{0}/history?date={1}&localization=false".format(token, date)
-        r = requests.get(gecko_uri)
-        if r.status_code == 200:
-            result = r.json()
-            try:
-                prices = result['market_data']['current_price']
-                marketcap = result['market_data']['market_cap']
-                volume = result['market_data']['total_volume']
-            except Exception as err:
-                result = "Error: failed to get prices no market data {0}".format(r.text)
-                logging.error(result + '\n')
-            if prices != None:
-                db.savePriceData(date, token, json.dumps(prices), json.dumps(marketcap), json.dumps(volume))
-                logging.info('Saved a new price for {0} on {1} from coin gecko'.format(token, date))
-                result = prices
-        else:
-            result = "Error: failed to get prices - {0}".format(r.text)
-            logging.error(result + '\n')
-    else:
-        # Lookup up price in DFK contract for some stuff
-        result = fetchItemPrice(token)
-    return result
-
-# Get price of stuff from DFK dex contract for stuff that is not listed on CoinGecko or for coins before they were there
-def fetchItemPrice(token):
-    price = None
-
-    # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
-    if token in today_prices:
-        price = today_prices[token]
-    else:
-        # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
-        logging.info('getting current price from dex.')
-        # TODO Improve item price storage to track network so we dont have to ignore tokens with dup address across networks
-        # doing a mostly ok workaround for now that ignored token addresses that have gold values since those wouldnt show up here anyway
-        if token in contracts.KLAYTN_TOKENS and (token not in contracts.KLAYTN_GOLD_VALUES or contracts.KLAYTN_GOLD_VALUES[token] == 0):
-            price = getCurrentPrice(token, contracts.JEWEL_ADDRESSES['klaytn'], 'klaytn')
-        elif token in contracts.DFKCHAIN_TOKENS and (token not in contracts.DFKCHAIN_GOLD_VALUES or contracts.DFKCHAIN_GOLD_VALUES[token] == 0):
-            price = getCurrentPrice(token, contracts.JEWEL_ADDRESSES['dfkchain'], 'dfkchain')
-        elif token in contracts.HARMONY_TOKENS and (token not in contracts.HARMONY_GOLD_VALUES or contracts.HARMONY_GOLD_VALUES[token] == 0):
-            price = getCurrentPrice(token, contracts.JEWEL_ADDRESSES['harmony'], 'harmony')
-        else:
-            price = 0
-
-        if price >= 0:
-            db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
-
-    if price >= 0:
-        today_prices[token] = price
-        result = json.loads('{ "usd" : %s }' % price)
-    else:
-        result = json.loads('{ "usd" : 0.0 }')
-
-    return result
-
-def getPrice(token, date, fiatType='usd'):
-    row = db.findPriceData(date, token)
-    if row != None:
-        logging.debug('Found existing price to use in database')
-        prices = json.loads(row[2])
-    else:
-        prices = fetchPriceData(token, date)
-
-    if fiatType in prices:
-        return prices[fiatType]
-    else:
-        logging.error('Failed to lookup a price for {0} on {1}: {2}'.format(token, date, prices))
-        return -1
-
-# Return USD price of token based on its pair to throughToken to 1USDC
-def getCurrentPrice(token, throughToken, network):
-    # use the current gaias tears for lookup because the logs still emit the old address for some reason
-    if token == '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278':
-        token = '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA'
-    ABI = getABI('UniswapV2Router02')
-    if network == 'dfkchain':
-        w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
-        contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
-        addrUSDC = '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a'
-        usdcDecimals = 18
-    elif network == 'klaytn':
-        w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
-        contract = w3.eth.contract(address='0x9e987E5E9aB872598f601BE4aCC5ac23F484845E', abi=ABI)
-        addrUSDC = '0xceE8FAF64bB97a73bb51E115Aa89C17FfA8dD167'
-        usdcDecimals = 6
-    elif network == 'harmony':
-        w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
-        contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
-        addrUSDC = '0x985458E523dB3d53125813eD68c274899e9DfAb4'
-        usdcDecimals = 6
-    else:
-        return -1
-
-    if token in contracts.alternate_pair_through_tokens[network]:
-        throughToken = contracts.alternate_pair_through_tokens[network][token]
-
-    tokenDecimals = getTokenInfo(w3, token)[1]
-    throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
-    # Sometimes 8 decimal tokens will try to get looked up, so skip those
-    if tokenDecimals in decimal_units and throughTokenDecimals in decimal_units:
-        tokenOne = 1 if tokenDecimals == 0 else Web3.to_wei(1, decimal_units[tokenDecimals])
-        throughTokenOne = Web3.to_wei(1, decimal_units[throughTokenDecimals])
-    else:
-        return -1
-
-    price = -1
-    try:
-        token0Amount = contract.functions.getAmountsOut(tokenOne, [token, throughToken]).call()
-        if throughToken == addrUSDC:
-            # If through token is USD, we don't need to get through token to USDC
-            price = contracts.valueFromWei(token0Amount[1], throughToken, network)
-        else:
-            # Use coin gecko price of through token if available
-            throughPrice = -1
-            if throughToken in token_map:
-                throughPrice = priceLookup(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc)), throughToken, network)
-            if throughPrice > -1:
-                token1Amount = [1, Web3.to_wei(throughPrice, decimal_units[usdcDecimals])]
-            else:
-                token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
-            # USD price by multiplying value in through token by through token value in USDC
-            price = contracts.valueFromWei(token0Amount[1], throughToken, network) * contracts.valueFromWei(token1Amount[1], addrUSDC, network)
-    except Exception as err:
-        logging.error('Price lookup failed for {1}: {0}'.format(err, token))
-
-    return price
 
 def getTokenInfo(w3, address):
     ABI = getABI('ERC20')
@@ -234,22 +82,168 @@ def getTokenInfo(w3, address):
 
     return [symbol, decimals, name]
 
+class PriceData():
+    def __init__(self, fiatType='usd'):
+        self.fiatType = fiatType
 
-def main():
-    logging.basicConfig(level=logging.INFO)
-    # Initialize database and ensure price history is pre-populated
-    startDate = datetime.datetime.strptime('01-01-2021', '%d-%m-%Y')
-    endDate = datetime.datetime.strptime('15-12-2021', '%d-%m-%Y')
-    result = fetchItemPrice('0xB3F5867E277798b50ba7A71C0b24FDcA03045eDF')
-    #result = getCurrentPrice('0xc6A58eFc320A7aFDB1cD662eaf6de10Ee17103F2', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', 'harmony')
-    #sys.stdout.write(str(priceLookup(1648745572, '0x04b9dA42306B023f3572e106B11D82aAd9D32EBb')))
-    #sys.stdout.write(str(getCurrentPrice(w3, '0x95d02C1Dc58F05A015275eB49E107137D9Ee81Dc', '0x72Cb10C6bfA5624dD07Ef608027E366bd690048F')))
-    #while startDate <= endDate:
-    #    sys.stdout.write(getPrice('harmony', startDate.strftime('%d-%m-%Y'), 'usd'))
-    #    sys.stdout.write(startDate)
-    #    startDate += datetime.timedelta(days=1)
-    #    time.sleep(10)
+    today_prices = {}
+    price_cache = {}
+    price_cache_date = ''
 
+    def priceLookup(self, timestamp, token, network, fiatType='usd'):
+        lookupDate = datetime.date.fromtimestamp(timestamp).strftime('%d-%m-%Y')
+        if network == 'harmony':
+            goldValues = contracts.HARMONY_GOLD_VALUES
+        elif network == 'klaytn':
+            goldValues = contracts.KLAYTN_GOLD_VALUES
+        else:
+            goldValues = contracts.DFKCHAIN_GOLD_VALUES
+        # if token is in map, switch to gecko token name instead
+        if token in token_map:
+            token = token_map[token]
+        # Calculate based on gold price if convertible to gold
+        if token in goldValues and goldValues[token] > 0:
+            return decimal.Decimal(self.getPrice(contracts.GOLD_TOKENS[network], lookupDate, fiatType) * goldValues[token])
+        else:
+            return decimal.Decimal(self.getPrice(token, lookupDate, fiatType))
 
-if __name__ == "__main__":
-	main()
+    # Date format DD-MM-YYYY for da gecko api
+    def fetchPriceData(self, token, date):
+        realDate = datetime.datetime.strptime(date, '%d-%m-%Y')
+        prices = None
+        # Coin Gecko only has prices from October 20th 2021 forward for JEWEL
+        if (realDate > datetime.datetime.strptime('19-10-2021', '%d-%m-%Y') or token != 'defi-kingdoms') and token[0] != '0':
+            gecko_uri = "https://api.coingecko.com/api/v3/coins/{0}/history?date={1}&localization=false".format(token, date)
+            r = requests.get(gecko_uri)
+            if r.status_code == 200:
+                result = r.json()
+                try:
+                    prices = result['market_data']['current_price']
+                    marketcap = result['market_data']['market_cap']
+                    volume = result['market_data']['total_volume']
+                except Exception as err:
+                    result = "Error: failed to get prices no market data {0}".format(r.text)
+                    logging.error(result + '\n')
+                if prices != None:
+                    db.savePriceData(date, token, json.dumps(prices), json.dumps(marketcap), json.dumps(volume))
+                    logging.info('Saved a new price for {0} on {1} from coin gecko'.format(token, date))
+                    result = prices
+            else:
+                result = "Error: failed to get prices - {0}".format(r.text)
+                logging.error(result + '\n')
+        else:
+            # Lookup up price in DFK contract for some stuff
+            result = self.fetchItemPrice(token)
+        return result
+
+    # Get price of stuff from DFK dex contract for stuff that is not listed on CoinGecko or for coins before they were there
+    def fetchItemPrice(self, token):
+        price = None
+
+        # last ditch effort, try to find a current price pair data with jewel and base on jewel to USD
+        if token in self.today_prices:
+            price = self.today_prices[token]
+        else:
+            # Use through token address for right Jewel address incase looking up crystalvale crystal or xJewel
+            logging.info('getting current price from dex.')
+            # TODO Improve item price storage to track network so we dont have to ignore tokens with dup address across networks
+            # doing a mostly ok workaround for now that ignored token addresses that have gold values since those wouldnt show up here anyway
+            if token in contracts.KLAYTN_TOKENS and (token not in contracts.KLAYTN_GOLD_VALUES or contracts.KLAYTN_GOLD_VALUES[token] == 0):
+                price = self.getCurrentPrice(token, contracts.JEWEL_ADDRESSES['klaytn'], 'klaytn')
+            elif token in contracts.DFKCHAIN_TOKENS and (token not in contracts.DFKCHAIN_GOLD_VALUES or contracts.DFKCHAIN_GOLD_VALUES[token] == 0):
+                price = self.getCurrentPrice(token, contracts.JEWEL_ADDRESSES['dfkchain'], 'dfkchain')
+            elif token in contracts.HARMONY_TOKENS and (token not in contracts.HARMONY_GOLD_VALUES or contracts.HARMONY_GOLD_VALUES[token] == 0):
+                price = self.getCurrentPrice(token, contracts.JEWEL_ADDRESSES['harmony'], 'harmony')
+            else:
+                price = 0
+
+            if price >= 0:
+                db.savePriceData(datetime.datetime.now().strftime('%d-%m-%Y'), token, '{ "usd" : %s }' % price, '{ "usd" : 0.0 }', '{ "usd" : 0.0 }')
+
+        if price >= 0:
+            self.today_prices[token] = price
+            result = json.loads('{ "usd" : %s }' % price)
+        else:
+            result = json.loads('{ "usd" : 0.0 }')
+
+        return result
+
+    def getPrice(self, token, date, fiatType='usd'):
+        # clear cache when we rollover to next day in update process to save memory
+        if date != self.price_cache_date:
+            self.price_cache = {}
+        if "{0}|{1}".format(token, date) in self.price_cache:
+            prices = self.price_cache["{0}|{1}".format(token, date)]
+        else:
+            row = db.findPriceData(date, token)
+            if row != None:
+                logging.debug('Found existing price to use in database')
+                prices = json.loads(row[2])
+            else:
+                prices = self.fetchPriceData(token, date)
+            self.price_cache["{0}|{1}".format(token, date)] = prices
+            self.price_cache_date = date
+
+        if fiatType in prices:
+            return prices[fiatType]
+        else:
+            logging.error('Failed to lookup a price for {0} on {1}: {2}'.format(token, date, prices))
+            return -1
+
+    # Return USD price of token based on its pair to throughToken to 1USDC
+    def getCurrentPrice(self, token, throughToken, network):
+        # use the current gaias tears for lookup because the logs still emit the old address for some reason
+        if token == '0x58E63A9bbb2047cd9Ba7E6bB4490C238d271c278':
+            token = '0x79fE1fCF16Cc0F7E28b4d7B97387452E3084b6dA'
+        ABI = getABI('UniswapV2Router02')
+        if network == 'dfkchain':
+            w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
+            contract = w3.eth.contract(address='0x3C351E1afdd1b1BC44e931E12D4E05D6125eaeCa', abi=ABI)
+            addrUSDC = '0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a'
+            usdcDecimals = 18
+        elif network == 'klaytn':
+            w3 = Web3(Web3.HTTPProvider(nets.klaytn_web3))
+            contract = w3.eth.contract(address='0x9e987E5E9aB872598f601BE4aCC5ac23F484845E', abi=ABI)
+            addrUSDC = '0xceE8FAF64bB97a73bb51E115Aa89C17FfA8dD167'
+            usdcDecimals = 6
+        elif network == 'harmony':
+            w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
+            contract = w3.eth.contract(address='0x24ad62502d1C652Cc7684081169D04896aC20f30', abi=ABI)
+            addrUSDC = '0x985458E523dB3d53125813eD68c274899e9DfAb4'
+            usdcDecimals = 6
+        else:
+            return -1
+
+        if token in contracts.alternate_pair_through_tokens[network]:
+            throughToken = contracts.alternate_pair_through_tokens[network][token]
+
+        tokenDecimals = getTokenInfo(w3, token)[1]
+        throughTokenDecimals = getTokenInfo(w3, throughToken)[1]
+        # Sometimes 8 decimal tokens will try to get looked up, so skip those
+        if tokenDecimals in decimal_units and throughTokenDecimals in decimal_units:
+            tokenOne = 1 if tokenDecimals == 0 else Web3.to_wei(1, decimal_units[tokenDecimals])
+            throughTokenOne = Web3.to_wei(1, decimal_units[throughTokenDecimals])
+        else:
+            return -1
+
+        price = -1
+        try:
+            token0Amount = contract.functions.getAmountsOut(tokenOne, [token, throughToken]).call()
+            if throughToken == addrUSDC:
+                # If through token is USD, we don't need to get through token to USDC
+                price = contracts.valueFromWei(token0Amount[1], throughToken, network)
+            else:
+                # Use coin gecko price of through token if available
+                throughPrice = -1
+                if throughToken in token_map:
+                    throughPrice = self.priceLookup(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc)), throughToken, network)
+                if throughPrice > -1:
+                    token1Amount = [1, Web3.to_wei(throughPrice, decimal_units[usdcDecimals])]
+                else:
+                    token1Amount = contract.functions.getAmountsOut(throughTokenOne, [throughToken, addrUSDC]).call()
+                # USD price by multiplying value in through token by through token value in USDC
+                price = contracts.valueFromWei(token0Amount[1], throughToken, network) * contracts.valueFromWei(token1Amount[1], addrUSDC, network)
+        except Exception as err:
+            logging.error('Price lookup failed for {1}: {0}'.format(err, token))
+
+        return price

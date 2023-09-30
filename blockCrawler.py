@@ -8,10 +8,11 @@ from web3.middleware import geth_poa_middleware
 import jsonpickle
 import nets
 import events
+import prices
 import db
 
 
-def handleLogs(w3, event, network):
+def handleLogs(w3, event, network, pd):
     tx = event['transactionHash'].hex()
     timestamp = w3.eth.get_block(event['blockNumber'])['timestamp']
     logging.info('handling event for tx {0} block {1}'.format(tx, event['blockNumber']))
@@ -24,13 +25,14 @@ def handleLogs(w3, event, network):
             auctionType = 'pet'
         else:
             auctionType = 'hero'
-        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType, network)
+        results = events.extractAuctionResults(w3, tx, None, timestamp, receipt, auctionType, network, pd)
         if results != None and results[1] != None and db.findTransaction(tx, results[1].seller) == None:
             db.saveTransaction(tx, timestamp, 'tavern', jsonpickle.encode(results[1]), results[1].seller, network, 0, 0)
     else:
         logging.error('Unknown contract in filter: {0}'.format(event['address']))
 
 def parseEvents(network):
+    pd = prices.PriceData()
     # Connect to w3
     if network == 'dfkchain':
         w3 = Web3(Web3.HTTPProvider(nets.dfk_web3))
@@ -95,7 +97,7 @@ def parseEvents(network):
 
         for event in allChanges:
             # We do not need to call handle function for multiple events in same tx because the fuction handles the whole tx
-            handleLogs(w3, event, network)
+            handleLogs(w3, event, network, pd)
 
             # keep track of what block we are on
             try:

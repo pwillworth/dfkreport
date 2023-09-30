@@ -36,6 +36,7 @@ def readCurrent():
 # Return array of transactions on DFK Chain for the address
 def getBalances(wallet):
     result = {}
+    pd = prices.PriceData()
     # Connect to w3
     w3d = Web3(Web3.HTTPProvider(nets.dfk_web3))
     if not w3d.is_connected():
@@ -53,7 +54,7 @@ def getBalances(wallet):
     balanceJewel = w3d.eth.get_balance(wallet)
     if balanceJewel > 1:
         logging.info('Found Jewel balance for {0}: {1}'.format(wallet, Web3.from_wei(balanceJewel, 'ether')))
-        jewelPrice = prices.priceLookup(datetime.now().timestamp(), JEWEL_DFKCHAIN, 'dfkchain')
+        jewelPrice = pd.priceLookup(datetime.now().timestamp(), JEWEL_DFKCHAIN, 'dfkchain')
         if jewelPrice > -1:
             logging.info(jewelPrice)
             jewelValue = Web3.from_wei(balanceJewel, 'ether') * decimal.Decimal(jewelPrice)
@@ -61,7 +62,7 @@ def getBalances(wallet):
     cbalance = ccontract.functions.balanceOf(wallet).call()
     if cbalance > 0:
         logging.info('Found Crystal balance for {0}: {1}'.format(wallet, Web3.from_wei(cbalance, 'ether')))
-        crystalPrice = prices.priceLookup(datetime.now().timestamp(), CRYSTAL_DFKCHAIN, 'dfkchain')
+        crystalPrice = pd.priceLookup(datetime.now().timestamp(), CRYSTAL_DFKCHAIN, 'dfkchain')
         if crystalPrice > -1:
             crystalValue = Web3.from_wei(cbalance, 'ether') * decimal.Decimal(crystalPrice)
     dcontract = w3d.eth.contract(address=USDC_DFKCHAIN, abi=ABI)
@@ -78,21 +79,21 @@ def getBalances(wallet):
     balanceKlay = w3k.eth.get_balance(wallet)
     if balanceKlay > 1:
         logging.info('Found Klay balance for {0}: {1}'.format(wallet, Web3.from_wei(balanceKlay, 'ether')))
-        klayPrice = prices.priceLookup(datetime.now().timestamp(), KLAY_KLAYTN, 'klaytn')
+        klayPrice = pd.priceLookup(datetime.now().timestamp(), KLAY_KLAYTN, 'klaytn')
         if klayPrice > -1:
             klayValue = Web3.from_wei(balanceKlay, 'ether') * decimal.Decimal(klayPrice)
     jcontract = w3k.eth.contract(address=JEWEL_KLAYTN, abi=ABI)
     jbalance = jcontract.functions.balanceOf(wallet).call()
     if jbalance > 0:
         logging.info('Found Jewel balance for {0}: {1}'.format(wallet, Web3.from_wei(jbalance, 'ether')))
-        jewelPrice = prices.priceLookup(datetime.now().timestamp(), JEWEL_KLAYTN, 'klaytn')
+        jewelPrice = pd.priceLookup(datetime.now().timestamp(), JEWEL_KLAYTN, 'klaytn')
         if jewelPrice > -1:
             jewelValueK = Web3.from_wei(jbalance, 'ether') * decimal.Decimal(jewelPrice)
     bcontract = w3k.eth.contract(address=JADE_KLAYTN, abi=ABI)
     bbalance = bcontract.functions.balanceOf(wallet).call()
     if bbalance > 0:
         logging.info('Found Jade balance for {0}: {1}'.format(wallet, Web3.from_wei(bbalance, 'ether')))
-        jadePrice = prices.priceLookup(datetime.now().timestamp(), JADE_KLAYTN, 'klaytn')
+        jadePrice = pd.priceLookup(datetime.now().timestamp(), JADE_KLAYTN, 'klaytn')
         if jadePrice > -1:
             jadeValue = Web3.from_wei(bbalance, 'ether') * decimal.Decimal(jadePrice)
 
