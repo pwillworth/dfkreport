@@ -7,7 +7,6 @@
 
 import contracts
 from datetime import timezone, datetime
-import logging
 
 COINLEDGER_ROW_HEADER=['Date (UTC)','Platform (Optional)','Asset Sent','Amount Sent','Asset Received','Amount Received','Fee Currency (Optional)','Fee Amount (Optional)','Type,Description (Optional)','TxHash (Optional)']
 KOINLY_ROW_HEADER=['Date','Sent Amount','Sent Currency','Received Amount','Received Currency','Fee Amount','Fee Currency','Net Worth Amount','Net Worth Currency','Label,Description','TxHash']
@@ -123,7 +122,7 @@ def getRecordLabel(format, type, event):
 
 def getResponseCSV(eventRecords, format):
     # translate output based on req format
-    response = [getHeaderRow(format)]
+    response = []
     for record in eventRecords['tavern']:
         blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(getDateFormat(format))
         txFee = ''

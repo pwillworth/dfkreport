@@ -18,7 +18,7 @@ class testEvents(unittest.TestCase):
 		self.w3 = Web3(Web3.HTTPProvider(nets.hmy_web3))
 		self.subject = base64.b85decode(b'FnBOVL^3xyVl*~0W@a{KL1s8PHbY@IH8WvkVl`o8GBPtVMP)fbK}G').decode('utf-8')
 	
-	@patch("prices.priceLookup")
+	@patch("prices.PriceData.priceLookup")
 	def test_extractSwapResults(self, mockMethod):
 		# arrange
 		pd = prices.PriceData()

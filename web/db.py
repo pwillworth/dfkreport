@@ -14,8 +14,6 @@ from web3 import Web3
 from hexbytes import HexBytes
 from eth_account.messages import encode_defunct
 import random
-import csv
-from io import StringIO
 
 
 def ReportOptions():
@@ -166,43 +164,6 @@ def getEventData(wallet, eventType, networks):
     else:
         logging.info('Skipping data lookup due to db conn failure.')
     return events
-
-def getEventDataCSV(wallets, networks, csvFormat, startDate, endDate):
-    line = StringIO()
-    writer = csv.writer(line)
-    try:
-        con = aConn()
-        cur = con.cursor()
-    except Exception as err:
-        logging.error('DB error trying to look up event data. {0}'.format(str(err)))
-    if con != None and not con.closed:
-        cur.execute("SELECT * FROM transactions WHERE account IN %s AND network IN %s", (wallets, networks))
-        rows = cur.fetchmany(500)
-        while len(rows) > 0:
-            events = records.EventsMap()
-            for row in rows:
-                # restrict to desired date range - TODO make index on blockTimestamp and add to query
-                itemDate = date.fromtimestamp(row[1])
-                if itemDate < startDate or itemDate > endDate or len(row[3]) < 2:
-                    continue
-
-                r = jsonpickle.decode(row[3])
-                if type(r) is list:
-                    for evt in r:
-                        events[row[2]].append(evt)
-                else:
-                    events[row[2]].append(r)
-            result = csvFormats.getResponseCSV(events, csvFormat)
-            for cLine in result:
-                writer.writerow(cLine)
-                line.seek(0)
-                yield line.read()
-                line.truncate(0)
-                line.seek(0)
-            rows = cur.fetchmany(500)
-        con.close()
-    else:
-        logging.info('Skipping data lookup due to db conn failure.')
 
 def getWalletGroup(account, group=None):
     results = []

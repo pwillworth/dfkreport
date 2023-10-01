@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-from flask import Flask, request, Response, redirect, url_for
+from flask import Flask, request, redirect, url_for, stream_with_context
 from flask import render_template
-from flask import make_response
 from markupsafe import escape
 from web3 import Web3
-from datetime import timezone, datetime, date
+from datetime import timedelta, datetime
 import logging
 from flask.logging import default_handler
 import urllib
+import jsonpickle
+import records
+import csvFormats
 import db
 import utils
 import payment
@@ -135,13 +137,45 @@ def csv():
         failure = True
 
     if failure == True:
-        output = response
-    else:
-        networks = nets.getNetworkList(includedChains)
-        output = Response(db.getEventDataCSV(tuple(wallets), networks, csvFormat, tmpStart, tmpEnd), mimetype='text/csv')
-        output.headers['Content-disposition'] = 'attachment; filename="dfk-report.csv"'
+        return response
 
-    return output
+    networks = nets.getNetworkList(includedChains)
+    def getEventDataCSV(wallets, networks, csvFormat, startDate, endDate):
+        fromTimestamp = int(datetime.timestamp(datetime(startDate.year, startDate.month, startDate.day)))
+        toTimestamp = int(datetime.timestamp(datetime(endDate.year, endDate.month, endDate.day) + timedelta(days=1)))
+        try:
+            con = db.aConn()
+            cur = con.cursor()
+        except Exception as err:
+            logging.error('DB error trying to look up event data. {0}'.format(str(err)))
+        if con != None and not con.closed:
+            cur.execute("SELECT * FROM transactions WHERE account IN %s AND network IN %s AND blockTimestamp >= %s AND blockTimestamp < %s", (wallets, networks, fromTimestamp, toTimestamp))
+            resultHeader = csvFormats.getHeaderRow(format)
+            yield f"{','.join(resultHeader)}\n"
+            rows = cur.fetchmany(100)
+            while len(rows) > 0:
+                events = records.EventsMap()
+                for row in rows:
+                    # some rows may have no events
+                    if len(row[3]) < 2:
+                        continue
+                    r = jsonpickle.decode(row[3])
+                    if type(r) is list:
+                        for evt in r:
+                            events[row[2]].append(evt)
+                    else:
+                        events[row[2]].append(r)
+                result = csvFormats.getResponseCSV(events, csvFormat)
+                for cLine in result:
+                    yield f"{','.join(cLine)}\n"
+                rows = cur.fetchmany(100)
+
+            con.close()
+        else:
+            logging.info('Skipping data lookup due to db conn failure.')
+
+    rHeaders = { 'Content-disposition' : 'attachment; filename="dfk-report.csv"', 'mimetype' : 'text/csv', 'Content-Type' : 'text/csv' }
+    return stream_with_context(getEventDataCSV(tuple(wallets), networks, csvFormat, tmpStart, tmpEnd)), rHeaders
 
 @app.route("/pnl/<content_type>", methods=['GET', 'POST'])
 def pnl(content_type=None):
@@ -254,7 +288,7 @@ def report_list():
             wallets = db.getWalletGroup(loginState[1])
             listResult = db.getWalletUpdateList(tuple(wallets))
         else:
-            listResult = db.getWalletUpdateList(loginState[1])
+            listResult = db.getWalletUpdateList((loginState[1],))
     else:
         listResult = 'Error: Login first to view reports'
 
