@@ -120,8 +120,7 @@ def getDuelsReport(wallets, startDate, endDate, includedChains):
     logging.info('taver {0} airdrop {1}'.format(len(tavernData), len(airdropData)))
 
     duelsRecords = records.EventsMap()
-    logging.info(str(airdropData[10].__dict__))
-    logging.info(str(tavernData[2345].__dict__))
+
     airdropData = [x for x in airdropData if (taxmap.inReportRange(x, startDate, endDate))]
     tavernData = [x for x in tavernData if (taxmap.inReportRange(x, startDate, endDate))]
     logging.info('t {0} airdrop {1}'.format(len(duelsRecords['tavern']), len(duelsRecords['airdrops'])))

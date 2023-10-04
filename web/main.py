@@ -74,7 +74,13 @@ def report_generate():
         if account == '':
             account = wallet
 
-    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, request.remote_addr, triggerUpdate)
+    if len(request.headers['x-appengine-user-ip']) > 0:
+        logging.warn(request.headers['x-appengine-user-ip'])
+        user_ip = request.headers['x-appengine-user-ip']
+    else:
+        user_ip = request.remote_addr
+
+    return generate.generation(account, loginState[0], wallet, startDate, endDate, includeHarmony, includeDFKChain, includeAvalanche, includeKlaytn, user_ip[0:30], triggerUpdate)
 
 @app.route("/csv", methods=['GET', 'POST'])
 def csv():
