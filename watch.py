@@ -40,7 +40,7 @@ def main():
                     except Exception as err:
                         logging.error('db error looking up running reports {0}'.format(str(err)))
                         reportCount = 99999
-                    logging.info("running reports: {0} max reports: {1}".format(reportCount, settings.MAX_REPORTS))
+                    logging.info("update needed for {2} - {3}, running reports: {0} max reports: {1}".format(reportCount, settings.MAX_REPORTS, row[0], row[2]))
                     if reportCount < settings.MAX_REPORTS:
                         with con.cursor() as cur2:
                             # dont start yet if existing process running from same IP and network

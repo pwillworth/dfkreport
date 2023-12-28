@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 
- Copyright 2022 Paul Willworth <ioscode@gmail.com>
+ Copyright 2023 Paul Willworth <ioscode@gmail.com>
 
 """
 
@@ -9,7 +9,7 @@ import contracts
 from datetime import timezone, datetime
 
 COINLEDGER_ROW_HEADER=['Date (UTC)','Platform (Optional)','Asset Sent','Amount Sent','Asset Received','Amount Received','Fee Currency (Optional)','Fee Amount (Optional)','Type,Description (Optional)','TxHash (Optional)']
-KOINLY_ROW_HEADER=['Date','Sent Amount','Sent Currency','Received Amount','Received Currency','Fee Amount','Fee Currency','Net Worth Amount','Net Worth Currency','Label,Description','TxHash']
+KOINLY_ROW_HEADER=['Date','Sent Amount','Sent Currency','Received Amount','Received Currency','Fee Amount','Fee Currency','Net Worth Amount','Net Worth Currency','Label','Description','TxHash']
 TOKENTAX_ROW_HEADER=['Type','BuyAmount','BuyCurrency','SellAmount','SellCurrency','FeeAmount','FeeCurrency','Exchange','Group','Comment','Date']
 TURBOTAX_ROW_HEADER=['Date','Type','Sent Asset','Sent Amount','Received Asset','Received Amount','Fee Asset','Fee Amount','Market Value Currency','Market Value','Description','Transaction Hash','Transaction ID']
 DEFAULT_ROW_HEADER=['category','block date','event','type 1','type 1 amount','type 2','type 2 amount','type 1 fiat value','type 2 fiat value','txHash','tx fee fiat value']
