@@ -156,7 +156,7 @@ def csv():
             logging.error('DB error trying to look up event data. {0}'.format(str(err)))
         if con != None and not con.closed:
             cur.execute("SELECT * FROM transactions WHERE account IN %s AND network IN %s AND blockTimestamp >= %s AND blockTimestamp < %s", (wallets, networks, fromTimestamp, toTimestamp))
-            resultHeader = csvFormats.getHeaderRow(format)
+            resultHeader = csvFormats.getHeaderRow(csvFormat)
             yield f"{','.join(resultHeader)}\n"
             rows = cur.fetchmany(100)
             while len(rows) > 0:
