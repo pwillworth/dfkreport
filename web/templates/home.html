@@ -351,6 +351,11 @@ function downloadDone() {
     <div id="csv_report" class="ghWidgetBox ui-widget-content" onclick="switchView('export')">
       <img src="{{ BASE_SCRIPT_URL }}static/images/airdrop.png" /><span>CSV Export</span>
     </div>
+    {% if sponsor == 'DFK_Helper_Sponsor' %}
+    <div id="supportBox" class="ghWidgetBox" style="padding:32px;">
+      <img src="{{ BASE_SCRIPT_URL }}static/images/DFK_Helper_Sponsor.png" style="width:100%;"/>
+    </div>
+    {% else %}
     <div id="supportBox" class="ghWidgetBox" style="height:280px;text-align: center;background-image: url({{ BASE_SCRIPT_URL }}static/images/{{ bankState }}.jpg);background-repeat:no-repeat;">
       <h3 style="margin-bottom: 60px;margin-top: 20px;">{{ bankMessage | safe }}</h3>
       <h1 id="bankProgress" title="Total amount of donations received this month." style="margin-bottom: 60px;">{{ bankProgress }}</h1>
@@ -358,6 +363,7 @@ function downloadDone() {
       <div class="inlineBlock"><a class="orphanButton" href="{{ BASE_SCRIPT_URL }}about" target="_blank">Donate Now</a></div>
       <img src="{{ BASE_SCRIPT_URL }}static/images/crystal.png" style="max-width:32px;"/>
     </div>
+    {% endif %}
   </div>
   <div id="rightMainContent" class="ghCol">
     <div id="reportContainer" class="ghWidgetBox ui-widget-content">

@@ -16,6 +16,7 @@ import payment
 import generate
 import view
 import nets
+import settings
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 root = logging.getLogger()
@@ -43,7 +44,7 @@ def index():
         bankState = 'ragman'
         bankMessage = 'Thank You!  The ragmans crates are full and the $30 hosting bill can be paid this month!'
 
-    return render_template('home.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage)
+    return render_template('home.html', memberState=memberState, bankState=bankState, bankProgress=bankProgress, bankMessage=bankMessage, sponsor=settings.CURRENT_SPONSOR)
 
 @app.route("/about")
 def about():

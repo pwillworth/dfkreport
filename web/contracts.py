@@ -159,6 +159,7 @@ address_map = {
     '0x501cdc4ef10b63219704bf6adb785dfccb06dee2': 'Item Bridge Serendale',
     '0x6d5B86EaC9097EA4a94B2b69Cd4854678B89f839': 'Item Bridge to Crystalvale',
     '0x57Dec9cC7f492d6583c773e2E7ad66dcDc6940Fb': 'CrystalvaleGardener',
+    '0xB04e8D6aED037904B77A9F0b08002592925833b7': 'CrystalvaleGardener2',
     '0x51577EC9644853c5d1B99d5045C133BBfa9a6a60': 'Gen0 Reroll',
     '0x123165B3a30fdA3655B30cfC10135C1CA3C21bFC': 'Airdrop Crystalvale',
     '0x947873092dc57C1A70704033c41cB110f4462a8B': 'Airdrop Claim',
