@@ -75,8 +75,7 @@ def report_generate():
         if account == '':
             account = wallet
 
-    if len(request.headers['x-appengine-user-ip']) > 0:
-        logging.warn(request.headers['x-appengine-user-ip'])
+    if 'x-appengine-user-ip' in request.headers and len(request.headers['x-appengine-user-ip']) > 0:
         user_ip = request.headers['x-appengine-user-ip']
     else:
         user_ip = request.remote_addr

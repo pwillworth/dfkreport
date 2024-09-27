@@ -125,6 +125,9 @@ def getResponseCSV(eventRecords, format):
     response = []
     for record in eventRecords['tavern']:
         blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(getDateFormat(format))
+        network = 'harmony'
+        if hasattr(record, 'network'):
+            network = record.network
         txFee = ''
         txFeeCurrency = ''
         if hasattr(record, 'fiatFeeValue'):
@@ -135,10 +138,10 @@ def getResponseCSV(eventRecords, format):
                 sentAmount = ''
                 sentType = ''
                 rcvdAmount = record.coinCost
-                rcvdType = contracts.getTokenName(record.coinType, record.network)
+                rcvdType = contracts.getTokenName(record.coinType, network)
             else:
                 sentAmount = record.coinCost
-                sentType = contracts.getTokenName(record.coinType, record.network)
+                sentType = contracts.getTokenName(record.coinType, network)
                 rcvdAmount = ''
                 rcvdType = ''
 
@@ -152,7 +155,7 @@ def getResponseCSV(eventRecords, format):
         elif format == 'turbotax':
             response.append([blockDateStr, label, sentType, str(sentAmount), rcvdType, str(rcvdAmount), txFeeCurrency, str(txFee), record.fiatType, str(record.fiatAmount), 'NFT {0} {1}'.format(record.itemID, record.event), record.txHash])
         else:
-            response.append(['tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getTokenName(record.coinType, record.network), str(record.coinCost), '', str(record.fiatAmount), record.txHash, str(txFee)])
+            response.append(['tavern', blockDateStr, record.event, record.itemType, str(record.itemID), contracts.getTokenName(record.coinType, network), str(record.coinCost), '', str(record.fiatAmount), record.txHash, str(txFee)])
 
     for record in eventRecords['swaps']:
         blockDateStr = datetime.fromtimestamp(record.timestamp, tz=timezone.utc).strftime(getDateFormat(format))

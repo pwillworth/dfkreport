@@ -1196,11 +1196,15 @@ def extractAlchemistResults(w3, txn, account, timestamp, receipt, network, pd):
 def extractPotionResults(w3, txn, account, timestamp, receipt, inputs, network, pd):
     r = None
     # Determine hero that is consuming potion from tx input
-    ABI = '[{"inputs":[{"internalType":"address","name":"_address","type":"address"},{"internalType":"uint256","name":"heroId","type":"uint256"}],"name":"consumeItem","outputs":[],"stateMutability":"view","type":"function"}]'
+    ABI = getABI('ItemConsumer')
     contract = w3.eth.contract(address='0x38e76972BD173901B5E5E43BA5cB464293B80C31', abi=ABI)
     input_data = contract.decode_function_input(inputs)
     logging.info(str(input_data))
-    heroId = input_data[1]['heroId']
+    heroId = 0
+    if 'heroId' in input_data[1]:
+        heroId = input_data[1]['heroId']
+    elif 'heroIds' in input_data[1]:
+        heroId = input_data[1]['heroIds'][0]
 
     ABI = getABI('JewelToken')
     contract = w3.eth.contract(address='0x72Cb10C6bfA5624dD07Ef608027E366bd690048F', abi=ABI)

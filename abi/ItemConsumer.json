@@ -1,0 +1,883 @@
+[
+{
+    "anonymous": false,
+    "inputs": [
+    {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+    }
+    ],
+    "name": "Initialized",
+    "type": "event"
+},
+{
+    "anonymous": false,
+    "inputs": [
+    {
+        "indexed": false,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+    },
+    {
+        "indexed": false,
+        "internalType": "address",
+        "name": "item",
+        "type": "address"
+    },
+    {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "heroId",
+        "type": "uint256"
+    },
+    {
+        "components": [
+        {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "summonedTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nextSummonTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "summonerId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "assistantId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint32",
+                "name": "summons",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "maxSummons",
+                "type": "uint32"
+            }
+            ],
+            "internalType": "struct SummoningInfo",
+            "name": "summoningInfo",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "statGenes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "visualGenes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "enum Rarity",
+                "name": "rarity",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bool",
+                "name": "shiny",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint16",
+                "name": "generation",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint32",
+                "name": "firstName",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "lastName",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "shinyStyle",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint8",
+                "name": "class",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint8",
+                "name": "subClass",
+                "type": "uint8"
+            }
+            ],
+            "internalType": "struct HeroInfo",
+            "name": "info",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "staminaFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "hpFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "mpFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint16",
+                "name": "level",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint64",
+                "name": "xp",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address",
+                "name": "currentQuest",
+                "type": "address"
+            },
+            {
+                "internalType": "uint8",
+                "name": "sp",
+                "type": "uint8"
+            },
+            {
+                "internalType": "enum HeroStatus",
+                "name": "status",
+                "type": "uint8"
+            }
+            ],
+            "internalType": "struct HeroState",
+            "name": "state",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hp",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mp",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "stamina",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStats",
+            "name": "stats",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpLg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpLg",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStatGrowth",
+            "name": "primaryStatGrowth",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpLg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpLg",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStatGrowth",
+            "name": "secondaryStatGrowth",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "mining",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "gardening",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "foraging",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "fishing",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroProfessions",
+            "name": "professions",
+            "type": "tuple"
+        }
+        ],
+        "indexed": false,
+        "internalType": "struct Hero",
+        "name": "oldHero",
+        "type": "tuple"
+    },
+    {
+        "components": [
+        {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "summonedTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nextSummonTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "summonerId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "assistantId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint32",
+                "name": "summons",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "maxSummons",
+                "type": "uint32"
+            }
+            ],
+            "internalType": "struct SummoningInfo",
+            "name": "summoningInfo",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "statGenes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "visualGenes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "enum Rarity",
+                "name": "rarity",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bool",
+                "name": "shiny",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint16",
+                "name": "generation",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint32",
+                "name": "firstName",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "lastName",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "shinyStyle",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint8",
+                "name": "class",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint8",
+                "name": "subClass",
+                "type": "uint8"
+            }
+            ],
+            "internalType": "struct HeroInfo",
+            "name": "info",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint256",
+                "name": "staminaFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "hpFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "mpFullAt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint16",
+                "name": "level",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint64",
+                "name": "xp",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address",
+                "name": "currentQuest",
+                "type": "address"
+            },
+            {
+                "internalType": "uint8",
+                "name": "sp",
+                "type": "uint8"
+            },
+            {
+                "internalType": "enum HeroStatus",
+                "name": "status",
+                "type": "uint8"
+            }
+            ],
+            "internalType": "struct HeroState",
+            "name": "state",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hp",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mp",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "stamina",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStats",
+            "name": "stats",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpLg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpLg",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStatGrowth",
+            "name": "primaryStatGrowth",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "strength",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "intelligence",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "wisdom",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "luck",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "agility",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "vitality",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "endurance",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "dexterity",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "hpLg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpSm",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpRg",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "mpLg",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroStatGrowth",
+            "name": "secondaryStatGrowth",
+            "type": "tuple"
+        },
+        {
+            "components": [
+            {
+                "internalType": "uint16",
+                "name": "mining",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "gardening",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "foraging",
+                "type": "uint16"
+            },
+            {
+                "internalType": "uint16",
+                "name": "fishing",
+                "type": "uint16"
+            }
+            ],
+            "internalType": "struct HeroProfessions",
+            "name": "professions",
+            "type": "tuple"
+        }
+        ],
+        "indexed": false,
+        "internalType": "struct Hero",
+        "name": "newHero",
+        "type": "tuple"
+    }
+    ],
+    "name": "ItemConsumed",
+    "type": "event"
+},
+{
+    "inputs": [
+    {
+        "internalType": "address",
+        "name": "_consumableAddress",
+        "type": "address"
+    },
+    {
+        "internalType": "uint256",
+        "name": "_heroId",
+        "type": "uint256"
+    }
+    ],
+    "name": "consumeItem",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+},
+{
+    "inputs": [
+    {
+        "internalType": "address[]",
+        "name": "_consumableAddresses",
+        "type": "address[]"
+    },
+    {
+        "internalType": "uint256[]",
+        "name": "_heroIds",
+        "type": "uint256[]"
+    }
+    ],
+    "name": "consumeItems",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+},
+{
+    "inputs": [
+    {
+        "internalType": "address",
+        "name": "_heroCoreAddress",
+        "type": "address"
+    }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+}
+]

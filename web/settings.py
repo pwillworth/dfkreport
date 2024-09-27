@@ -1,4 +1,5 @@
-CURRENT_SPONSOR='DFK_Helper_Sponsor'
+# Sponsor period 3/7/2024 - 9/7/2024 DFK_Helper_Sponsor
+CURRENT_SPONSOR=''
 GAS_TOKENS = {
     'harmony': '0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a',
     'dfkchain': '0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260',
